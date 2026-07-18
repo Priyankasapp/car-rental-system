@@ -1,0 +1,320 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ============== USER MODEL ==============
+model User {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  email           String   @unique
+  phone           String?
+  firstName       String
+  lastName        String
+  password        String?  
+  role            Role     @default(CUSTOMER)
+  isEmailVerified Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  isDeleted       Boolean  @default(false)
+  profilePicture  String?
+  preferences     Json?    // { language, currency, notifications }
+  
+  // Relations
+  sessions        Session[]
+  reservations    Reservation[]
+  emailLogs       EmailLog[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([role])
+  @@index([isActive, isDeleted])
+  @@map("users")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  CUSTOMER
+}
+
+// ============== SESSION MODEL ==============
+model Session {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  user           User     @relation(fields: [userId], references: [id])
+  token          String   @unique
+  refreshToken   String   @unique
+  expiresAt      DateTime
+  lastActivityAt DateTime @default(now())
+  ipAddress      String?
+  userAgent      String?
+  isRevoked      Boolean  @default(false)
+  isDeleted      Boolean  @default(false)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, isRevoked])
+  @@map("sessions")
+}
+
+// ============== OTP MODEL ==============
+model OTP {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  email        String
+  otp          String
+  purpose      OTPScope
+  expiresAt    DateTime
+  attempts     Int      @default(0)
+  maxAttempts  Int      @default(3)
+  isUsed       Boolean  @default(false)
+  ipAddress    String?
+  userAgent    String?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+  @@map("otps")
+}
+
+enum OTPScope {
+  LOGIN
+  REGISTER
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+// ============== CAR MODEL ==============
+model Car {
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  manufacturer      String
+  model             String
+  year              Int
+  category          CarCategory
+  licensePlate      String      @unique
+  color             String?
+  transmission      Transmission
+  fuelType          FuelType
+  seats             Int
+  luggageCapacity   Int
+  features          String[]
+  
+  // Pricing (in cents)
+  pricePerDay       Int
+  pricePerWeek      Int?
+  pricePerMonth     Int?
+  securityDeposit   Int
+  
+  // Mileage
+  mileageFree       Int?
+  mileageExtraFee   Int?
+  
+  // Location
+  locationAddress   String
+  locationCity      String
+  locationState     String
+  locationZipCode   String
+  locationLat       Float?
+  locationLng       Float?
+  
+  // Images
+  imageMain         String
+  imageGallery      String[]
+  
+  // Status
+  status            CarStatus   @default(AVAILABLE)
+  isDeleted         Boolean     @default(false)
+  
+  // Relations
+  reservations      Reservation[]
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([status, isDeleted])
+  @@index([category, status])
+  @@index([locationCity])
+  @@index([pricePerDay])
+  @@map("cars")
+}
+
+enum CarCategory {
+  SEDAN
+  SUV
+  LUXURY
+  CONVERTIBLE
+  HATCHBACK
+  VAN
+}
+
+enum Transmission {
+  AUTOMATIC
+  MANUAL
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+enum CarStatus {
+  AVAILABLE
+  RESERVED
+  UNAVAILABLE
+  MAINTENANCE
+}
+
+// ============== RESERVATION MODEL ==============
+model Reservation {
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  reservationRef     String            @unique
+  carId              String            @db.ObjectId
+  car                Car               @relation(fields: [carId], references: [id])
+  userId             String?           @db.ObjectId
+  user               User?             @relation(fields: [userId], references: [id])
+  
+  // Customer info (denormalized)
+  customerName       String
+  customerEmail      String
+  customerPhone      String?
+  isGuestBooking     Boolean           @default(false)
+  
+  // Pickup
+  pickupLocation     String
+  pickupDate         DateTime
+  pickupTime         String
+  
+  // Dropoff
+  dropoffLocation    String
+  dropoffDate        DateTime
+  dropoffTime        String
+  
+  // Extras
+  chauffeur          Boolean           @default(false)
+  conciergeDelivery  Boolean           @default(false)
+  platinumInsurance  Boolean           @default(false)
+  satelliteConnectivity Boolean        @default(false)
+  
+  // Pricing (server calculated, in cents)
+  dailyRate          Int
+  rentalDays         Int
+  subtotal           Int
+  tax                Int
+  total              Int
+  
+  // Status
+  status             ReservationStatus @default(PENDING)
+  cancellationReason String?
+  cancellationFee    Int?
+  adminNotes         String?
+  
+  // Soft delete
+  isDeleted          Boolean           @default(false)
+  
+  // Relations
+  emailLogs          EmailLog[]
+  
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([userId, status])
+  @@index([carId, status])
+  @@index([pickupDate, pickupTime])
+  @@index([customerEmail])
+  @@map("reservations")
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+}
+
+// ============== EMAIL LOG MODEL ==============
+model EmailLog {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String?     @db.ObjectId
+  user         User?       @relation(fields: [userId], references: [id])
+  reservationId String?    @db.ObjectId
+  reservation  Reservation? @relation(fields: [reservationId], references: [id])
+  
+  emailType    EmailType
+  recipient    String
+  recipientName String?
+  subject      String
+  content      String?     // Store email content for reference
+  status       EmailStatus @default(PENDING)
+  messageId    String?
+  error        String?
+  sentAt       DateTime?
+  retryCount   Int         @default(0)
+  openedAt     DateTime?   // For tracking if email was opened
+  clickedAt    DateTime?   // For tracking if links were clicked
+  
+  // Metadata
+  ipAddress    String?
+  userAgent    String?
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([reservationId])
+  @@index([status])
+  @@index([sentAt])
+  @@index([emailType])
+  @@map("email_logs")
+}
+
+enum EmailType {
+  // Reservation related
+  RESERVATION_CONFIRMATION
+  RESERVATION_REMINDER
+  RESERVATION_MODIFIED
+  RESERVATION_CANCELLED
+  RESERVATION_COMPLETED
+  
+  // Car related
+  CAR_AVAILABLE
+  CAR_REVIEW_REQUEST
+  
+  // Account related
+  WELCOME
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+  ACCOUNT_UPDATE
+  
+  // Promotional
+  PROMOTIONAL
+  NEWSLETTER
+  OFFER
+  
+  // Admin
+  ADMIN_NOTIFICATION
+  SUPPORT_REPLY
+}
+
+enum EmailStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  BOUNCED
+  SPAM
+  UNSUBSCRIBED
+}
