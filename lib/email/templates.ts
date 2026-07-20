@@ -132,7 +132,7 @@ export function generateWelcomeText(
    OTP (ONE-TIME PASSWORD) TEMPLATES
    ========================================================================== */
 
-export function generateOtpHTML({ customerName, otp }: OtpEmailProps): string {
+export function generateOtpHTML({ customerName, otp, }: OtpEmailProps): string {
   const currentYear = new Date().getFullYear();
 
   return `

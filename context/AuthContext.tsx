@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // context/AuthContext.tsx
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 
 // Types
 interface User {
@@ -17,6 +17,9 @@ interface User {
   profilePicture?: string
 }
 
+// ✅ Define OTPPurpose type for reusability
+type OTPPurpose = 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD' | '2FA'
+
 interface AuthContextType {
   // State
   user: User | null
@@ -25,9 +28,9 @@ interface AuthContextType {
   
   // Actions
   login: (email: string, password: string) => Promise<{ requiresOTP: boolean; email: string }>
-  verifyOTP: (email: string, otp: string, purpose: 'LOGIN' | 'REGISTER') => Promise<void>
+  verifyOTP: (email: string, otp: string, purpose: OTPPurpose) => Promise<void>  // Using type
   register: (userData: RegisterData) => Promise<{ success: boolean; message: string; email: string }>
-  resendOTP: (email: string, purpose: 'LOGIN' | 'REGISTER') => Promise<void>
+  resendOTP: (email: string, purpose: OTPPurpose) => Promise<any>  //  Using type
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
   updateUser: (user: User) => void
@@ -93,8 +96,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Verify OTP
-  const verifyOTP = useCallback(async (email: string, otp: string, purpose: 'LOGIN' | 'REGISTER') => {
+  // ✅ Fixed: Verify OTP with correct purpose type
+  const verifyOTP = useCallback(async (
+    email: string, 
+    otp: string, 
+    purpose: OTPPurpose  // ✅ Changed from 'LOGIN' | 'REGISTER'
+  ) => {
     const response = await fetch('/api/auth/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -104,6 +111,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await response.json()
     
     if (!response.ok) {
+      // ✅ Better error handling
+      if (data.canResend) {
+        throw new Error(`${data.message} Please request a new OTP.`)
+      }
       throw new Error(data.message || 'Verification failed')
     }
     
@@ -133,8 +144,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Resend OTP
-  const resendOTP = useCallback(async (email: string, purpose: 'LOGIN' | 'REGISTER') => {
+  // ✅ Fixed: Resend OTP with correct purpose type
+  const resendOTP = useCallback(async (
+    email: string, 
+    purpose: OTPPurpose  // ✅ Changed from 'LOGIN' | 'REGISTER'
+  ) => {
     const response = await fetch('/api/auth/resend-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -144,8 +158,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await response.json()
     
     if (!response.ok) {
+      // ✅ Handle cooldown error (429)
+      if (response.status === 429 && data.data?.remainingSeconds) {
+        throw new Error(`${data.message} (${data.data.remainingSeconds}s remaining)`)
+      }
       throw new Error(data.message || 'Failed to resend OTP')
     }
+    
+    return data  // ✅ Return data for frontend
   }, [])
 
   // Logout

@@ -1,13 +1,30 @@
-// src/emails/otpTemplate.ts
+// lib/email/templates/otpTemplate.ts
 import { emailStyles } from '../styles';
 
 interface OtpEmailProps {
   customerName: string;
   otp: string;
+  purpose?: 'REGISTER' | 'LOGIN' | 'RESET_PASSWORD' | '2FA';  //  RESET_PASSWORD
+  expiryMinutes?: number;  //  expiryMinutes (plural)
 }
 
-export function generateOtpHTML({ customerName, otp }: OtpEmailProps): string {
+export function generateOtpHTML({ 
+  customerName, 
+  otp, 
+  purpose = 'REGISTER',
+  expiryMinutes = 5  //  expiryMinutes
+}: OtpEmailProps): string {
   const currentYear = new Date().getFullYear();
+
+  // Purpose-specific messages
+  const purposeMessages = {
+    REGISTER: 'to verify your email address and complete your registration',
+    LOGIN: 'to securely log in to your account',
+    RESET_PASSWORD: 'to reset your password',  //  RESET_PASSWORD
+    '2FA': 'for two-factor authentication',
+  };
+
+  const purposeMessage = purposeMessages[purpose] || purposeMessages.REGISTER;
 
   return `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -31,7 +48,7 @@ export function generateOtpHTML({ customerName, otp }: OtpEmailProps): string {
           <div style="${emailStyles.greeting}">Hello, <span>${customerName}</span></div>
           
           <p style="${emailStyles.description}">
-            Thank you for choosing UrbanDrive. To verify your email address and complete your request, please use the One-Time Password (OTP) below:
+            Thank you for choosing UrbanDrive. ${purposeMessage}, please use the One-Time Password (OTP) below:
           </p>
 
           <!-- OTP View Box -->
@@ -41,7 +58,8 @@ export function generateOtpHTML({ customerName, otp }: OtpEmailProps): string {
           </div>
 
           <p style="${emailStyles.description}">
-            This verification code is valid for <strong>10 minutes</strong>. Please enter this code on the verification screen to continue.
+            This verification code is valid for <strong>${expiryMinutes} minutes</strong>. 
+            Please enter this code on the verification screen to continue. 
           </p>
 
           <!-- Clean Structural Divider using style sheets -->
@@ -86,8 +104,43 @@ export function generateOtpHTML({ customerName, otp }: OtpEmailProps): string {
   `;
 }
 
-export function generateOtpText({ customerName, otp }: OtpEmailProps): string {
+export function generateOtpText({ 
+  customerName, 
+  otp,
+  purpose = 'REGISTER',
+  expiryMinutes = 5
+}: OtpEmailProps): string {
   const currentYear = new Date().getFullYear();
 
-  return `URBAN DRIVE\nPrecision in Motion\n\nDear ${customerName},\n\nThank you for choosing UrbanDrive. To verify your email address and complete your request, please use the One-Time Password (OTP) below:\n\nVerification Code: ${otp}\n\nThis verification code is valid for 10 minutes. Please enter this code on the verification screen to continue.\n\nFor your security:\n- Do not share this OTP with anyone, including UrbanDrive staff.\n- UrbanDrive will never ask for your OTP via phone, email, or text message.\n- If you did not request this code, you can safely ignore this email.\n\nBest regards,\nThe UrbanDrive Team\nDrive with Confidence. Travel with Comfort.\n\n© ${currentYear} UrbanDrive Global. All Rights Reserved.`;
+  // Purpose-specific messages
+  const purposeMessages = {
+    REGISTER: 'to verify your email address and complete your registration',
+    LOGIN: 'to securely log in to your account',
+    RESET_PASSWORD: 'to reset your password',
+    '2FA': 'for two-factor authentication',
+  };
+
+
+  const purposeMessage = purposeMessages[purpose] || purposeMessages.REGISTER;
+  return `URBAN DRIVE
+Precision in Motion
+
+Dear ${customerName},
+
+Thank you for choosing UrbanDrive. ${purposeMessage}, please use the One-Time Password (OTP) below:
+
+Verification Code: ${otp}
+
+This verification code is valid for ${expiryMinutes} minutes. Please enter this code on the verification screen to continue.
+
+For your security:
+- Do not share this OTP with anyone, including UrbanDrive staff.
+- UrbanDrive will never ask for your OTP via phone, email, or text message.
+- If you did not request this code, you can safely ignore this email.
+
+Best regards,
+The UrbanDrive Team
+Drive with Confidence. Travel with Comfort.
+
+© ${currentYear} UrbanDrive Global. All Rights Reserved.`;
 }
