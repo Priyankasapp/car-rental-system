@@ -8,6 +8,7 @@ const publicRoutes = [
   '/api/auth/login',
   '/api/auth/verify-otp',
   '/api/auth/resend-otp',
+  '/api/auth/forgot-password',
   '/api/health',
   '/api/cars',
   '/api/cars/',

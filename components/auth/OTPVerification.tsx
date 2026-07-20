@@ -12,8 +12,8 @@ interface OTPVerificationProps {
   onVerify: (otp: string) => Promise<void>
   onResend?: () => Promise<void>
   onBack?: () => void
-  purpose?: 'REGISTER' | 'LOGIN' | 'RESET_PASSWORD'
-  expiryMinutes?: number
+purpose?: 'REGISTER' | 'LOGIN' | 'PASSWORD_RESET' | 'EMAIL_VERIFICATION',
+expiryMinutes?: number
   className?: string
 }
 

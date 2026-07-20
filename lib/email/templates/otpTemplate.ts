@@ -1,27 +1,28 @@
 // lib/email/templates/otpTemplate.ts
 import { emailStyles } from '../styles';
 
+
 interface OtpEmailProps {
   customerName: string;
   otp: string;
-  purpose?: 'REGISTER' | 'LOGIN' | 'RESET_PASSWORD' | '2FA';  //  RESET_PASSWORD
-  expiryMinutes?: number;  //  expiryMinutes (plural)
+  purpose?: 'REGISTER' | 'LOGIN' | 'PASSWORD_RESET' | 'EMAIL_VERIFICATION';  
+  expiryMinutes?: number;
 }
 
 export function generateOtpHTML({ 
   customerName, 
   otp, 
   purpose = 'REGISTER',
-  expiryMinutes = 5  //  expiryMinutes
+  expiryMinutes = 5
 }: OtpEmailProps): string {
   const currentYear = new Date().getFullYear();
 
-  // Purpose-specific messages
+  
   const purposeMessages = {
     REGISTER: 'to verify your email address and complete your registration',
     LOGIN: 'to securely log in to your account',
-    RESET_PASSWORD: 'to reset your password',  //  RESET_PASSWORD
-    '2FA': 'for two-factor authentication',
+    PASSWORD_RESET: 'to reset your password',  
+    EMAIL_VERIFICATION: 'for two-factor authentication',  
   };
 
   const purposeMessage = purposeMessages[purpose] || purposeMessages.REGISTER;
@@ -62,10 +63,8 @@ export function generateOtpHTML({
             Please enter this code on the verification screen to continue. 
           </p>
 
-          <!-- Clean Structural Divider using style sheets -->
           <div style="${emailStyles.pillar}"></div>
 
-          <!-- Security Callout Block -->
           <div style="${emailStyles.credsLabel}">For your security:</div>
           <ul style="${emailStyles.bulletList}">
             <li style="${emailStyles.bulletItem}">Do not share this OTP with anyone, including UrbanDrive staff.</li>
@@ -112,16 +111,16 @@ export function generateOtpText({
 }: OtpEmailProps): string {
   const currentYear = new Date().getFullYear();
 
-  // Purpose-specific messages
+  // ✅ Updated keys to match database
   const purposeMessages = {
     REGISTER: 'to verify your email address and complete your registration',
     LOGIN: 'to securely log in to your account',
-    RESET_PASSWORD: 'to reset your password',
-    '2FA': 'for two-factor authentication',
+    PASSWORD_RESET: 'to reset your password',  // ✅ Changed
+    EMAIL_VERIFICATION: 'for two-factor authentication',  // ✅ Changed
   };
 
-
   const purposeMessage = purposeMessages[purpose] || purposeMessages.REGISTER;
+
   return `URBAN DRIVE
 Precision in Motion
 
