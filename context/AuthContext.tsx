@@ -313,44 +313,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   //  Reset Password
-  const resetPassword = useCallback(async (data: ResetPasswordData) => {
-    setError(null)
+  // const resetPassword = useCallback(async (data: ResetPasswordData) => {
+  //   setError(null)
     
-    //  Validate passwords match
-    if (data.newPassword !== data.confirmPassword) {
-      const error = new Error('Passwords do not match')
-      setError(error.message)
-      throw error
-    }
+  //   //  Validate passwords match
+  //   if (data.newPassword !== data.confirmPassword) {
+  //     const error = new Error('Passwords do not match')
+  //     setError(error.message)
+  //     throw error
+  //   }
     
-    //  Validate password strength
-    if (data.newPassword.length < 8) {
-      const error = new Error('Password must be at least 8 characters')
-      setError(error.message)
-      throw error
-    }
+  //   //  Validate password strength
+  //   if (data.newPassword.length < 8) {
+  //     const error = new Error('Password must be at least 8 characters')
+  //     setError(error.message)
+  //     throw error
+  //   }
     
-    //  Check for at least one uppercase, lowercase, number, special character
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
-    if (!passwordRegex.test(data.newPassword)) {
-      const error = new Error('Password must contain uppercase, lowercase, number, and special character')
-      setError(error.message)
-      throw error
-    }
+  //   //  Check for at least one uppercase, lowercase, number, special character
+  //   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+  //   if (!passwordRegex.test(data.newPassword)) {
+  //     const error = new Error('Password must contain uppercase, lowercase, number, and special character')
+  //     setError(error.message)
+  //     throw error
+  //   }
     
-    try {
-      //  Use verifyOTP with PASSWORD_RESET purpose
-      const result = await verifyOTP(data.email, data.otp, 'PASSWORD_RESET', data.newPassword)
+  //   try {
+  //     //  Use verifyOTP with PASSWORD_RESET purpose
+  //     const result = await verifyOTP(data.email, data.otp, 'PASSWORD_RESET', data.newPassword)
       
-      return {
-        success: true,
-        message: result.message || 'Password reset successfully',
-      }
-    } catch (error: any) {
-      setError(error.message)
-      throw error
+  //     return {
+  //       success: true,
+  //       message: result.message || 'Password reset successfully',
+  //     }
+  //   } catch (error: any) {
+  //     setError(error.message)
+  //     throw error
+  //   }
+  // }, [verifyOTP])
+
+
+  // context/AuthContext.tsx - resetPassword function
+
+const resetPassword = useCallback(async (resetData: ResetPasswordData) => {
+  setError(null)
+  
+  // Validate passwords match
+  if (resetData.newPassword !== resetData.confirmPassword) {
+    const error = new Error('Passwords do not match')
+    setError(error.message)
+    throw error
+  }
+  
+  // Validate password strength
+  if (resetData.newPassword.length < 8) {
+    const error = new Error('Password must be at least 8 characters')
+    setError(error.message)
+    throw error
+  }
+  
+  // Check for at least one uppercase, lowercase, number, special character
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+  if (!passwordRegex.test(resetData.newPassword)) {
+    const error = new Error('Password must contain uppercase, lowercase, number, and special character')
+    setError(error.message)
+    throw error
+  }
+  
+  try {
+    // ✅ Use verifyOTP with PASSWORD_RESET purpose
+    const result = await verifyOTP(
+      resetData.email, 
+      resetData.otp, 
+      'PASSWORD_RESET', 
+      resetData.newPassword
+    )
+    
+    return {
+      success: true,
+      message: result.message || 'Password reset successfully',
     }
-  }, [verifyOTP])
+  } catch (error: any) {
+    setError(error.message)
+    throw error
+  }
+}, [verifyOTP])
 
   // Logout
   const logout = useCallback(async () => {
@@ -380,7 +427,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updatedUser)
   }, [])
 
-  // Memoized value to prevent unnecessary re-renders
+  //  Memoized value to prevent unnecessary re-renders
   const value = useMemo<AuthContextType>(() => ({
     user,
     isLoading,

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/set-state-in-effect */
 // components/auth/OTPVerification.tsx
 'use client'
 
@@ -12,8 +11,8 @@ interface OTPVerificationProps {
   onVerify: (otp: string) => Promise<void>
   onResend?: () => Promise<void>
   onBack?: () => void
-purpose?: 'REGISTER' | 'LOGIN' | 'PASSWORD_RESET' | 'EMAIL_VERIFICATION',
-expiryMinutes?: number
+  purpose?: 'REGISTER' | 'LOGIN' | 'PASSWORD_RESET' | 'EMAIL_VERIFICATION'
+  expiryMinutes?: number
   className?: string
 }
 
@@ -22,7 +21,6 @@ export function OTPVerification({
   onVerify,
   onResend,
   onBack,
-  purpose = 'REGISTER',
   expiryMinutes = 5,
   className,
 }: OTPVerificationProps) {
@@ -33,34 +31,43 @@ export function OTPVerification({
   const [timeLeft, setTimeLeft] = useState(expiryMinutes * 60)
   const [canResend, setCanResend] = useState(false)
 
-  // Countdown timer
+  // Countdown timer with proper dependency tracking
   useEffect(() => {
     if (timeLeft <= 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCanResend(true)
       return
     }
 
     const timer = setTimeout(() => {
-      setTimeLeft(timeLeft - 1)
+      setTimeLeft((prev) => prev - 1)
     }, 1000)
 
     return () => clearTimeout(timer)
   }, [timeLeft])
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Centralized single execution point
+  const executeVerification = async (otpValue: string) => {
+    if (loading || otpValue.length !== 6) return
+    
     setError('')
     setMessage('')
     setLoading(true)
 
     try {
-      await onVerify(otp)
-      setMessage(' Verification successful!')
+      await onVerify(otpValue)
+      setMessage('✅ Verification successful!')
     } catch (err: any) {
-      setError(err.message || 'Invalid OTP. Please try again.')
+      // Pull error message safely whether it's an object or an explicit string response
+      setError(err?.message || err || 'Invalid OTP. Please try again.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    executeVerification(otp)
   }
 
   const handleResend = async () => {
@@ -72,12 +79,12 @@ export function OTPVerification({
 
     try {
       await onResend()
-      setMessage(' New OTP sent successfully!')
+      setMessage('📧 New OTP sent successfully!')
       setTimeLeft(expiryMinutes * 60)
       setCanResend(false)
-      setOtp('')
+      setOtp('') // Flush input state clean
     } catch (err: any) {
-      setError(err.message || 'Failed to resend OTP. Please try again.')
+      setError(err?.message || err || 'Failed to resend OTP. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -114,16 +121,14 @@ export function OTPVerification({
       )}
 
       {/* OTP Form */}
-      <form onSubmit={handleVerify} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <OTPInput
             value={otp}
             onChange={setOtp}
-            onComplete={() => {
-              // Auto-submit when all digits filled
-              if (otp.length === 6) {
-                handleVerify(new Event('submit') as any)
-              }
+            onComplete={(value) => {
+              // Direct execution bypassing local async state lags
+              executeVerification(value)
             }}
             disabled={loading}
           />
@@ -132,14 +137,14 @@ export function OTPVerification({
           <div className="text-center">
             {timeLeft > 0 ? (
               <p className="text-sm text-gray-500">
-                 OTP expires in{' '}
+                ⏰ OTP expires in{' '}
                 <span className="font-mono font-semibold text-gray-700">
                   {formatTime(timeLeft)}
                 </span>
               </p>
             ) : (
               <p className="text-sm text-red-500 font-medium">
-                 OTP has expired
+                ⏰ OTP has expired
               </p>
             )}
           </div>
