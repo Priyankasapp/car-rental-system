@@ -24,7 +24,8 @@ interface CarContextType {
   transmissionOptions: FleetFilterOption[]
   
   // Actions
-  fetchCars: () => Promise<void>
+  fetchCars: (filters?: { category?: string; city?: string; search?: string }) => Promise<void>
+  applyFilters: (filters: { category?: string; city?: string; search?: string; minPrice?: number; maxPrice?: number }) => void
   toggleBrand: (brandId: string) => void
   toggleType: (typeId: string) => void
   toggleTransmission: (transmissionId: string) => void
@@ -32,6 +33,7 @@ interface CarContextType {
   clearAllFilters: () => void
   toggleFavorite: (carId: string) => void
   isFavorite: (carId: string) => boolean
+  getCarById: (id: string) => FleetCar | undefined
 }
 
 const CarContext = createContext<CarContextType | undefined>(undefined)
@@ -93,9 +95,9 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
   const [selectedTransmissions, setSelectedTransmissions] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState({
     min: 0,
-    max: 1000,
+    max: 20000,
     currentMin: 0,
-    currentMax: 1000
+    currentMax: 20000
   })
   
   // Filter options
@@ -109,7 +111,6 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem('carFavorites')
       if (saved) {
         const parsed = JSON.parse(saved)
-        // Use a state setter without triggering re-render cascade
         setFavorites(parsed)
       }
     } catch (error) {
@@ -117,7 +118,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Save favorites to localStorage - moved to separate effect
+  // Save favorites to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('carFavorites', JSON.stringify(favorites))
@@ -156,19 +157,27 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     setTransmissionOptions(transmissions)
   }, [selectedBrands, selectedTypes, selectedTransmissions])
 
-  // Fetch cars from API
-  const fetchCars = useCallback(async () => {
+  // ✅ Fetch cars from API with optional filters
+  const fetchCars = useCallback(async (filters?: { category?: string; city?: string; search?: string }) => {
     try {
       setIsLoading(true)
       setError(null)
       
-      const response = await fetch('/api/cars?limit=20')
+      // Build query params
+      const params = new URLSearchParams()
+      params.append('limit', '100')  // ✅ Increased limit to 100
+      
+      if (filters?.category) params.append('category', filters.category)
+      if (filters?.city) params.append('city', filters.city)
+      if (filters?.search) params.append('search', filters.search)
+      
+      const response = await fetch(`/api/cars?${params.toString()}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch cars')
       }
       
-      const data: ApiResponse = await response.json()
+      const data = await response.json()
       
       if (data.success) {
         // Convert API cars to FleetCar format
@@ -184,10 +193,10 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
         // Extract filter options
         extractFilterOptions(fleetCars)
         
-        // Set price range
+        // Set price range from API
         if (data.data.filters?.priceRange) {
-          const minPrice = data.data.filters.priceRange.min / 100
-          const maxPrice = data.data.filters.priceRange.max / 100
+          const minPrice = data.data.filters.priceRange.min
+          const maxPrice = data.data.filters.priceRange.max
           setPriceRange({
             min: minPrice,
             max: maxPrice,
@@ -204,44 +213,46 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     }
   }, [favorites, extractFilterOptions])
 
-  // Apply all filters - this will be called by effects and user actions
-  const applyFilters = useCallback(() => {
+  // ✅ Apply filters to existing cars (without re-fetching)
+  const applyFilters = useCallback((filters: { category?: string; city?: string; search?: string; minPrice?: number; maxPrice?: number }) => {
     let filtered = [...cars]
     
-    // Filter by brands
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter(car => selectedBrands.includes(car.brand))
-    }
-    
-    // Filter by types
-    if (selectedTypes.length > 0) {
-      filtered = filtered.filter(car => selectedTypes.includes(car.category))
-    }
-    
-    // Filter by transmissions
-    if (selectedTransmissions.length > 0) {
+    // Filter by category
+    if (filters.category) {
       filtered = filtered.filter(car => 
-        selectedTransmissions.includes(car.specs.transmission)
+        car.category.toLowerCase() === filters.category!.toLowerCase()
+      )
+    }
+    
+    // Filter by city
+    if (filters.city) {
+      const city = filters.city.toLowerCase()
+      filtered = filtered.filter(car => 
+        car.location?.toLowerCase().includes(city)
+      )
+    }
+    
+    // Filter by search (brand or model)
+    if (filters.search) {
+      const search = filters.search.toLowerCase()
+      filtered = filtered.filter(car => 
+        car.brand.toLowerCase().includes(search) ||
+        car.name.toLowerCase().includes(search)
       )
     }
     
     // Filter by price range
-    filtered = filtered.filter(car => 
-      car.price >= priceRange.currentMin && car.price <= priceRange.currentMax
-    )
+    if (filters.minPrice !== undefined) {
+      filtered = filtered.filter(car => car.price >= filters.minPrice!)
+    }
+    if (filters.maxPrice !== undefined) {
+      filtered = filtered.filter(car => car.price <= filters.maxPrice!)
+    }
     
     setFilteredCars(filtered)
-  }, [cars, selectedBrands, selectedTypes, selectedTransmissions, priceRange])
+  }, [cars])
 
-  // Re-apply filters when dependencies change
-  // Using a separate effect to update filtered cars
-  useEffect(() => {
-    // This is safe because applyFilters uses useCallback and has proper dependencies
-    applyFilters()
-  }, [applyFilters])
-
-  // Alternative: Use useMemo for filtered cars instead of useEffect
-  // This is actually better practice for derived state
+  // Apply all filters - using useMemo for derived state
   const computedFilteredCars = useMemo(() => {
     let filtered = [...cars]
     
@@ -286,7 +297,6 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
         ? prev.filter(b => b !== brandName)
         : [...prev, brandName]
       
-      // Update brand options checked state
       setBrandOptions(prevOptions => 
         prevOptions.map(opt => ({
           ...opt,
@@ -362,7 +372,6 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       currentMax: prev.max
     }))
     
-    // Reset filter options checked state
     setBrandOptions(prev => prev.map(opt => ({ ...opt, checked: false })))
     setTypeOptions(prev => prev.map(opt => ({ ...opt, checked: false })))
     setTransmissionOptions(prev => prev.map(opt => ({ ...opt, checked: false })))
@@ -376,7 +385,6 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
         ? prev.filter(id => id !== carId)
         : [...prev, carId]
       
-      // Update cars
       setCars(prevCars =>
         prevCars.map(car =>
           car.id === carId
@@ -393,6 +401,11 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
   const isFavorite = useCallback((carId: string): boolean => {
     return favorites.includes(carId)
   }, [favorites])
+
+  // Get car by ID
+  const getCarById = useCallback((id: string) => {
+    return cars.find(car => car.id === id)
+  }, [cars])
 
   // Load cars on mount
   useEffect(() => {
@@ -412,6 +425,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     typeOptions,
     transmissionOptions,
     fetchCars,
+    applyFilters,  // ✅ Added applyFilters
     toggleBrand,
     toggleType,
     toggleTransmission,
@@ -419,6 +433,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     clearAllFilters,
     toggleFavorite,
     isFavorite,
+    getCarById,
   }), [
     cars,
     filteredCars,
@@ -432,6 +447,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     typeOptions,
     transmissionOptions,
     fetchCars,
+    applyFilters,
     toggleBrand,
     toggleType,
     toggleTransmission,
@@ -439,6 +455,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     clearAllFilters,
     toggleFavorite,
     isFavorite,
+    getCarById,
   ])
 
   return (

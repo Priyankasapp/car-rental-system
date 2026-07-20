@@ -7,6 +7,7 @@ async function main() {
   console.log('🚗 Seeding cars...')
 
   const sampleCars = [
+    // ========== EXISTING CARS ==========
     {
       manufacturer: 'Toyota',
       model: 'Camry',
@@ -30,9 +31,7 @@ async function main() {
       locationState: 'NY',
       locationZipCode: '10001',
       imageMain: 'https://images.unsplash.com/photo-1606016159991-dfe4f974be5c?auto=format&fit=crop&q=80&w=600',
-      imageGallery: [
-        'https://images.unsplash.com/photo-1606016159991-dfe4f974be5c?auto=format&fit=crop&q=80&w=600',
-      ],
+      imageGallery: ['https://images.unsplash.com/photo-1606016159991-dfe4f974be5c?auto=format&fit=crop&q=80&w=600'],
       status: 'AVAILABLE' as CarStatus,
     },
     {
@@ -58,9 +57,7 @@ async function main() {
       locationState: 'NY',
       locationZipCode: '10002',
       imageMain: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600',
-      imageGallery: [
-        'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600',
-      ],
+      imageGallery: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600'],
       status: 'AVAILABLE' as CarStatus,
     },
     {
@@ -86,9 +83,7 @@ async function main() {
       locationState: 'NY',
       locationZipCode: '10003',
       imageMain: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600',
-      imageGallery: [
-        'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600',
-      ],
+      imageGallery: ['https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600'],
       status: 'AVAILABLE' as CarStatus,
     },
     {
@@ -114,9 +109,7 @@ async function main() {
       locationState: 'CA',
       locationZipCode: '90001',
       imageMain: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600',
-      imageGallery: [
-        'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600',
-      ],
+      imageGallery: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600'],
       status: 'AVAILABLE' as CarStatus,
     },
     {
@@ -142,9 +135,7 @@ async function main() {
       locationState: 'CA',
       locationZipCode: '90002',
       imageMain: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600',
-      imageGallery: [
-        'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600',
-      ],
+      imageGallery: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600'],
       status: 'AVAILABLE' as CarStatus,
     },
     {
@@ -170,9 +161,7 @@ async function main() {
       locationState: 'MH',
       locationZipCode: '400001',
       imageMain: 'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',
-      imageGallery: [
-        'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',
-      ],
+      imageGallery: ['https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600'],
       status: 'AVAILABLE' as CarStatus,
     },
     {
@@ -198,12 +187,145 @@ async function main() {
       locationState: 'MH',
       locationZipCode: '400002',
       imageMain: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=600',
-      imageGallery: [
-        'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=600',
-      ],
+      imageGallery: ['https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=600'],
+      status: 'AVAILABLE' as CarStatus,
+    },
+
+    // ========== 🆕 NEW CARS ADDED ==========
+    {
+      manufacturer: 'Audi',
+      model: 'A6',
+      year: 2024,
+      category: 'SEDAN' as CarCategory,
+      licensePlate: 'AUD-9876',
+      color: 'Black',
+      transmission: 'AUTOMATIC' as Transmission,
+      fuelType: 'PETROL' as FuelType,
+      seats: 5,
+      luggageCapacity: 5,
+      features: ['GPS', 'Bluetooth', 'Sunroof', '360 Camera', 'Leather Seats'],
+      pricePerDay: 15000,
+      pricePerWeek: 90000,
+      pricePerMonth: 360000,
+      securityDeposit: 60000,
+      mileageFree: 100,
+      mileageExtraFee: 50,
+      locationAddress: '123 Luxury Drive',
+      locationCity: 'Mumbai',
+      locationState: 'MH',
+      locationZipCode: '400005',
+      imageMain: 'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',
+      imageGallery: ['https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600'],
+      status: 'AVAILABLE' as CarStatus,
+    },
+    {
+      manufacturer: 'Kia',
+      model: 'Seltos',
+      year: 2023,
+      category: 'SUV' as CarCategory,
+      licensePlate: 'KIA-5678',
+      color: 'Blue',
+      transmission: 'AUTOMATIC' as Transmission,
+      fuelType: 'DIESEL' as FuelType,
+      seats: 5,
+      luggageCapacity: 6,
+      features: ['GPS', 'Bluetooth', 'Sunroof', 'Ventilated Seats'],
+      pricePerDay: 6500,
+      pricePerWeek: 39000,
+      pricePerMonth: 156000,
+      securityDeposit: 28000,
+      mileageFree: 100,
+      mileageExtraFee: 50,
+      locationAddress: '456 Auto Street',
+      locationCity: 'New Delhi',
+      locationState: 'DL',
+      locationZipCode: '110001',
+      imageMain: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600',
+      imageGallery: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600'],
+      status: 'AVAILABLE' as CarStatus,
+    },
+    {
+      manufacturer: 'MG Motors',
+      model: 'Hector',
+      year: 2023,
+      category: 'SUV' as CarCategory,
+      licensePlate: 'MG-4321',
+      color: 'White',
+      transmission: 'AUTOMATIC' as Transmission,
+      fuelType: 'PETROL' as FuelType,
+      seats: 7,
+      luggageCapacity: 7,
+      features: ['GPS', 'Bluetooth', 'Sunroof', 'Panoramic View', 'Internet Car'],
+      pricePerDay: 8000,
+      pricePerWeek: 48000,
+      pricePerMonth: 192000,
+      securityDeposit: 32000,
+      mileageFree: 100,
+      mileageExtraFee: 50,
+      locationAddress: '789 Auto Hub',
+      locationCity: 'Bengaluru',
+      locationState: 'KA',
+      locationZipCode: '560001',
+      imageMain: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600',
+      imageGallery: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600'],
+      status: 'AVAILABLE' as CarStatus,
+    },
+    {
+      manufacturer: 'Porsche',
+      model: 'Cayenne',
+      year: 2024,
+      category: 'LUXURY' as CarCategory,
+      licensePlate: 'POR-1111',
+      color: 'Silver',
+      transmission: 'AUTOMATIC' as Transmission,
+      fuelType: 'PETROL' as FuelType,
+      seats: 5,
+      luggageCapacity: 5,
+      features: ['GPS', 'Bluetooth', 'Sunroof', 'Carbon Fiber', 'Sport Mode'],
+      pricePerDay: 25000,
+      pricePerWeek: 150000,
+      pricePerMonth: 600000,
+      securityDeposit: 100000,
+      mileageFree: 100,
+      mileageExtraFee: 50,
+      locationAddress: '123 Elite Drive',
+      locationCity: 'Mumbai',
+      locationState: 'MH',
+      locationZipCode: '400006',
+      imageMain: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600',
+      imageGallery: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600'],
+      status: 'AVAILABLE' as CarStatus,
+    },
+    {
+      manufacturer: 'Range Rover',
+      model: 'Velar',
+      year: 2024,
+      category: 'LUXURY' as CarCategory,
+      licensePlate: 'RR-9999',
+      color: 'Black',
+      transmission: 'AUTOMATIC' as Transmission,
+      fuelType: 'DIESEL' as FuelType,
+      seats: 5,
+      luggageCapacity: 7,
+      features: ['GPS', 'Bluetooth', 'Sunroof', 'Panoramic View', 'Air Suspension'],
+      pricePerDay: 28000,
+      pricePerWeek: 168000,
+      pricePerMonth: 672000,
+      securityDeposit: 120000,
+      mileageFree: 100,
+      mileageExtraFee: 50,
+      locationAddress: '456 Luxury Lane',
+      locationCity: 'New Delhi',
+      locationState: 'DL',
+      locationZipCode: '110002',
+      imageMain: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600',
+      imageGallery: ['https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600'],
       status: 'AVAILABLE' as CarStatus,
     },
   ]
+
+  let added = 0
+  let skipped = 0
 
   for (const carData of sampleCars) {
     const existingCar = await prisma.car.findUnique({
@@ -215,13 +337,15 @@ async function main() {
         data: carData,
       })
       console.log(`✅ Car added: ${carData.manufacturer} ${carData.model}`)
+      added++
     } else {
       console.log(`ℹ️ Car already exists: ${carData.manufacturer} ${carData.model}`)
+      skipped++
     }
   }
 
   console.log('✅ Seeding complete!')
-  console.log(`🚗 Total cars: ${sampleCars.length}`)
+  console.log(`📊 Summary: ${added} added, ${skipped} skipped, ${sampleCars.length} total`)
 }
 
 main()

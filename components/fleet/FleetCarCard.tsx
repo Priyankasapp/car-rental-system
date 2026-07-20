@@ -1,7 +1,7 @@
 // components/fleet/FleetCarCard.tsx
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { FleetCar } from '@/types/fleet'
 import { cn } from '@/lib/utils'
@@ -16,9 +16,39 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
   const { toggleFavorite, isFavorite } = useCars()
   const isFav = isFavorite(car.id)
   
+  // ✅ CONSOLE LOG 1: Check if car data is received
+  console.log('🚗 FleetCarCard received car:', {
+    id: car.id,
+    name: car.name,
+    brand: car.brand,
+    price: car.price,
+    image: car.image,
+    category: car.category,
+    status: car.status,
+    specs: car.specs
+  })
+
+  // ✅ CONSOLE LOG 2: Check if car has all required fields
+  useEffect(() => {
+    if (!car) {
+      console.error('❌ FleetCarCard: No car data received!')
+      return
+    }
+
+    const requiredFields = ['id', 'name', 'brand', 'price', 'image', 'category', 'status', 'specs']
+    const missingFields = requiredFields.filter(field => !car[field as keyof FleetCar])
+    
+    if (missingFields.length > 0) {
+      console.warn('⚠️ FleetCarCard: Missing fields:', missingFields, car)
+    } else {
+      console.log('✅ FleetCarCard: All required fields present')
+    }
+  }, [car])
+  
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    console.log('❤️ Toggle favorite for car:', car.id, car.name)
     toggleFavorite(car.id)
   }
 
@@ -33,6 +63,9 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
     'reserved': 'Reserved',
     'new-arrival': 'New Style'
   }
+
+  // ✅ CONSOLE LOG 3: Check status
+  console.log('🏷️ Car status:', car.status, '→', statusLabels[car.status] || 'Unknown')
 
   return (
     <Link 
@@ -100,7 +133,7 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
               <div className="flex flex-col">
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Power</span>
                 <span className="text-xs font-semibold text-gray-700">
-                  {car.specs.power}
+                  {car.specs?.power || 'N/A'}
                 </span>
               </div>
             </div>
@@ -112,7 +145,7 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
               <div className="flex flex-col">
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none mb-0.5">Type</span>
                 <span className="text-xs font-semibold text-gray-700">
-                  {car.specs.transmission}
+                  {car.specs?.transmission || 'N/A'}
                 </span>
               </div>
             </div>
@@ -126,7 +159,7 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
               </span>
               <div className="flex items-baseline">
                 <span className="text-xl font-extrabold text-gray-900">
-                  ${car.price}
+                  ${car.price || 0}
                 </span>
                 <span className="text-xs text-gray-500 ml-0.5 font-medium">/day</span>
               </div>

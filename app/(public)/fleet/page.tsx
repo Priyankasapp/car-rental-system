@@ -1,75 +1,138 @@
+// app/(public)/fleet/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useCars } from '@/context/CarContext'
 
 import FleetHero from '@/components/sections/FleetHero'
 import FleetSidebar, { FleetFiltersState } from '@/components/fleet/FleetSidebar'
 import FleetGrid from '@/components/fleet/FleetGrid'
 import { fleetData } from '@/data/fleet'
+import { FleetFilterOption } from '@/types/fleet'
+
+//  Define filter type
+interface FilterParams {
+  category?: string
+  city?: string
+  search?: string
+  minPrice?: number
+  maxPrice?: number
+}
 
 export default function FleetPage() {
-  const { hero, filters, cars } = fleetData
-  const [filteredCars, setFilteredCars] = useState(cars)
+  const searchParams = useSearchParams()
+  
+  //  Use CarContext
+  const { 
+    filteredCars, 
+    isLoading, 
+    error, 
+    fetchCars, 
+    applyFilters,
+    typeOptions,
+    priceRange
+  } = useCars()
+  
+  const { hero } = fleetData
+  const [isFiltering, setIsFiltering] = useState(false)
 
-  // Explicitly type-bound `newFilters` to our state interface
-  const handleFilterChange = (newFilters: FleetFiltersState) => {
-    let filtered = [...cars]
+  //  Load cars on mount with URL filters
+  useEffect(() => {
+    const filters: FilterParams = {}
+    const category = searchParams.get('category')
+    const city = searchParams.get('city')
+    const search = searchParams.get('search')
+    const minPrice = searchParams.get('minPrice')
+    const maxPrice = searchParams.get('maxPrice')
+    
+    if (category) filters.category = category
+    if (city) filters.city = city
+    if (search) filters.search = search
+    if (minPrice) filters.minPrice = parseInt(minPrice)
+    if (maxPrice) filters.maxPrice = parseInt(maxPrice)
+    
+    fetchCars(filters)
+  }, [fetchCars, searchParams])
 
-    // Filter by price
+  //  Handle filter changes from sidebar
+  const handleFilterChange = useCallback((newFilters: FleetFiltersState) => {
+    setIsFiltering(true)
+    
+    const carFilters: FilterParams = {}
+    
     if (newFilters.priceMin !== undefined) {
-      filtered = filtered.filter(car => car.price >= newFilters.priceMin)
+      carFilters.minPrice = newFilters.priceMin
     }
     if (newFilters.priceMax !== undefined) {
-      filtered = filtered.filter(car => car.price <= newFilters.priceMax)
+      carFilters.maxPrice = newFilters.priceMax
     }
-
-    // Filter by vehicle types
     if (newFilters.vehicleTypes && newFilters.vehicleTypes.length > 0) {
-      filtered = filtered.filter(car => 
-        newFilters.vehicleTypes.some((type: string) => 
-          car.category.toLowerCase().includes(type.toLowerCase())
-        )
-      )
+      carFilters.category = newFilters.vehicleTypes[0]
     }
-
-    // Filter by brand
     if (newFilters.brand) {
-      filtered = filtered.filter(car => 
-        car.brand.toLowerCase() === newFilters.brand.toLowerCase()
-      )
+      carFilters.search = newFilters.brand
     }
+    
+    applyFilters(carFilters)
+    setIsFiltering(false)
+  }, [applyFilters])
 
-    // Filter by transmission
-    if (newFilters.transmission) {
-      filtered = filtered.filter(car => 
-        car.specs.transmission.toLowerCase() === newFilters.transmission.toLowerCase()
-      )
-    }
+  //  Convert typeOptions to FleetFilterOption[] format
+  const vehicleTypes: FleetFilterOption[] = typeOptions.map(opt => ({
+    id: opt.id,
+    label: opt.label,
+    value: opt.value,
+    checked: opt.checked || false
+  }))
 
-    setFilteredCars(filtered)
-  }
+  //  Get unique brands from cars
+  const brands: FleetFilterOption[] = [...new Set(filteredCars.map(car => car.brand))].map(brand => ({
+    id: brand.toLowerCase().replace(/\s+/g, '-'),
+    label: brand,
+    value: brand,
+    checked: false
+  }))
+
+  //  Get unique transmissions
+  const transmissions: FleetFilterOption[] = [...new Set(filteredCars.map(car => car.specs.transmission))].map(trans => ({
+    id: trans.toLowerCase().replace(/\s+/g, '-'),
+    label: trans,
+    value: trans,
+    checked: false
+  }))
+
+  //  totalVehicles as number
+  const totalVehicles = filteredCars.length
 
   return (
-    <main className="mt-20 px-10 md:px-20 py-10 md:py-32 max-w-[1100px] mx-auto">
+    <main className="mt-20 px-10 md:px-20 py-10 md:py-32 max-w-7xl mx-auto">
       <FleetHero
         label={hero.label}
         title={hero.title}
         description={hero.description}
-        totalVehicles={hero.totalVehicles}
+        totalVehicles={totalVehicles}
       />
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-6">
+           {error}
+        </div>
+      )}
 
       <div className="flex gap-12">
         <FleetSidebar
-          priceRange={filters.priceRange}
-          vehicleTypes={filters.vehicleTypes}
-          brands={filters.brands}
-          transmissions={filters.transmission}
+          priceRange={priceRange}
+          vehicleTypes={vehicleTypes}
+          brands={brands}
+          transmissions={transmissions}
           onFilterChange={handleFilterChange}
+          // loading={isLoading || isFiltering}
         />
 
         <FleetGrid
           cars={filteredCars}
-          totalVehicles={hero.totalVehicles}
+          totalVehicles={filteredCars.length}
           onLoadMore={() => console.log('Load more clicked')}
         />
       </div>
