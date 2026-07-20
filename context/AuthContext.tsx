@@ -2,6 +2,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 
 // Types
 interface User {
@@ -23,11 +24,20 @@ interface AuthContextType {
   isAuthenticated: boolean
   
   // Actions
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<{ requiresOTP: boolean; email: string }>
   verifyOTP: (email: string, otp: string, purpose: 'LOGIN' | 'REGISTER') => Promise<void>
+  register: (userData: RegisterData) => Promise<{ success: boolean; message: string; email: string }>
+  resendOTP: (email: string, purpose: 'LOGIN' | 'REGISTER') => Promise<void>
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
   updateUser: (user: User) => void
+}
+
+interface RegisterData {
+  email: string
+  firstName: string
+  lastName: string
+  phone?: string
 }
 
 // Create Context
@@ -70,9 +80,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ email, password }),
     })
     
+    const data = await response.json()
+    
     if (!response.ok) {
-      const data = await response.json()
       throw new Error(data.message || 'Login failed')
+    }
+    
+    // Return login response which includes OTP requirement
+    return {
+      requiresOTP: data.data.requiresOTP || false,
+      email: data.data.email || email,
     }
   }, [])
 
@@ -84,24 +101,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ email, otp, purpose }),
     })
     
+    const data = await response.json()
+    
     if (!response.ok) {
-      const data = await response.json()
       throw new Error(data.message || 'Verification failed')
     }
     
-    const data = await response.json()
     if (data.success && data.data.user) {
       setUser(data.data.user)
+    }
+  }, [])
+
+  // Register new user
+  const register = useCallback(async (userData: RegisterData) => {
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    })
+    
+    const data = await response.json()
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Registration failed')
+    }
+    
+    return {
+      success: data.success,
+      message: data.message,
+      email: data.data.email,
+    }
+  }, [])
+
+  // Resend OTP
+  const resendOTP = useCallback(async (email: string, purpose: 'LOGIN' | 'REGISTER') => {
+    const response = await fetch('/api/auth/resend-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, purpose }),
+    })
+    
+    const data = await response.json()
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to resend OTP')
     }
   }, [])
 
   // Logout
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      const response = await fetch('/api/auth/logout', { method: 'POST' })
+      if (response.ok) {
+        setUser(null)
+      }
     } catch (error) {
       console.error('Logout error:', error)
-    } finally {
+      // Still clear user state even if API fails
       setUser(null)
     }
   }, [])
@@ -123,6 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user,
     login,
     verifyOTP,
+    register,
+    resendOTP,
     logout,
     checkAuth,
     updateUser,

@@ -2,8 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateOTP, generatePassword, hashPassword } from '@/lib/auth'
-import { sendEmail } from '@/lib/email/send-email';
-
+import { sendWelcomeAndOtpEmails } from '@/lib/email/emailService'
 
 function isValidRegisterBody(body: unknown): body is { 
   email: string; 
@@ -29,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     if (!isValidRegisterBody(body)) {
       return NextResponse.json(
-        { success: false, message: 'Invalid registration data' },
+        { success: false, message: 'Invalid registration data. First name and last name must be at least 2 characters.' },
         { status: 400 }
       )
     }
@@ -42,89 +41,95 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUser) {
+      // If user exists but not verified, delete and recreate
       if (existingUser.isEmailVerified) {
         return NextResponse.json(
-          { success: false, message: 'Email already registered' },
+          { success: false, message: 'Email already registered. Please login.' },
           { status: 409 }
         )
       }
-      await prisma.user.delete({ where: { id: existingUser.id } })
+      
+      // Delete unverified user and their OTPs
+      await prisma.$transaction([
+        prisma.oTP.deleteMany({
+          where: { email },
+        }),
+        prisma.user.delete({
+          where: { id: existingUser.id },
+        }),
+      ])
     }
 
     // Generate secure password
     const plainPassword = generatePassword(12)
     const hashedPassword = await hashPassword(plainPassword)
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        firstName,
-        lastName,
-        phone,
-        role: 'CUSTOMER',
-        password: hashedPassword,
-        isEmailVerified: false,
-        isActive: true,
-      },
-    })
-
     // Generate OTP
     const otp = generateOTP()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
-    // Save OTP
-    await prisma.oTP.create({
-      data: {
-        email,
-        otp,
-        purpose: 'REGISTER',
-        expiresAt,
-        maxAttempts: 3,
-      },
+    // Create user with OTP in a transaction
+    const user = await prisma.$transaction(async (tx) => {
+      // Create user
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          firstName,
+          lastName,
+          phone: phone || '',
+          role: 'CUSTOMER',
+          password: hashedPassword,
+          isEmailVerified: false,
+          isActive: true,
+        },
+      })
+
+      // Create OTP
+      await tx.oTP.create({
+        data: {
+          email,
+          otp,
+          purpose: 'REGISTER',
+          expiresAt,
+          maxAttempts: 3,
+        },
+      })
+
+      return newUser
     })
 
-    // 1. Send Welcome Email with Password
+    // Send both emails simultaneously
+    const emailErrors = []
     try {
-      await sendEmail({
-        to: email,
-        type: 'WELCOME',
-        data: {
-          firstName: firstName,
-          password: plainPassword,
-        },
-      })
-      console.log(` Welcome email sent to ${email}`)
+      await sendWelcomeAndOtpEmails(
+        email,
+        firstName,
+        plainPassword,
+        otp
+      )
+      console.log(`✅ Welcome and OTP emails sent to ${email}`)
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError)
+      console.error('❌ Failed to send emails:', emailError)
+      emailErrors.push(emailError)
+      
+      // Don't fail the registration if email fails, but log it
+      // You might want to retry or notify admin
     }
 
-    // 2. Send OTP Email (for verification)
-    try {
-      await sendEmail({
-        to: email,
-        type: 'OTP',
-        data: {
-          otp: otp,
-          purpose: 'REGISTER',
-        },
-      })
-      console.log(` OTP email sent to ${email}`)
-    } catch (emailError) {
-      console.error('Failed to send OTP email:', emailError)
-    }
-
+    // Return success response
     return NextResponse.json(
       {
         success: true,
         message: 'Registration successful! Check your email for password and OTP.',
         data: {
           email,
-          expiresIn: 600,
+          expiresIn: 600, // 10 minutes in seconds
+          // Include debug info in development only
           ...(process.env.NODE_ENV === 'development' && {
             _debug: {
               password: plainPassword,
               otp: otp,
+              emailSent: emailErrors.length === 0,
             }
           })
         },
@@ -132,9 +137,26 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Registration error:', error)
+    console.error('❌ Registration error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Registration failed. Please try again.'
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint')) {
+        errorMessage = 'Email already registered.'
+      } else if (error.message.includes('Prisma')) {
+        errorMessage = 'Database error. Please try again later.'
+      }
+    }
+    
     return NextResponse.json(
-      { success: false, message: 'Registration failed' },
+      { 
+        success: false, 
+        message: errorMessage,
+        ...(process.env.NODE_ENV === 'development' && {
+          _debug: { error: error instanceof Error ? error.message : String(error) }
+        })
+      },
       { status: 500 }
     )
   }

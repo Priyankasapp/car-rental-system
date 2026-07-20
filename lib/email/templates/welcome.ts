@@ -1,115 +1,124 @@
-export function generateWelcomeHTML(
-  firstName: string,
-  email: string,
-  temporaryPassword: string
-): string {
+
+import { emailStyles } from '../styles';
+
+interface WelcomeEmailProps {
+  firstName: string;
+  email: string;
+  temporaryPassword: string;
+}
+
+// 1. The HTML Generator (Using our modular inline styles)
+export function generateWelcomeHTML({ firstName, email, temporaryPassword }: WelcomeEmailProps): string {
+  const currentYear = new Date().getFullYear();
+  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
+
   return `
-    <!DOCTYPE html>
-    <html>
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
     <head>
-      <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .password-box { background: #f0f0ff; border: 2px dashed #667eea; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
-        .password { font-size: 24px; font-weight: bold; color: #667eea; letter-spacing: 2px; font-family: monospace; }
-        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin: 20px 0; }
-        .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
-        .footer { text-align: center; padding: 20px; color: #6c757d; font-size: 14px; }
-        .divider { border-top: 1px solid #e9ecef; margin: 20px 0; }
-        .security-tip { background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0; }
-      </style>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Welcome to UrbanDrive</title>
     </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>🚗 Welcome to Urban Drive!</h1>
-          <p>Your account has been created successfully</p>
+    <body style="${emailStyles.body}">
+      <div style="${emailStyles.wrapper}">
+        
+        <!-- Header -->
+        <div style="${emailStyles.header}">
+          <h1 style="${emailStyles.headerH1}">UrbanDrive</h1>
+          <div style="${emailStyles.headerSub}">Precision in Motion</div>
         </div>
-        <div class="content">
-          <h2>Hello ${firstName},</h2>
-          <p>Welcome to <strong>Urban Drive</strong> - your premium car rental service!</p>
-          <p>We're excited to have you on board. Your account has been created and you can now start renting cars with us.</p>
 
-          <div class="password-box">
-            <p style="margin-bottom: 10px;"><strong>Your temporary password:</strong></p>
-            <div class="password">${temporaryPassword}</div>
-            <p style="font-size: 14px; color: #6c757d; margin-top: 10px;">
-              Please change this password after your first login
-            </p>
-          </div>
-
-          <div class="warning">
-            <p style="margin: 0;"><strong>⚠️ Important Security Information</strong></p>
-            <ul style="margin: 5px 0; padding-left: 20px;">
-              <li>This password is temporary and expires in 24 hours</li>
-              <li>Please change your password immediately after logging in</li>
-              <li>Never share your password with anyone</li>
-            </ul>
-          </div>
-
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/login" class="button">
-              🔑 Log in to Your Account
-            </a>
-          </div>
-
-          <div class="security-tip">
-            <p style="margin: 0;"><strong>🔒 Security Tips:</strong></p>
-            <ul style="margin: 5px 0; padding-left: 20px; font-size: 14px;">
-              <li>Use a strong password with at least 8 characters</li>
-              <li>Include uppercase, lowercase, numbers, and special characters</li>
-              <li>Enable two-factor authentication for extra security</li>
-              <li>Never share your login credentials</li>
-            </ul>
-          </div>
-
-          <div class="divider"></div>
-
-          <p style="font-size: 14px; color: #6c757d;">
-            If you have any questions, feel free to <a href="mailto:support@urbandrive.com" style="color: #667eea;">contact our support team</a>.
+        <!-- Main Content -->
+        <div style="${emailStyles.content}">
+          <div style="${emailStyles.greeting}">The Keys are Yours, <span>${firstName}</span>.</div>
+          <p style="${emailStyles.description}">
+            Welcome to UrbanDrive. You are now part of an elite collective of enthusiasts with access to the world's most exclusive automotive fleet. From high-performance electric sprints to timeless vintage icons, your next extraordinary journey begins here.
           </p>
+
+          <!-- Credentials Box -->
+          <div style="${emailStyles.credsBox}">
+            <div style="${emailStyles.credsLabel}">Your Executive Credentials</div>
+            
+            <div style="${emailStyles.credItem}">
+              <div style="${emailStyles.credLabel}">Email Address</div>
+              <div style="${emailStyles.credValue}">${email}</div>
+            </div>
+            
+            <div style="${emailStyles.credItem}">
+              <div style="${emailStyles.credLabel}">Temporary Password</div>
+              <div>
+                <span style="${emailStyles.credPassword}">${temporaryPassword}</span>
+              </div>
+            </div>
+
+            <div style="${emailStyles.btnWrap}">
+              <a href="${loginUrl}" style="${emailStyles.btn}">
+                Sign In to Dashboard
+              </a>
+            </div>
+          </div>
+
+          <p style="${emailStyles.securityNote}">*For your security, please update your password immediately upon your first login.</p>
+
+          <!-- Service Pillars -->
+          <div style="${emailStyles.pillar}">
+            <h4 style="${emailStyles.pillarTitle}">Curated Fleet</h4>
+            <p style="${emailStyles.pillarText}">Hand-selected models maintained to showroom standards.</p>
+          </div>
+          <div style="${emailStyles.pillar}">
+            <h4 style="${emailStyles.pillarTitle}">White-Glove</h4>
+            <p style="${emailStyles.pillarText}">Bespoke delivery and 24/7 concierge support.</p>
+          </div>
+          <div style="${emailStyles.pillar}">
+            <h4 style="${emailStyles.pillarTitle}">Total Discretion</h4>
+            <p style="${emailStyles.pillarText}">Secure, encrypted, and anonymous logistics.</p>
+          </div>
         </div>
-        <div class="footer">
-          <p>© ${new Date().getFullYear()} Urban Drive. All rights reserved.</p>
-          <p style="font-size: 12px;">This email was sent to ${email}</p>
+
+        <!-- Footer -->
+        <div style="${emailStyles.footer}">
+          <div style="${emailStyles.copyright}">&copy; ${currentYear} UrbanDrive Global. All Rights Reserved.</div>
+          <div style="${emailStyles.footerLinks}">
+            <a href="#" style="${emailStyles.footerLink}">Privacy Policy</a>
+            <a href="#" style="${emailStyles.footerLink}">Terms of Service</a>
+            <a href="#" style="${emailStyles.footerLink}">Unsubscribe</a>
+          </div>
         </div>
+        
       </div>
     </body>
     </html>
   `;
 }
 
-export function generateWelcomeText(
-  firstName: string,
-  email: string,
-  temporaryPassword: string
-): string {
+// 2. The Plain Text Fallback Generator (What your EmailService was looking for!)
+export function generateWelcomeText({ firstName, email, temporaryPassword }: WelcomeEmailProps): string {
+  const currentYear = new Date().getFullYear();
+  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
+
   return `
-    WELCOME TO URBAN DRIVE!
+    URBAN DRIVE
+    Precision in Motion
     
-    Hello ${firstName},
+    The Keys are Yours, ${firstName}.
     
-    Welcome to Urban Drive - your premium car rental service!
-    Your account has been created successfully.
+    Welcome to UrbanDrive. You are now part of an elite collective of enthusiasts with access to the world's most exclusive automotive fleet. From high-performance electric sprints to timeless vintage icons, your next extraordinary journey begins here.
     
-    Your temporary password: ${temporaryPassword}
+    Your Executive Credentials:
+    Email Address: ${email}
+    Temporary Password: ${temporaryPassword}
     
-    IMPORTANT SECURITY INFORMATION:
-    - This password expires in 24 hours
-    - Please change your password immediately after logging in
-    - Never share your password with anyone
+    Sign In to Dashboard:
+    ${loginUrl}
     
-    Log in to your account: ${process.env.NEXT_PUBLIC_APP_URL}/login
+    *For your security, please update your password immediately upon your first login.
     
-    Security Tips:
-    - Use a strong password with at least 8 characters
-    - Include uppercase, lowercase, numbers, and special characters
-    - Enable two-factor authentication
+    SERVICE PILLARS:
+    Curated Fleet - Hand-selected models maintained to showroom standards.
+    White-Glove - Bespoke delivery and 24/7 concierge support.
+    Total Discretion - Secure, encrypted, and anonymous logistics.
     
-    For any questions, contact our support team.
-    
-    © ${new Date().getFullYear()} Urban Drive. All rights reserved.
+    © ${currentYear} UrbanDrive Global. All Rights Reserved.
   `;
 }

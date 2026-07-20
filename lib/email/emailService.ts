@@ -1,195 +1,178 @@
-import nodemailer from 'nodemailer';
-import { prisma } from '@/lib/prisma';
+// lib/email/emailService.ts
 import { 
   generateWelcomeHTML, 
-  generateWelcomeText 
-} from './templates/welcome';
-import { 
-  EmailOptions, 
-  EmailResponse, 
-  CreateEmailLogInput,
-  EmailType,
-  EmailStatus
-} from './type';
+  generateWelcomeText,
+  generateOtpHTML, 
+  generateOtpText 
+} from '@/lib/email/templates'
+import nodemailer from 'nodemailer'
 
-class EmailService {
-  private transporter: nodemailer.Transporter;
-  private fromEmail: string;
-  private fromName: string;
+interface SendEmailParams {
+  to: string
+  type: 'WELCOME' | 'OTP'
+  data: {
+    firstName?: string
+    password?: string
+    otp?: string
+    purpose?: string
+  }
+}
 
-  constructor() {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      throw new Error('Email credentials missing in environment variables');
-    }
+let transporter: nodemailer.Transporter | null = null
 
-    this.fromEmail = process.env.EMAIL_USER;
-    this.fromName = process.env.EMAIL_FROM_NAME || 'Urban Drive';
+async function getTransporter() {
+  if (transporter) return transporter
 
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+  // Check if we have EMAIL_USER and EMAIL_PASS
+  const hasEmailConfig = process.env.EMAIL_USER && process.env.EMAIL_PASS
+
+  if (hasEmailConfig) {
+    console.log(' Using email configuration...')
+    
+    // Check if it's an Ethereal email (contains @ethereal.email)
+    const isEthereal = process.env.EMAIL_USER?.includes('ethereal.email')
+    
+    transporter = nodemailer.createTransport({
+      host: isEthereal ? 'smtp.ethereal.email' : (process.env.SMTP_HOST || 'smtp.gmail.com'),
+      port: isEthereal ? 587 : parseInt(process.env.SMTP_PORT || '587'),
+      secure: isEthereal ? false : (process.env.SMTP_SECURE === 'true'),
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
-  }
-
-  // Core email sending with database logging
-  async sendEmail({ 
-    options, 
-    logData 
-  }: { 
-    options: EmailOptions; 
-    logData?: CreateEmailLogInput; 
-  }): Promise<EmailResponse> {
-    let logId: string | undefined;
-
-    // Create email log in database
-    if (logData) {
-      try {
-        const log = await prisma.emailLog.create({
-          data: {
-            userId: logData.userId,
-            reservationId: logData.reservationId,
-            emailType: logData.emailType,
-            recipient: logData.recipient,
-            recipientName: logData.recipientName,
-            subject: logData.subject,
-            content: options.html || options.text,
-            status: EmailStatus.PENDING,
-            ipAddress: logData.ipAddress,
-            userAgent: logData.userAgent
-          }
-        });
-        logId = log.id;
-      } catch (dbError) {
-        console.error('Failed to create email log:', dbError);
-      }
-    }
-
+        pass: process.env.EMAIL_PASS,
+      },
+    })
+    
+    // Verify connection
     try {
-      // Verify connection
-      await this.transporter.verify();
-
-      const mailOptions = {
-        from: `"${this.fromName}" <${this.fromEmail}>`,
-        to: options.to,
-        cc: options.cc || [],
-        bcc: options.bcc || [],
-        subject: options.subject,
-        text: options.text || '',
-        html: options.html || '',
-        attachments: options.attachments || []
-      };
-
-      const info = await this.transporter.sendMail(mailOptions);
-
-      // Update log with success
-      if (logId) {
-        await prisma.emailLog.update({
-          where: { id: logId },
-          data: {
-            status: EmailStatus.SENT,
-            messageId: info.messageId,
-            sentAt: new Date()
-          }
-        });
+      await transporter.verify()
+      console.log(' Email connection verified')
+      if (isEthereal) {
+        console.log(`Ethereal account: ${process.env.EMAIL_USER}`)
       }
-
-      console.log(`✅ Email sent to ${options.to}`);
-      console.log(`📋 Message ID: ${info.messageId}`);
-
-      return {
-        success: true,
-        messageId: info.messageId,
-        recipient: options.to
-      };
-
     } catch (error) {
-      console.error('❌ Error sending email:', error);
-
-      // Update log with failure
-      if (logId) {
-        await prisma.emailLog.update({
-          where: { id: logId },
-          data: {
-            status: EmailStatus.FAILED,
-            error: error instanceof Error ? error.message : 'Unknown error'
-          }
-        });
-      }
-
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
+      console.error(' Email connection failed:', error)
+      transporter = null
+      throw new Error('Email connection failed')
     }
+  } 
+  // Fallback to Ethereal for development
+  else if (process.env.NODE_ENV === 'development') {
+    console.log('No email config found. Creating Ethereal test account...')
+    const testAccount = await nodemailer.createTestAccount()
+    
+    transporter = nodemailer.createTransport({
+      host: testAccount.smtp.host,
+      port: testAccount.smtp.port,
+      secure: testAccount.smtp.secure,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    })
+    
+    console.log('Ethereal test account created')
+    console.log(' Email:', testAccount.user)
+    console.log(' Password:', testAccount.pass)
+    console.log('\n Add these to your .env.local:')
+    console.log(`EMAIL_USER=${testAccount.user}`)
+    console.log(`EMAIL_PASS=${testAccount.pass}`)
+    console.log(`EMAIL_FROM_NAME=UrbanDrive`)
+  } 
+  else {
+    throw new Error('No email configuration found. Please set EMAIL_USER and EMAIL_PASS.')
   }
 
-  // ============== WELCOME EMAIL METHOD ==============
-  async sendWelcomeEmail(
-    userId: string,
-    email: string,
-    firstName: string,
-    temporaryPassword: string
-  ): Promise<EmailResponse> {
-    try {
-      // Generate email content
-      const subject = '🚗 Welcome to Urban Drive!';
-      const html = generateWelcomeHTML(firstName, email, temporaryPassword);
-      const text = generateWelcomeText(firstName, email, temporaryPassword);
+  return transporter
+}
 
-      // Prepare email options
-      const emailOptions: EmailOptions = {
+export async function sendEmail({ to, type, data }: SendEmailParams): Promise<void> {
+  let subject = ''
+  let html = ''
+  let text = ''
+
+  // Generate email content based on type
+  if (type === 'WELCOME' && data.firstName && data.password) {
+    subject = 'Welcome to UrbanDrive - Your Account Details'
+    html = generateWelcomeHTML(data.firstName, to, data.password)
+    text = generateWelcomeText(data.firstName, to, data.password)
+  } else if (type === 'OTP' && data.otp) {
+    subject = 'UrbanDrive - Your Verification Code'
+    const customerName = data.firstName || 'Customer'
+    html = generateOtpHTML({ customerName, otp: data.otp })
+    text = generateOtpText({ customerName, otp: data.otp })
+  } else {
+    throw new Error('Invalid email type or missing data')
+  }
+
+  console.log(`Sending ${type} email to ${to}`)
+  console.log('Subject:', subject)
+
+  try {
+    const transporter = await getTransporter()
+    
+    // Build from address
+    const fromName = process.env.EMAIL_FROM_NAME || 'UrbanDrive'
+    const fromEmail = process.env.EMAIL_USER || 'noreply@urbandrive.com'
+    const from = `${fromName} <${fromEmail}>`
+    
+    const info = await transporter.sendMail({
+      from,
+      to,
+      subject,
+      html,
+      text,
+    })
+
+    console.log(`✅ Email sent successfully to ${to}`)
+    
+    // Log preview URL for Ethereal
+    if (process.env.NODE_ENV === 'development') {
+      const previewUrl = nodemailer.getTestMessageUrl(info)
+      if (previewUrl) {
+        console.log(`📧 Preview URL: ${previewUrl}`)
+      }
+    }
+    
+    return info
+  } catch (error) {
+    console.error(`❌ Failed to send email to ${to}:`, error)
+    throw error
+  }
+}
+
+export async function sendWelcomeAndOtpEmails(
+  email: string,
+  firstName: string,
+  temporaryPassword: string,
+  otp: string
+): Promise<void> {
+  console.log(`📧 Sending welcome and OTP emails to ${email}`)
+  
+  try {
+    // Send both emails in parallel
+    await Promise.all([
+      sendEmail({
         to: email,
-        toName: firstName,
-        subject,
-        html,
-        text
-      };
-
-      // Prepare log data
-      const logData: CreateEmailLogInput = {
-        userId: userId,
-        emailType: EmailType.WELCOME,
-        recipient: email,
-        recipientName: firstName,
-        subject,
-        content: html
-      };
-
-      // Send email with logging
-      return await this.sendEmail({ options: emailOptions, logData });
-
-    } catch (error) {
-      console.error('❌ Error sending welcome email:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  }
-
-  // ============== CHECK EMAIL SERVICE STATUS ==============
-  async checkStatus(): Promise<boolean> {
-    try {
-      await this.transporter.verify();
-      return true;
-    } catch (error) {
-      console.error('Email service check failed:', error);
-      return false;
-    }
+        type: 'WELCOME',
+        data: {
+          firstName,
+          password: temporaryPassword,
+        },
+      }),
+      sendEmail({
+        to: email,
+        type: 'OTP',
+        data: {
+          firstName,
+          otp,
+          purpose: 'REGISTER',
+        },
+      }),
+    ])
+    
+    console.log(`✅ Welcome and OTP emails sent to ${email}`)
+  } catch (error) {
+    console.error(`❌ Failed to send emails to ${email}:`, error)
+    throw error
   }
 }
-
-// ============== SINGLETON INSTANCE ==============
-let emailServiceInstance: EmailService | null = null;
-
-export function getEmailService(): EmailService {
-  if (!emailServiceInstance) {
-    emailServiceInstance = new EmailService();
-  }
-  return emailServiceInstance;
-}
-
-export default EmailService;
