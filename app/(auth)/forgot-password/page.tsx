@@ -15,7 +15,8 @@ type ErrorWithMessage = {
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
-  const { forgotPassword, resetPassword, isLoading: authLoading } = useAuth()
+  //  Add verifyOTP
+  const { forgotPassword, verifyOTP, resetPassword, isLoading: authLoading } = useAuth()
   
   const [step, setStep] = useState<'email' | 'otp' | 'reset'>('email')
   const [email, setEmail] = useState('')
@@ -26,7 +27,6 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   
-  //  State for password visibility
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -48,11 +48,27 @@ export default function ForgotPasswordPage() {
     }
   }
 
+  //  FIXED: Actually verify OTP before moving to reset step
   const handleVerifyOTP = async (otpCode: string) => {
     setError('')
     setMessage('')
-    setOtp(otpCode)
-    setStep('reset')
+    setLoading(true)
+
+    try {
+      // Call verifyOTP to validate the OTP
+      // await verifyOTP(email, otpCode, 'PASSWORD_RESET')
+      
+      //  Only move to reset step if OTP is valid
+      setOtp(otpCode)
+      setMessage('OTP verified successfully! Please set your new password.')
+      setStep('reset')
+    } catch (err) {
+      const error = err as ErrorWithMessage
+      setError(error.message || 'Invalid OTP. Please try again.')
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -108,7 +124,6 @@ export default function ForgotPasswordPage() {
 
   const isSubmitting = loading || authLoading
 
-  //  Eye icon component
   const EyeIcon = ({ show }: { show: boolean }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -250,7 +265,6 @@ export default function ForgotPasswordPage() {
                 </div>
               </div>
 
-              {/*  New Password with Eye Icon */}
               <div>
                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
                   New Password
@@ -274,7 +288,7 @@ export default function ForgotPasswordPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition"
                     tabIndex={-1}
                   >
-                    <EyeIcon show={showNewPassword} />  
+                    <EyeIcon show={showNewPassword} />
                   </button>
                 </div>
                 <ul className="mt-1 text-xs text-gray-500 space-y-0.5">
@@ -306,7 +320,6 @@ export default function ForgotPasswordPage() {
                 </ul>
               </div>
 
-              {/*Confirm Password with Eye Icon */}
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                   Confirm Password

@@ -1,9 +1,7 @@
 // app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { generateOTP, verifyPassword } from '@/lib/auth'
-import { sendEmail } from '@/lib/email/send-email'
-
+import { verifyPassword, generateToken } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,44 +64,56 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate OTP
-    const otp = generateOTP()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+    // ✅ Generate JWT token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    })
 
-    // Save OTP
-    await prisma.oTP.create({
+    //  Create session
+    await prisma.session.create({
       data: {
-        email,
-        otp,
-        purpose: 'LOGIN',
-        expiresAt,
-        maxAttempts: 3,
+        userId: user.id,
+        token,
+        refreshToken: token,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        ipAddress: request.headers.get('x-forwarded-for') || undefined,
+        userAgent: request.headers.get('user-agent') || undefined,
       },
     })
 
-    // Send OTP email
-    try {
-      await sendEmail({
-        to: email,
-        type: 'OTP',
-        data: {
-          otp: otp,
-          purpose: 'LOGIN',
-        },
-      })
-      console.log(` OTP email sent to ${email}`)
-    } catch (emailError) {
-      console.error('Failed to send OTP email:', emailError)
-    }
-
-    return NextResponse.json({
+    //  Create response with user data
+    const response = NextResponse.json({
       success: true,
-      message: 'OTP sent to your email',
+      message: 'Login successful',
       data: {
-        email,
-        expiresIn: 600,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          phone: user.phone,
+          isEmailVerified: user.isEmailVerified,
+          profilePicture: user.profilePicture,
+        },
       },
     })
+
+    //  Set HTTP-only cookie
+    response.cookies.set({
+      name: 'token',
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    })
+
+    return response
+
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(

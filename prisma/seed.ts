@@ -4,31 +4,8 @@ import { PrismaClient, CarCategory, Transmission, FuelType, CarStatus } from '@p
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Seeding database...')
+  console.log('🚗 Seeding cars...')
 
-  // 1. Create Super Admin
-  const adminEmail = 'admin@urbandrive.com'
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail },
-  })
-
-  if (!existingAdmin) {
-    await prisma.user.create({
-      data: {
-        email: adminEmail,
-        firstName: 'Super',
-        lastName: 'Admin',
-        role: 'SUPERADMIN',
-        isEmailVerified: true,
-        isActive: true,
-      },
-    })
-    console.log('✅ Super Admin created')
-  } else {
-    console.log('ℹ️ Super Admin already exists')
-  }
-
-  // 2. Create Sample Cars with correct enum types
   const sampleCars = [
     {
       manufacturer: 'Toyota',
@@ -170,6 +147,62 @@ async function main() {
       ],
       status: 'AVAILABLE' as CarStatus,
     },
+    {
+      manufacturer: 'Hyundai',
+      model: 'Creta',
+      year: 2023,
+      category: 'SUV' as CarCategory,
+      licensePlate: 'HYD-2468',
+      color: 'White',
+      transmission: 'AUTOMATIC' as Transmission,
+      fuelType: 'DIESEL' as FuelType,
+      seats: 5,
+      luggageCapacity: 5,
+      features: ['GPS', 'Bluetooth', 'Sunroof', '360 Camera'],
+      pricePerDay: 6000,
+      pricePerWeek: 36000,
+      pricePerMonth: 144000,
+      securityDeposit: 22000,
+      mileageFree: 100,
+      mileageExtraFee: 50,
+      locationAddress: '789 MG Road',
+      locationCity: 'Mumbai',
+      locationState: 'MH',
+      locationZipCode: '400001',
+      imageMain: 'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',
+      imageGallery: [
+        'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',
+      ],
+      status: 'AVAILABLE' as CarStatus,
+    },
+    {
+      manufacturer: 'Maruti Suzuki',
+      model: 'Swift',
+      year: 2023,
+      category: 'HATCHBACK' as CarCategory,
+      licensePlate: 'MS-1357',
+      color: 'Red',
+      transmission: 'MANUAL' as Transmission,
+      fuelType: 'PETROL' as FuelType,
+      seats: 5,
+      luggageCapacity: 3,
+      features: ['GPS', 'Bluetooth'],
+      pricePerDay: 3000,
+      pricePerWeek: 18000,
+      pricePerMonth: 72000,
+      securityDeposit: 15000,
+      mileageFree: 100,
+      mileageExtraFee: 50,
+      locationAddress: '456 Linking Road',
+      locationCity: 'Mumbai',
+      locationState: 'MH',
+      locationZipCode: '400002',
+      imageMain: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=600',
+      imageGallery: [
+        'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=600',
+      ],
+      status: 'AVAILABLE' as CarStatus,
+    },
   ]
 
   for (const carData of sampleCars) {
@@ -188,6 +221,7 @@ async function main() {
   }
 
   console.log('✅ Seeding complete!')
+  console.log(`🚗 Total cars: ${sampleCars.length}`)
 }
 
 main()
