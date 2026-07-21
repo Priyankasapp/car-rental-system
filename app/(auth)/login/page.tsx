@@ -1,14 +1,19 @@
 /* eslint-disable react-hooks/static-components */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 // app/(auth)/login/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState} from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { OTPVerification } from '@/components/auth/OTPVerification'
+
+//  Define error type
+type ErrorWithMessage = {
+  message: string
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -27,7 +32,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState(resetSuccess ? 'Password reset successfully! Please login.' : '')
 
-  //  Login with email + password
+  //  Handle Login with redirect URL
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -37,19 +42,21 @@ export default function LoginPage() {
     try {
       const result = await login(email, password)
       
-      //  Check if OTP is required
+      // ✅ Check if OTP is required
       if (result.requiresOTP) {
-        setMessage(' Please enter the OTP sent to your email.')
+        setMessage('📧 Please enter the OTP sent to your email.')
         setStep('otp')
       } else {
-        // No OTP required - logged in directly
+        // ✅ Use redirectUrl from API response
+        const redirectUrl = result.redirectUrl || '/'
         setMessage('Login successful! Redirecting...')
         setTimeout(() => {
-          router.push('/fleet')
+          router.push(redirectUrl)
         }, 1000)
       }
-    } catch (err: any) {
-      setError(err.message || 'Login failed')
+    } catch (err) {
+      const error = err as ErrorWithMessage
+      setError(error.message || 'Login failed')
     } finally {
       setLoading(false)
     }
@@ -65,10 +72,11 @@ export default function LoginPage() {
       await verifyOTP(email, otp, 'LOGIN')
       setMessage(' Login successful! Redirecting...')
       setTimeout(() => {
-        router.push('/fleet')
+        router.push('/')
       }, 1000)
-    } catch (err: any) {
-      setError(err.message || 'Invalid OTP')
+    } catch (err) {
+      const error = err as ErrorWithMessage
+      setError(error.message || 'Invalid OTP')
       throw err
     } finally {
       setLoading(false)
@@ -84,15 +92,16 @@ export default function LoginPage() {
     try {
       await resendOTP(email, 'LOGIN')
       setMessage(' New OTP sent successfully!')
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend OTP')
+    } catch (err) {
+      const error = err as ErrorWithMessage
+      setError(error.message || 'Failed to resend OTP')
       throw err
     } finally {
       setLoading(false)
     }
   }
 
-  // Back to login
+  //  Back to login
   const handleBack = () => {
     setStep('login')
     setError('')
@@ -195,7 +204,7 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/*  Password with Eye Icon */}
+              {/* Password with Eye Icon */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
@@ -265,7 +274,7 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* ==========  OTP VERIFICATION ========== */}
+          {/* ========== OTP VERIFICATION ========== */}
           {step === 'otp' && (
             <OTPVerification
               email={email}

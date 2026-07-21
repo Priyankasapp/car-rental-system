@@ -24,6 +24,7 @@ export type OTPPurpose = 'LOGIN' | 'REGISTER' | 'PASSWORD_RESET' | 'EMAIL_VERIFI
 interface LoginResponse {
   requiresOTP: boolean
   email: string
+   redirectUrl?: string 
 }
 
 interface RegisterResponse {
@@ -158,13 +159,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // If user is already logged in (no OTP required), set user
-      if (!data.data?.requiresOTP && data.data?.user) {
-        setUser(data.data.user)
-      }
+       if (!data.data?.requiresOTP && data.data?.user) {
+      setUser(data.data.user)
+    }
+    
       
       return {
         requiresOTP: data.data?.requiresOTP || false,
         email: data.data?.email || email,
+        redirectUrl: data.data?.redirectUrl || '/', 
       }
     } catch (error: any) {
       setError(error.message)

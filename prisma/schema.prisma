@@ -11,27 +11,27 @@ datasource db {
 
 // ============== USER MODEL ==============
 model User {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  email           String   @unique
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  email           String      @unique
   phone           String?
   firstName       String
   lastName        String
   password        String?  
-  role            Role     @default(CUSTOMER)
-  isEmailVerified Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  isDeleted       Boolean  @default(false)
+  role            Role        @default(CUSTOMER)
+  staffType       StaffType?  // Optional: DRIVER or CLEANER if role == STAFF
+  isEmailVerified Boolean     @default(false)
+  isActive        Boolean     @default(true)
+  isDeleted       Boolean     @default(false)
   profilePicture  String?
-  preferences     Json?    // { language, currency, notifications }
+  preferences     Json?       // { language, currency, notifications }
   
   // Relations
   sessions        Session[]
   reservations    Reservation[]
   emailLogs       EmailLog[]
-  staffProfile    Staff?   // One-to-one with Staff
   
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([role])
   @@index([isActive, isDeleted])
@@ -41,8 +41,13 @@ model User {
 enum Role {
   SUPERADMIN
   ADMIN
-  STAFF        
+  STAFF       // ✅ Added STAFF role
   CUSTOMER
+}
+
+enum StaffType {
+  DRIVER
+  CLEANER
 }
 
 // ============== SESSION MODEL ==============
@@ -68,19 +73,19 @@ model Session {
 
 // ============== OTP MODEL ==============
 model OTP {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  email        String
-  otp          String
-  purpose      OTPScope
-  expiresAt    DateTime
-  attempts     Int      @default(0)
-  maxAttempts  Int      @default(3)
-  isUsed       Boolean  @default(false)
-  ipAddress    String?
-  userAgent    String?
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  email       String
+  otp         String
+  purpose     OTPScope
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3)
+  isUsed      Boolean  @default(false)
+  ipAddress   String?
+  userAgent   String?
   
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([email, purpose])
   @@index([expiresAt])
@@ -92,57 +97,54 @@ enum OTPScope {
   REGISTER
   PASSWORD_RESET
   EMAIL_VERIFICATION
-  BOOKING_CONFIRMATION  
-  BOOKING_CANCELLATION 
 }
 
 // ============== CAR MODEL ==============
 model Car {
-  id                String      @id @default(auto()) @map("_id") @db.ObjectId
-  manufacturer      String
-  model             String
-  year              Int
-  category          CarCategory
-  licensePlate      String      @unique
-  color             String?
-  transmission      Transmission
-  fuelType          FuelType
-  seats             Int
-  luggageCapacity   Int
-  features          String[]
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  manufacturer     String
+  model            String
+  year             Int
+  category         CarCategory
+  licensePlate     String       @unique
+  color            String?
+  transmission     Transmission
+  fuelType         FuelType
+  seats            Int
+  luggageCapacity  Int
+  features         String[]
   
-  // Pricing (in cents)
-  pricePerDay       Int
-  pricePerWeek      Int?
-  pricePerMonth     Int?
-  securityDeposit   Int
+  // Pricing (in cents / paise)
+  pricePerDay      Int
+  pricePerWeek     Int?
+  pricePerMonth    Int?
+  securityDeposit  Int
   
   // Mileage
-  mileageFree       Int?
-  mileageExtraFee   Int?
+  mileageFree      Int?
+  mileageExtraFee  Int?
   
   // Location
-  locationAddress   String
-  locationCity      String
-  locationState     String
-  locationZipCode   String
-  locationLat       Float?
-  locationLng       Float?
+  locationAddress  String
+  locationCity     String
+  locationState    String
+  locationZipCode  String
+  locationLat      Float?
+  locationLng      Float?
   
   // Images
-  imageMain         String
-  imageGallery      String[]
+  imageMain        String
+  imageGallery     String[]
   
   // Status
-  status            CarStatus   @default(AVAILABLE)
-  isDeleted         Boolean     @default(false)
+  status           CarStatus    @default(AVAILABLE)
+  isDeleted        Boolean      @default(false)
   
   // Relations
-  reservations      Reservation[]
-  staffAssignments  Staff[]     // Cars assigned to staff
+  reservations     Reservation[]
   
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   @@index([status, isDeleted])
   @@index([category, status])
@@ -181,57 +183,56 @@ enum CarStatus {
 
 // ============== RESERVATION MODEL ==============
 model Reservation {
-  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
-  reservationRef     String            @unique
-  carId              String            @db.ObjectId
-  car                Car               @relation(fields: [carId], references: [id])
-  userId             String?           @db.ObjectId
-  user               User?             @relation(fields: [userId], references: [id])
+  id                    String            @id @default(auto()) @map("_id") @db.ObjectId
+  reservationRef        String            @unique
+  carId                 String            @db.ObjectId
+  car                   Car               @relation(fields: [carId], references: [id])
+  userId                String?           @db.ObjectId
+  user                  User?             @relation(fields: [userId], references: [id])
   
   // Customer info (denormalized)
-  customerName       String
-  customerEmail      String
-  customerPhone      String?
-  isGuestBooking     Boolean           @default(false)
+  customerName          String
+  customerEmail         String
+  customerPhone         String?
+  isGuestBooking        Boolean           @default(false)
   
   // Pickup
-  pickupLocation     String
-  pickupDate         DateTime
-  pickupTime         String
+  pickupLocation        String
+  pickupDate            DateTime
+  pickupTime            String
   
   // Dropoff
-  dropoffLocation    String
-  dropoffDate        DateTime
-  dropoffTime        String
+  dropoffLocation       String
+  dropoffDate           DateTime
+  dropoffTime           String
   
   // Extras
-  chauffeur          Boolean           @default(false)
-  conciergeDelivery  Boolean           @default(false)
-  platinumInsurance  Boolean           @default(false)
-  satelliteConnectivity Boolean        @default(false)
+  chauffeur             Boolean           @default(false)
+  conciergeDelivery     Boolean           @default(false)
+  platinumInsurance     Boolean           @default(false)
+  satelliteConnectivity Boolean           @default(false)
   
-  // Pricing (server calculated, in cents)
-  dailyRate          Int
-  rentalDays         Int
-  subtotal           Int
-  tax                Int
-  total              Int
+  // Pricing (server calculated, in cents/paise)
+  dailyRate             Int
+  rentalDays            Int
+  subtotal              Int
+  tax                   Int
+  total                 Int
   
   // Status
-  status             ReservationStatus @default(PENDING)
-  cancellationReason String?
-  cancellationFee    Int?
-  adminNotes         String?
-  
-  // Relations
-  emailLogs          EmailLog[]
-  staffShifts        StaffShift[]      // Shifts related to this booking
+  status                ReservationStatus @default(PENDING)
+  cancellationReason    String?
+  cancellationFee       Int?
+  adminNotes            String?
   
   // Soft delete
-  isDeleted          Boolean           @default(false)
+  isDeleted             Boolean           @default(false)
   
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  // Relations
+  emailLogs             EmailLog[]
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   @@index([userId, status])
   @@index([carId, status])
@@ -248,126 +249,33 @@ enum ReservationStatus {
   EXPIRED
 }
 
-// ============== STAFF MODEL ==============
-model Staff {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String      @db.ObjectId
-  user            User        @relation(fields: [userId], references: [id])
-  
-  // Staff Details
-  employeeCode    String      @unique
-  staffRole       StaffRole   @default(DRIVER)
-  joiningDate     DateTime    @default(now())
-  isActive        Boolean     @default(true)
-  isDeleted       Boolean     @default(false)
-  
-  // Current Status
-  isOnDuty        Boolean     @default(false)
-  currentShiftId  String?     @db.ObjectId
-  assignedCarId   String?     @db.ObjectId
-  assignedCar     Car?        @relation(fields: [assignedCarId], references: [id])
-  
-  // Relations
-  shifts          StaffShift[]
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  @@index([userId])
-  @@index([assignedCarId])
-  @@index([staffRole])
-  @@map("staff")
-}
-
-enum StaffRole {
-  DRIVER
-  CLEANER
-}
-
-// ============== STAFF SHIFT MODEL ==============
-model StaffShift {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  staffId         String      @db.ObjectId
-  staff           Staff       @relation(fields: [staffId], references: [id])
-  
-  // Related Booking (if any)
-  bookingId       String?     @db.ObjectId
-  booking         Reservation? @relation(fields: [bookingId], references: [id])
-  
-  // Car Information
-  carId           String      @db.ObjectId
-  car             Car         @relation(fields: [carId], references: [id])
-  
-  // Shift Timing
-  clockIn         DateTime    @default(now())
-  clockOut        DateTime?
-  
-  // Mileage Tracking
-  startMileage    Int?
-  endMileage      Int?
-  
-  // For Cleaners - Checklist
-  cleaningChecklist Json?     // { 
-                              //   interior: boolean, 
-                              //   exterior: boolean, 
-                              //   sanitized: boolean,
-                              //   vacuumed: boolean,
-                              //   windows: boolean
-                              // }
-  
-  // For Drivers - Trip Details
-  tripStartLocation String?
-  tripEndLocation   String?
-  tripDistance      Int?      // in km
-  
-  // Status & Notes
-  status          ShiftStatus @default(ACTIVE)
-  notes           String?
-  photos          String[]    // Uploaded photos
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  @@index([staffId])
-  @@index([bookingId])
-  @@index([carId])
-  @@index([status])
-  @@map("staff_shifts")
-}
-
-enum ShiftStatus {
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
 // ============== EMAIL LOG MODEL ==============
 model EmailLog {
-  id           String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String?     @db.ObjectId
-  user         User?       @relation(fields: [userId], references: [id])
-  reservationId String?    @db.ObjectId
-  reservation  Reservation? @relation(fields: [reservationId], references: [id])
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String?     @db.ObjectId
+  user          User?       @relation(fields: [userId], references: [id])
+  reservationId String?     @db.ObjectId
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
   
-  emailType    EmailType
-  recipient    String
+  emailType     EmailType
+  recipient     String
   recipientName String?
-  subject      String
-  content      String?     // Store email content for reference
-  status       EmailStatus @default(PENDING)
-  messageId    String?
-  error        String?
-  sentAt       DateTime?
-  retryCount   Int         @default(0)
-  openedAt     DateTime?   // For tracking if email was opened
-  clickedAt    DateTime?   // For tracking if links were clicked
+  subject       String
+  content       String?     // Store email content for reference
+  status        EmailStatus @default(PENDING)
+  messageId     String?
+  error         String?
+  sentAt        DateTime?
+  retryCount    Int         @default(0)
+  openedAt      DateTime?   // For tracking if email was opened
+  clickedAt     DateTime?   // For tracking if links were clicked
   
   // Metadata
-  ipAddress    String?
-  userAgent    String?
+  ipAddress     String?
+  userAgent     String?
   
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@index([userId])
   @@index([reservationId])
@@ -394,10 +302,6 @@ enum EmailType {
   PASSWORD_RESET
   EMAIL_VERIFICATION
   ACCOUNT_UPDATE
-  
-  // Staff related
-  SHIFT_STARTED
-  SHIFT_COMPLETED
   
   // Promotional
   PROMOTIONAL

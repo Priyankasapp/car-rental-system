@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = body
 
+    //  Validate email
     if (!email || !email.includes('@')) {
       return NextResponse.json(
         { success: false, message: 'Invalid email' },
@@ -15,6 +16,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate password
     if (!password || password.length < 1) {
       return NextResponse.json(
         { success: false, message: 'Password required' },
@@ -22,25 +24,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find user
+    //  Find user with role information
     const user = await prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        password: true,
+        role: true,
+        isEmailVerified: true,
+        isActive: true,
+        isDeleted: true,
+        profilePicture: true,
+      },
     })
 
     if (!user) {
       return NextResponse.json(
-        { success: false, message: 'Email not registered' },
-        { status: 404 }
+        { success: false, message: 'Invalid email or password' },
+        { status: 401 }
       )
     }
 
+    //  Check if account is active
     if (!user.isActive || user.isDeleted) {
       return NextResponse.json(
-        { success: false, message: 'Account is disabled' },
+        { success: false, message: 'Your account has been disabled' },
         { status: 403 }
       )
     }
 
+    //  Check if email is verified
     if (!user.isEmailVerified) {
       return NextResponse.json(
         { success: false, message: 'Please verify your email first' },
@@ -48,7 +65,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify password
+    //  Verify password
     if (!user.password) {
       return NextResponse.json(
         { success: false, message: 'Account not set up properly' },
@@ -59,12 +76,12 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await verifyPassword(password, user.password)
     if (!isValidPassword) {
       return NextResponse.json(
-        { success: false, message: 'Invalid password' },
+        { success: false, message: 'Invalid email or password' },
         { status: 401 }
       )
     }
 
-    //  Generate JWT token
+    // Generate JWT token
     const token = generateToken({
       userId: user.id,
       email: user.email,
@@ -83,6 +100,12 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    //  Determine redirect URL based on role
+    let redirectUrl = '/'
+    if (user.role === 'SUPERADMIN' || user.role === 'ADMIN') {
+      redirectUrl = '/admin'
+    }
+
     //  Create response with user data
     const response = NextResponse.json({
       success: true,
@@ -98,6 +121,7 @@ export async function POST(request: NextRequest) {
           isEmailVerified: user.isEmailVerified,
           profilePicture: user.profilePicture,
         },
+        redirectUrl, //  Send redirect URL to frontend
       },
     })
 
@@ -117,7 +141,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
-      { success: false, message: 'Login failed' },
+      { success: false, message: 'Login failed. Please try again.' },
       { status: 500 }
     )
   }

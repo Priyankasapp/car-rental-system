@@ -78,8 +78,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
-//  POST: Create new car (Admin only)
-export async function POST(request: NextRequest) {
-  // ... (same as before, no changes needed)
-}

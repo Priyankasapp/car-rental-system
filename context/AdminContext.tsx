@@ -2,7 +2,7 @@
 // context/AdminContext.tsx
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react'
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useAuth } from './AuthContext'
 
 // ============== TYPES ==============
@@ -97,6 +97,7 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
+  const hasInitialized = useRef(false)  
   
   // ============== STATE ==============
   const [bookings, setBookings] = useState<AdminBooking[]>([])
@@ -190,12 +191,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.message || 'Failed to confirm booking')
       }
 
-      //  Update bookings list
       setBookings(prev => 
         prev.map(b => b.id === id ? { ...b, status: 'CONFIRMED' } : b)
       )
 
-      //  Update current booking if it's the one confirmed
       if (currentBooking?.id === id) {
         setCurrentBooking(prev => prev ? { ...prev, status: 'CONFIRMED' } : null)
       }
@@ -231,12 +230,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.message || 'Failed to reject booking')
       }
 
-      //  Update bookings list
       setBookings(prev => 
         prev.map(b => b.id === id ? { ...b, status: 'CANCELLED', cancellationReason: reason || null } : b)
       )
 
-      //  Update current booking if it's the one rejected
       if (currentBooking?.id === id) {
         setCurrentBooking(prev => 
           prev ? { ...prev, status: 'CANCELLED', cancellationReason: reason || null } : null
@@ -288,10 +285,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     fetchBookings({})
   }, [fetchBookings])
 
-  // ============== INITIAL LOAD ==============
+  // ============== INITIAL LOAD - FIXED ==============
   useEffect(() => {
-    if (isAdmin) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    // Only run once when admin is available
+    if (isAdmin && !hasInitialized.current) {
+      hasInitialized.current = true
       fetchBookings()
       fetchStats()
     }

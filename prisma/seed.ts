@@ -1,356 +1,347 @@
 // prisma/seed.ts
-import { PrismaClient, CarCategory, Transmission, FuelType, CarStatus } from '@prisma/client'
+import { PrismaClient, Role } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🚗 Seeding cars...')
+  console.log('🌱 Starting database seeding...')
 
-  const sampleCars = [
-    // ========== EXISTING CARS ==========
-    {
-      manufacturer: 'Toyota',
-      model: 'Camry',
-      year: 2023,
-      category: 'SEDAN' as CarCategory,
-      licensePlate: 'ABC-1234',
-      color: 'Silver',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'PETROL' as FuelType,
-      seats: 5,
-      luggageCapacity: 4,
-      features: ['GPS', 'Bluetooth', 'Backup Camera', 'Cruise Control'],
-      pricePerDay: 5000,
-      pricePerWeek: 30000,
-      pricePerMonth: 120000,
-      securityDeposit: 20000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '123 Main St',
-      locationCity: 'New York',
-      locationState: 'NY',
-      locationZipCode: '10001',
-      imageMain: 'https://images.unsplash.com/photo-1606016159991-dfe4f974be5c?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1606016159991-dfe4f974be5c?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
-    {
-      manufacturer: 'Honda',
-      model: 'CR-V',
-      year: 2023,
-      category: 'SUV' as CarCategory,
-      licensePlate: 'XYZ-5678',
-      color: 'Blue',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'HYBRID' as FuelType,
-      seats: 5,
-      luggageCapacity: 6,
-      features: ['GPS', 'Bluetooth', 'Sunroof', 'Lane Assist'],
-      pricePerDay: 7000,
-      pricePerWeek: 42000,
-      pricePerMonth: 168000,
-      securityDeposit: 25000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '456 Park Ave',
-      locationCity: 'New York',
-      locationState: 'NY',
-      locationZipCode: '10002',
-      imageMain: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
-    {
-      manufacturer: 'Tesla',
-      model: 'Model 3',
-      year: 2024,
-      category: 'LUXURY' as CarCategory,
-      licensePlate: 'TES-7890',
-      color: 'Red',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'ELECTRIC' as FuelType,
-      seats: 5,
-      luggageCapacity: 4,
-      features: ['GPS', 'Bluetooth', 'Autopilot', 'Premium Sound'],
-      pricePerDay: 12000,
-      pricePerWeek: 72000,
-      pricePerMonth: 288000,
-      securityDeposit: 50000,
-      mileageFree: 0,
-      mileageExtraFee: 0,
-      locationAddress: '789 Broadway',
-      locationCity: 'New York',
-      locationState: 'NY',
-      locationZipCode: '10003',
-      imageMain: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
-    {
-      manufacturer: 'BMW',
-      model: 'X5',
-      year: 2023,
-      category: 'SUV' as CarCategory,
-      licensePlate: 'BMW-4321',
-      color: 'Black',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'PETROL' as FuelType,
-      seats: 5,
-      luggageCapacity: 7,
-      features: ['GPS', 'Bluetooth', 'Sunroof', 'Leather Seats'],
-      pricePerDay: 9500,
-      pricePerWeek: 57000,
-      pricePerMonth: 228000,
-      securityDeposit: 35000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '321 5th Ave',
-      locationCity: 'Los Angeles',
-      locationState: 'CA',
-      locationZipCode: '90001',
-      imageMain: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
-    {
-      manufacturer: 'Mercedes',
-      model: 'C-Class',
-      year: 2024,
-      category: 'LUXURY' as CarCategory,
-      licensePlate: 'MBZ-9876',
-      color: 'White',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'PETROL' as FuelType,
-      seats: 5,
-      luggageCapacity: 4,
-      features: ['GPS', 'Bluetooth', 'Sunroof', 'Parking Sensors'],
-      pricePerDay: 11000,
-      pricePerWeek: 66000,
-      pricePerMonth: 264000,
-      securityDeposit: 45000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '654 Madison Ave',
-      locationCity: 'Los Angeles',
-      locationState: 'CA',
-      locationZipCode: '90002',
-      imageMain: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
-    {
-      manufacturer: 'Hyundai',
-      model: 'Creta',
-      year: 2023,
-      category: 'SUV' as CarCategory,
-      licensePlate: 'HYD-2468',
-      color: 'White',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'DIESEL' as FuelType,
-      seats: 5,
-      luggageCapacity: 5,
-      features: ['GPS', 'Bluetooth', 'Sunroof', '360 Camera'],
-      pricePerDay: 6000,
-      pricePerWeek: 36000,
-      pricePerMonth: 144000,
-      securityDeposit: 22000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '789 MG Road',
-      locationCity: 'Mumbai',
-      locationState: 'MH',
-      locationZipCode: '400001',
-      imageMain: 'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
-    {
-      manufacturer: 'Maruti Suzuki',
-      model: 'Swift',
-      year: 2023,
-      category: 'HATCHBACK' as CarCategory,
-      licensePlate: 'MS-1357',
-      color: 'Red',
-      transmission: 'MANUAL' as Transmission,
-      fuelType: 'PETROL' as FuelType,
-      seats: 5,
-      luggageCapacity: 3,
-      features: ['GPS', 'Bluetooth'],
-      pricePerDay: 3000,
-      pricePerWeek: 18000,
-      pricePerMonth: 72000,
-      securityDeposit: 15000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '456 Linking Road',
-      locationCity: 'Mumbai',
-      locationState: 'MH',
-      locationZipCode: '400002',
-      imageMain: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
+  // ============== 1. CREATE SUPER ADMIN ==============
+  console.log('👑 Creating Super Admin...')
 
-    // ========== 🆕 NEW CARS ADDED ==========
+  const superAdminData = {
+    email: 'superadmin@urbandrive.com',
+    firstName: 'Super',
+    lastName: 'Admin',
+    phone: '+91 98765 43000',
+    password: 'SuperAdmin@123',
+    role: 'SUPERADMIN' as Role,
+  }
+
+  try {
+    const existingSuperAdmin = await prisma.user.findUnique({
+      where: { email: superAdminData.email },
+    })
+
+    if (!existingSuperAdmin) {
+      const hashedPassword = await bcrypt.hash(superAdminData.password, 10)
+      
+      await prisma.user.create({
+        data: {
+          email: superAdminData.email,
+          firstName: superAdminData.firstName,
+          lastName: superAdminData.lastName,
+          phone: superAdminData.phone,
+          password: hashedPassword,
+          role: superAdminData.role,
+          isEmailVerified: true,
+          isActive: true,
+          isDeleted: false,
+          profilePicture: `https://ui-avatars.com/api/?name=Super+Admin&background=1a1a1a&color=ffffff&size=128`,
+          preferences: {
+            language: 'en',
+            currency: 'INR',
+            notifications: { email: true, push: true, sms: true },
+          },
+        },
+      })
+      console.log(`✅ Super Admin created: ${superAdminData.email}`)
+    } else {
+      console.log(`ℹ️ Super Admin already exists: ${superAdminData.email}`)
+    }
+  } catch (error) {
+    console.error('❌ Error creating Super Admin:', error)
+  }
+
+  // ============== 2. CREATE ADMINS ==============
+  console.log('👥 Creating Admins...')
+
+  const adminData = [
     {
-      manufacturer: 'Audi',
-      model: 'A6',
-      year: 2024,
-      category: 'SEDAN' as CarCategory,
-      licensePlate: 'AUD-9876',
-      color: 'Black',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'PETROL' as FuelType,
-      seats: 5,
-      luggageCapacity: 5,
-      features: ['GPS', 'Bluetooth', 'Sunroof', '360 Camera', 'Leather Seats'],
-      pricePerDay: 15000,
-      pricePerWeek: 90000,
-      pricePerMonth: 360000,
-      securityDeposit: 60000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '123 Luxury Drive',
-      locationCity: 'Mumbai',
-      locationState: 'MH',
-      locationZipCode: '400005',
-      imageMain: 'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
+      email: 'admin1@urbandrive.com',
+      firstName: 'Raj',
+      lastName: 'Kumar',
+      phone: '+91 98765 43101',
+      password: 'Admin@123',
+      role: 'ADMIN' as Role,
     },
     {
-      manufacturer: 'Kia',
-      model: 'Seltos',
-      year: 2023,
-      category: 'SUV' as CarCategory,
-      licensePlate: 'KIA-5678',
-      color: 'Blue',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'DIESEL' as FuelType,
-      seats: 5,
-      luggageCapacity: 6,
-      features: ['GPS', 'Bluetooth', 'Sunroof', 'Ventilated Seats'],
-      pricePerDay: 6500,
-      pricePerWeek: 39000,
-      pricePerMonth: 156000,
-      securityDeposit: 28000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '456 Auto Street',
-      locationCity: 'New Delhi',
-      locationState: 'DL',
-      locationZipCode: '110001',
-      imageMain: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
+      email: 'admin2@urbandrive.com',
+      firstName: 'Priya',
+      lastName: 'Sharma',
+      phone: '+91 98765 43102',
+      password: 'Admin@123',
+      role: 'ADMIN' as Role,
     },
     {
-      manufacturer: 'MG Motors',
-      model: 'Hector',
-      year: 2023,
-      category: 'SUV' as CarCategory,
-      licensePlate: 'MG-4321',
-      color: 'White',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'PETROL' as FuelType,
-      seats: 7,
-      luggageCapacity: 7,
-      features: ['GPS', 'Bluetooth', 'Sunroof', 'Panoramic View', 'Internet Car'],
-      pricePerDay: 8000,
-      pricePerWeek: 48000,
-      pricePerMonth: 192000,
-      securityDeposit: 32000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '789 Auto Hub',
-      locationCity: 'Bengaluru',
-      locationState: 'KA',
-      locationZipCode: '560001',
-      imageMain: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
-    {
-      manufacturer: 'Porsche',
-      model: 'Cayenne',
-      year: 2024,
-      category: 'LUXURY' as CarCategory,
-      licensePlate: 'POR-1111',
-      color: 'Silver',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'PETROL' as FuelType,
-      seats: 5,
-      luggageCapacity: 5,
-      features: ['GPS', 'Bluetooth', 'Sunroof', 'Carbon Fiber', 'Sport Mode'],
-      pricePerDay: 25000,
-      pricePerWeek: 150000,
-      pricePerMonth: 600000,
-      securityDeposit: 100000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '123 Elite Drive',
-      locationCity: 'Mumbai',
-      locationState: 'MH',
-      locationZipCode: '400006',
-      imageMain: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
-    },
-    {
-      manufacturer: 'Range Rover',
-      model: 'Velar',
-      year: 2024,
-      category: 'LUXURY' as CarCategory,
-      licensePlate: 'RR-9999',
-      color: 'Black',
-      transmission: 'AUTOMATIC' as Transmission,
-      fuelType: 'DIESEL' as FuelType,
-      seats: 5,
-      luggageCapacity: 7,
-      features: ['GPS', 'Bluetooth', 'Sunroof', 'Panoramic View', 'Air Suspension'],
-      pricePerDay: 28000,
-      pricePerWeek: 168000,
-      pricePerMonth: 672000,
-      securityDeposit: 120000,
-      mileageFree: 100,
-      mileageExtraFee: 50,
-      locationAddress: '456 Luxury Lane',
-      locationCity: 'New Delhi',
-      locationState: 'DL',
-      locationZipCode: '110002',
-      imageMain: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600',
-      imageGallery: ['https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=600'],
-      status: 'AVAILABLE' as CarStatus,
+      email: 'admin3@urbandrive.com',
+      firstName: 'Amit',
+      lastName: 'Patel',
+      phone: '+91 98765 43103',
+      password: 'Admin@123',
+      role: 'ADMIN' as Role,
     },
   ]
 
-  let added = 0
-  let skipped = 0
-
-  for (const carData of sampleCars) {
-    const existingCar = await prisma.car.findUnique({
-      where: { licensePlate: carData.licensePlate },
-    })
-
-    if (!existingCar) {
-      await prisma.car.create({
-        data: carData,
+  for (const admin of adminData) {
+    try {
+      const existingAdmin = await prisma.user.findUnique({
+        where: { email: admin.email },
       })
-      console.log(` Car added: ${carData.manufacturer} ${carData.model}`)
-      added++
-    } else {
-      console.log(`ℹ Car already exists: ${carData.manufacturer} ${carData.model}`)
-      skipped++
+
+      if (!existingAdmin) {
+        const hashedPassword = await bcrypt.hash(admin.password, 10)
+        
+        await prisma.user.create({
+          data: {
+            email: admin.email,
+            firstName: admin.firstName,
+            lastName: admin.lastName,
+            phone: admin.phone,
+            password: hashedPassword,
+            role: admin.role,
+            isEmailVerified: true,
+            isActive: true,
+            isDeleted: false,
+            profilePicture: `https://ui-avatars.com/api/?name=${admin.firstName}+${admin.lastName}&background=2d2d2d&color=ffffff&size=128`,
+            preferences: {
+              language: 'en',
+              currency: 'INR',
+              notifications: { email: true, push: true, sms: false },
+            },
+          },
+        })
+        console.log(`✅ Admin created: ${admin.email}`)
+      } else {
+        console.log(`ℹ️ Admin already exists: ${admin.email}`)
+      }
+    } catch (error) {
+      console.error(`❌ Error creating admin ${admin.email}:`, error)
     }
   }
 
-  console.log(' Seeding complete!')
-  console.log(` Summary: ${added} added, ${skipped} skipped, ${sampleCars.length} total`)
+  // ============== 3. CREATE STAFF (DRIVERS & CLEANERS) ==============
+  console.log('🧑‍🔧 Creating Staff (Drivers & Cleaners)...')
+
+  const staffData = [
+    // Drivers
+    {
+      email: 'driver1@urbandrive.com',
+      firstName: 'Vikram',
+      lastName: 'Singh',
+      phone: '+91 98765 43201',
+      password: 'Staff@123',
+      role: 'STAFF' as Role,
+    },
+    {
+      email: 'driver2@urbandrive.com',
+      firstName: 'Suresh',
+      lastName: 'Yadav',
+      phone: '+91 98765 43202',
+      password: 'Staff@123',
+      role: 'STAFF' as Role,
+    },
+    {
+      email: 'driver3@urbandrive.com',
+      firstName: 'Ravi',
+      lastName: 'Kumar',
+      phone: '+91 98765 43203',
+      password: 'Staff@123',
+      role: 'STAFF' as Role,
+    },
+    // Cleaners
+    {
+      email: 'cleaner1@urbandrive.com',
+      firstName: 'Mohan',
+      lastName: 'Das',
+      phone: '+91 98765 43301',
+      password: 'Staff@123',
+      role: 'STAFF' as Role,
+    },
+    {
+      email: 'cleaner2@urbandrive.com',
+      firstName: 'Gita',
+      lastName: 'Verma',
+      phone: '+91 98765 43302',
+      password: 'Staff@123',
+      role: 'STAFF' as Role,
+    },
+  ]
+
+  for (const staff of staffData) {
+    try {
+      const existingStaff = await prisma.user.findUnique({
+        where: { email: staff.email },
+      })
+
+      if (!existingStaff) {
+        const hashedPassword = await bcrypt.hash(staff.password, 10)
+        
+        await prisma.user.create({
+          data: {
+            email: staff.email,
+            firstName: staff.firstName,
+            lastName: staff.lastName,
+            phone: staff.phone,
+            password: hashedPassword,
+            role: staff.role,
+            isEmailVerified: true,
+            isActive: true,
+            isDeleted: false,
+            profilePicture: `https://ui-avatars.com/api/?name=${staff.firstName}+${staff.lastName}&background=444444&color=ffffff&size=128`,
+            preferences: {
+              language: 'en',
+              currency: 'INR',
+              notifications: { email: true, push: true, sms: true },
+            },
+          },
+        })
+        console.log(`✅ Staff created: ${staff.email}`)
+      } else {
+        console.log(`ℹ️ Staff already exists: ${staff.email}`)
+      }
+    } catch (error) {
+      console.error(`❌ Error creating staff ${staff.email}:`, error)
+    }
+  }
+
+  // ============== 4. CREATE CUSTOMERS ==============
+  console.log('👤 Creating Customers...')
+
+  const customerData = [
+    {
+      email: 'rahul.sharma@email.com',
+      firstName: 'Rahul',
+      lastName: 'Sharma',
+      phone: '+91 98765 43401',
+      password: 'Customer@123',
+    },
+    {
+      email: 'priya.patel@email.com',
+      firstName: 'Priya',
+      lastName: 'Patel',
+      phone: '+91 98765 43402',
+      password: 'Customer@123',
+    },
+    {
+      email: 'amit.kumar@email.com',
+      firstName: 'Amit',
+      lastName: 'Kumar',
+      phone: '+91 98765 43403',
+      password: 'Customer@123',
+    },
+    {
+      email: 'sneha.reddy@email.com',
+      firstName: 'Sneha',
+      lastName: 'Reddy',
+      phone: '+91 98765 43404',
+      password: 'Customer@123',
+    },
+    {
+      email: 'vikram.singh@email.com',
+      firstName: 'Vikram',
+      lastName: 'Singh',
+      phone: '+91 98765 43405',
+      password: 'Customer@123',
+    },
+  ]
+
+  for (const customer of customerData) {
+    try {
+      const existingCustomer = await prisma.user.findUnique({
+        where: { email: customer.email },
+      })
+
+      if (!existingCustomer) {
+        const hashedPassword = await bcrypt.hash(customer.password, 10)
+        
+        await prisma.user.create({
+          data: {
+            email: customer.email,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            phone: customer.phone,
+            password: hashedPassword,
+            role: 'CUSTOMER',
+            isEmailVerified: true,
+            isActive: true,
+            isDeleted: false,
+            profilePicture: `https://ui-avatars.com/api/?name=${customer.firstName}+${customer.lastName}&background=666666&color=ffffff&size=128`,
+            preferences: {
+              language: 'en',
+              currency: 'INR',
+              notifications: { email: true, push: false, sms: false },
+            },
+          },
+        })
+        console.log(`✅ Customer created: ${customer.email}`)
+      } else {
+        console.log(`ℹ️ Customer already exists: ${customer.email}`)
+      }
+    } catch (error) {
+      console.error(`❌ Error creating customer ${customer.email}:`, error)
+    }
+  }
+
+  console.log('\n✅ Seeding complete!')
+  console.log('\n📋 CREDENTIALS LIST:')
+  console.log('═══════════════════════════════════════════════════════════════')
+  console.log('\n🔹 SUPER ADMIN (Full Access):')
+  console.log('   📧 Email: superadmin@urbandrive.com')
+  console.log('   🔑 Password: SuperAdmin@123')
+  console.log('   👤 Role: SUPERADMIN')
+  console.log('───────────────────────────────────────────────────────────────')
+
+  console.log('\n🔹 ADMINS (Management Access):')
+  console.log('   📧 Email: admin1@urbandrive.com')
+  console.log('   🔑 Password: Admin@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: admin2@urbandrive.com')
+  console.log('   🔑 Password: Admin@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: admin3@urbandrive.com')
+  console.log('   🔑 Password: Admin@123')
+  console.log('───────────────────────────────────────────────────────────────')
+
+  console.log('\n🔹 STAFF (Drivers & Cleaners):')
+  console.log('   📧 Email: driver1@urbandrive.com')
+  console.log('   🔑 Password: Staff@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: driver2@urbandrive.com')
+  console.log('   🔑 Password: Staff@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: driver3@urbandrive.com')
+  console.log('   🔑 Password: Staff@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: cleaner1@urbandrive.com')
+  console.log('   🔑 Password: Staff@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: cleaner2@urbandrive.com')
+  console.log('   🔑 Password: Staff@123')
+  console.log('───────────────────────────────────────────────────────────────')
+
+  console.log('\n🔹 CUSTOMERS (Book Cars, View Bookings):')
+  console.log('   📧 Email: rahul.sharma@email.com')
+  console.log('   🔑 Password: Customer@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: priya.patel@email.com')
+  console.log('   🔑 Password: Customer@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: amit.kumar@email.com')
+  console.log('   🔑 Password: Customer@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: sneha.reddy@email.com')
+  console.log('   🔑 Password: Customer@123')
+  console.log('───────────────────────────────────────────────────────────────')
+  console.log('   📧 Email: vikram.singh@email.com')
+  console.log('   🔑 Password: Customer@123')
+  console.log('═══════════════════════════════════════════════════════════════')
 }
 
 main()
   .catch((e) => {
-    console.error(' Seeding failed:', e)
+    console.error('❌ Seeding failed:', e)
     process.exit(1)
   })
   .finally(async () => {
