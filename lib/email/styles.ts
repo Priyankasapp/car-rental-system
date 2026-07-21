@@ -12,6 +12,9 @@ export const tokens = {
     textMuted: '#6b6b6b',
     textLight: '#8a8a8a',
     accentGray: '#a0a0a0',
+    amberBg: '#fff8e6',
+    amberBorder: '#ffe599',
+    amberText: '#8a5d00',
   },
   fonts: {
     sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
@@ -73,5 +76,12 @@ export const emailStyles = {
 
   // Core visual hooks for rendering secure OTP boxes
   otpContainer: `background: ${tokens.colors.lightGray}; border-radius: 16px; padding: 24px; text-align: center; border: 1px dashed ${tokens.colors.borderGray}; margin: 24px 0;`,
-  otpText: `font-family: ${tokens.fonts.mono}; font-size: 36px; font-weight: 700; letter-spacing: 0.15em; color: ${tokens.colors.black}; margin: 0; padding: 4px 0; max-width: 100%; word-break: break-all;`
+  otpText: `font-family: ${tokens.fonts.mono}; font-size: 36px; font-weight: 700; letter-spacing: 0.15em; color: ${tokens.colors.black}; margin: 0; padding: 4px 0; max-width: 100%; word-break: break-all;`,
+
+  // Booking Specific Styles
+  statusBadgePending: `display: inline-block; background: ${tokens.colors.amberBg}; border: 1px solid ${tokens.colors.amberBorder}; color: ${tokens.colors.amberText}; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 14px; border-radius: 30px; margin-bottom: 16px;`,
+  tableRow: `border-bottom: 1px solid ${tokens.colors.borderGray};`,
+  tableCellLabel: `padding: 10px 0; font-size: 13px; color: ${tokens.colors.textMuted}; font-weight: 500; width: 40%;`,
+  tableCellValue: `padding: 10px 0; font-size: 14px; color: ${tokens.colors.black}; font-weight: 600; text-align: right; width: 60%;`,
+  totalHighlight: `font-size: 18px; font-weight: 700; color: ${tokens.colors.black};`
 };

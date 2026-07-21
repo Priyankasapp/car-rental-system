@@ -21,7 +21,7 @@ export default function LoginPage() {
   // State
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)  // ✅ Eye icon state
+  const [showPassword, setShowPassword] = useState(false)  
   const [step, setStep] = useState<'login' | 'otp'>('login')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -101,7 +101,7 @@ export default function LoginPage() {
 
   const isSubmitting = loading
 
-  // ✅ Eye icon component
+  //  Eye icon component
   const EyeIcon = ({ show }: { show: boolean }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -195,7 +195,7 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* ✅ Password with Eye Icon */}
+              {/*  Password with Eye Icon */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password

@@ -56,7 +56,7 @@ export function OTPVerification({
 
     try {
       await onVerify(otpValue)
-      setMessage('✅ Verification successful!')
+      setMessage(' Verification successful!')
     } catch (err: any) {
       // Pull error message safely whether it's an object or an explicit string response
       setError(err?.message || err || 'Invalid OTP. Please try again.')
@@ -79,7 +79,7 @@ export function OTPVerification({
 
     try {
       await onResend()
-      setMessage('📧 New OTP sent successfully!')
+      setMessage(' New OTP sent successfully!')
       setTimeLeft(expiryMinutes * 60)
       setCanResend(false)
       setOtp('') // Flush input state clean

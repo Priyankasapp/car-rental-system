@@ -47,7 +47,7 @@ export default function RegisterPage() {
       }
 
       setEmail(formData.email)
-      setMessage('📧 Check your email for password and OTP!')
+      setMessage(' Check your email for password and OTP!')
       setStep('otp')
     } catch (err: any) {
       setError(err.message || 'Registration failed')
@@ -63,7 +63,7 @@ export default function RegisterPage() {
 
     try {
       await verifyOTP(email, otp, 'REGISTER')
-      setMessage('✅ Email verified! Account active.')
+      setMessage(' Email verified! Account active.')
       setTimeout(() => {
         router.push('/login?registered=true')
       }, 1500)
@@ -82,7 +82,7 @@ export default function RegisterPage() {
 
     try {
       await resendOTP(email, 'REGISTER')
-      setMessage('📧 New OTP sent successfully!')
+      setMessage(' New OTP sent successfully!')
     } catch (err: any) {
       setError(err.message || 'Failed to resend OTP')
       throw err
@@ -114,7 +114,7 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* ✅ Only ONE error display - HERE */}
+          {/*  Only ONE error display - HERE */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
               <p className="text-red-600 text-sm">
@@ -141,7 +141,7 @@ export default function RegisterPage() {
           {step === 'form' && (
             <RegistrationForm
               onSubmit={handleRegister}
-              // ✅ Don't pass error to child
+              // Don't pass error to child
               message={message}
             />
           )}

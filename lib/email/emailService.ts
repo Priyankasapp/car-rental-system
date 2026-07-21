@@ -3,18 +3,22 @@ import {
   generateWelcomeHTML, 
   generateWelcomeText,
   generateOtpHTML, 
-  generateOtpText 
+  generateOtpText,
+  generateBookingPendingHTML,
+  generateBookingPendingText,
+  type BookingEmailProps
 } from '@/lib/email/templates'
 import nodemailer from 'nodemailer'
 
 interface SendEmailParams {
   to: string
-  type: 'WELCOME' | 'OTP'
+  type: 'WELCOME' | 'OTP' | 'BOOKING_PENDING'
   data: {
     firstName?: string
     password?: string
     otp?: string
     purpose?: string
+    bookingDetails?: BookingEmailProps
   }
 }
 
@@ -100,8 +104,12 @@ export async function sendEmail({ to, type, data }: SendEmailParams): Promise<vo
     const customerName = data.firstName || 'Customer'
     html = generateOtpHTML({ customerName, otp: data.otp })
     text = generateOtpText({ customerName, otp: data.otp })
+  } else if (type === 'BOOKING_PENDING' && data.bookingDetails) {
+    subject = `Booking Request Received (#${data.bookingDetails.bookingId}) - UrbanDrive`
+    html = generateBookingPendingHTML(data.bookingDetails)
+    text = generateBookingPendingText(data.bookingDetails)
   } else {
-    throw new Error('Invalid email type or missing data')
+    throw new Error('Invalid email type or missing required parameters.')
   }
 
   console.log(`Sending ${type} email to ${to}`)
@@ -123,19 +131,19 @@ export async function sendEmail({ to, type, data }: SendEmailParams): Promise<vo
       text,
     })
 
-    console.log(`✅ Email sent successfully to ${to}`)
+    console.log(` Email sent successfully to ${to}`)
     
     // Log preview URL for Ethereal
     if (process.env.NODE_ENV === 'development') {
       const previewUrl = nodemailer.getTestMessageUrl(info)
       if (previewUrl) {
-        console.log(`📧 Preview URL: ${previewUrl}`)
+        console.log(` Preview URL: ${previewUrl}`)
       }
     }
     
     return info
   } catch (error) {
-    console.error(`❌ Failed to send email to ${to}:`, error)
+    console.error(` Failed to send email to ${to}:`, error)
     throw error
   }
 }
@@ -146,7 +154,7 @@ export async function sendWelcomeAndOtpEmails(
   temporaryPassword: string,
   otp: string
 ): Promise<void> {
-  console.log(`📧 Sending welcome and OTP emails to ${email}`)
+  console.log(` Sending welcome and OTP emails to ${email}`)
   
   try {
     // Send both emails in parallel
@@ -170,9 +178,9 @@ export async function sendWelcomeAndOtpEmails(
       }),
     ])
     
-    console.log(`✅ Welcome and OTP emails sent to ${email}`)
+    console.log(` Welcome and OTP emails sent to ${email}`)
   } catch (error) {
-    console.error(`❌ Failed to send emails to ${email}:`, error)
+    console.error(` Failed to send emails to ${email}:`, error)
     throw error
   }
 }

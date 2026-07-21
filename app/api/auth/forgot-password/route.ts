@@ -102,9 +102,9 @@ export async function POST(request: NextRequest) {
 
     //  Console mein OTP dikhega (Development only)
     if (process.env.NODE_ENV === 'development') {
-      console.log('📧 [DEV] Password Reset OTP:', {
+      console.log(' [DEV] Password Reset OTP:', {
         email,
-        otp,  // ✅ OTP yahan dikhega
+        otp, 
         purpose: 'PASSWORD_RESET',
         expiresAt,
       })
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log(`✅ Password reset OTP sent to ${email}`)
+    console.log(` Password reset OTP sent to ${email}`)
 
     //  Response mein OTP dikhega (Development only)
     return NextResponse.json({
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         
         ...(process.env.NODE_ENV === 'development' && {
           _debug: {
-            otp,  // ✅ Response mein OTP dikhega
+            otp,  //  Response mein OTP dikhega
           }
         }),
       },

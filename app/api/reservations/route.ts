@@ -2,6 +2,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { sendEmail } from '@/lib/email/emailService'
+
+// Helper to format JavaScript dates nicely for the email template
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date)
+}
 
 // GET: Get user's bookings
 export async function GET(request: NextRequest) {
@@ -130,7 +140,7 @@ export async function POST(request: NextRequest) {
     const tax = Math.round(totalBeforeTax * 0.12)
     const total = totalBeforeTax + tax
 
-    // ✅ Create reservation with PENDING status
+    //  Create reservation with PENDING status
     const reservation = await prisma.reservation.create({
       data: {
         reservationRef,
@@ -155,7 +165,7 @@ export async function POST(request: NextRequest) {
         subtotal: totalBeforeTax,
         tax,
         total,
-        status: 'PENDING', // ✅ Always PENDING
+        status: 'PENDING', //  Always PENDING
       },
       include: {
         car: {
@@ -170,18 +180,30 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // REMOVED: Car status update
-    // Car stays AVAILABLE until admin confirms
-    // await prisma.car.update({
-    //   where: { id: carId },
-    //   data: { status: 'RESERVED' },
-    // })
+    // Send "Booking Request Received" email to user
+    try {
+      const fullCarName = `${reservation.car.year} ${reservation.car.manufacturer} ${reservation.car.model}`.trim()
+      const formattedPickupDate = `${formatDate(reservation.pickupDate)} at ${reservation.pickupTime}`
+      const formattedDropoffDate = `${formatDate(reservation.dropoffDate)} at ${reservation.dropoffTime}`
 
-    // TODO: Send "Booking Request Received" email to user
-    // await sendBookingRequestEmail(reservation, customer)
-
-    // TODO: Send notification to admin
-    // await notifyAdminNewBooking(reservation)
+      await sendEmail({
+        to: reservation.customerEmail,
+        type: 'BOOKING_PENDING',
+        data: {
+          bookingDetails: {
+            customerName: reservation.customerName,
+            bookingId: reservation.reservationRef,
+            carName: fullCarName,
+            startDate: formattedPickupDate,
+            endDate: formattedDropoffDate,
+            pickupLocation: reservation.pickupLocation,
+            totalPrice: reservation.total.toLocaleString('en-IN'),
+          },
+        },
+      })
+    } catch (emailError) {
+      console.error(' Reservation created, but email notification failed:', emailError)
+    }
 
     return NextResponse.json({
       success: true,

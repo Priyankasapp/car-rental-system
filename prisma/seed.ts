@@ -336,21 +336,21 @@ async function main() {
       await prisma.car.create({
         data: carData,
       })
-      console.log(`✅ Car added: ${carData.manufacturer} ${carData.model}`)
+      console.log(` Car added: ${carData.manufacturer} ${carData.model}`)
       added++
     } else {
-      console.log(`ℹ️ Car already exists: ${carData.manufacturer} ${carData.model}`)
+      console.log(`ℹ Car already exists: ${carData.manufacturer} ${carData.model}`)
       skipped++
     }
   }
 
-  console.log('✅ Seeding complete!')
-  console.log(`📊 Summary: ${added} added, ${skipped} skipped, ${sampleCars.length} total`)
+  console.log(' Seeding complete!')
+  console.log(` Summary: ${added} added, ${skipped} skipped, ${sampleCars.length} total`)
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e)
+    console.error(' Seeding failed:', e)
     process.exit(1)
   })
   .finally(async () => {

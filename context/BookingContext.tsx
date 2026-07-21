@@ -5,9 +5,9 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 
-// ✅ Types - Add id field
+//  Types - Add id field and all booking fields
 export interface BookingItem {
-  id: string  // ✅ Add id field
+  id: string  
   carId: string
   carName: string
   carBrand: string
@@ -46,7 +46,7 @@ interface BookingContextType {
   error: string | null
   
   // Actions
-  createBooking: (bookingData: Partial<BookingItem>) => Promise<any>
+  createBooking: (bookingData: any) => Promise<any>
   getBookings: () => Promise<void>
   getBookingById: (id: string) => Promise<BookingItem | null>
   cancelBooking: (id: string) => Promise<void>
@@ -57,14 +57,14 @@ interface BookingContextType {
 const BookingContext = createContext<BookingContextType | undefined>(undefined)
 
 export function BookingProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth()  //  Remove user if not used
+  const { isAuthenticated } = useAuth()
   
   const [currentBooking, setCurrentBooking] = useState<BookingItem | null>(null)
   const [bookings, setBookings] = useState<BookingItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Clear booking on logout
+  //  Clear booking on logout
   useEffect(() => {
     if (!isAuthenticated) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -74,7 +74,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated])
 
   //  Create a new booking
-  const createBooking = useCallback(async (bookingData: Partial<BookingItem>) => {
+  const createBooking = useCallback(async (bookingData: any) => {
     setIsLoading(true)
     setError(null)
 

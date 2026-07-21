@@ -157,7 +157,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     setTransmissionOptions(transmissions)
   }, [selectedBrands, selectedTypes, selectedTransmissions])
 
-  // ✅ Fetch cars from API with optional filters
+  //  Fetch cars from API with optional filters
   const fetchCars = useCallback(async (filters?: { category?: string; city?: string; search?: string }) => {
     try {
       setIsLoading(true)
@@ -165,7 +165,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       
       // Build query params
       const params = new URLSearchParams()
-      params.append('limit', '100')  // ✅ Increased limit to 100
+      params.append('limit', '100')  
       
       if (filters?.category) params.append('category', filters.category)
       if (filters?.city) params.append('city', filters.city)
@@ -213,7 +213,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     }
   }, [favorites, extractFilterOptions])
 
-  // ✅ Apply filters to existing cars (without re-fetching)
+  //  Apply filters to existing cars (without re-fetching)
   const applyFilters = useCallback((filters: { category?: string; city?: string; search?: string; minPrice?: number; maxPrice?: number }) => {
     let filtered = [...cars]
     
@@ -425,7 +425,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     typeOptions,
     transmissionOptions,
     fetchCars,
-    applyFilters,  // ✅ Added applyFilters
+    applyFilters,  
     toggleBrand,
     toggleType,
     toggleTransmission,

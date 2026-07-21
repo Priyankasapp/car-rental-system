@@ -16,7 +16,7 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
   const { toggleFavorite, isFavorite } = useCars()
   const isFav = isFavorite(car.id)
   
-  // ✅ CONSOLE LOG 1: Check if car data is received
+  //  CONSOLE LOG 1: Check if car data is received
   console.log('🚗 FleetCarCard received car:', {
     id: car.id,
     name: car.name,
@@ -28,10 +28,10 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
     specs: car.specs
   })
 
-  // ✅ CONSOLE LOG 2: Check if car has all required fields
+  //  CONSOLE LOG 2: Check if car has all required fields
   useEffect(() => {
     if (!car) {
-      console.error('❌ FleetCarCard: No car data received!')
+      console.error(' FleetCarCard: No car data received!')
       return
     }
 
@@ -39,16 +39,16 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
     const missingFields = requiredFields.filter(field => !car[field as keyof FleetCar])
     
     if (missingFields.length > 0) {
-      console.warn('⚠️ FleetCarCard: Missing fields:', missingFields, car)
+      console.warn(' FleetCarCard: Missing fields:', missingFields, car)
     } else {
-      console.log('✅ FleetCarCard: All required fields present')
+      console.log(' FleetCarCard: All required fields present')
     }
   }, [car])
   
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    console.log('❤️ Toggle favorite for car:', car.id, car.name)
+    console.log(' Toggle favorite for car:', car.id, car.name)
     toggleFavorite(car.id)
   }
 
@@ -64,8 +64,8 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
     'new-arrival': 'New Style'
   }
 
-  // ✅ CONSOLE LOG 3: Check status
-  console.log('🏷️ Car status:', car.status, '→', statusLabels[car.status] || 'Unknown')
+  //  CONSOLE LOG 3: Check status
+  console.log(' Car status:', car.status, '→', statusLabels[car.status] || 'Unknown')
 
   return (
     <Link 

@@ -37,7 +37,7 @@ export default function AuthTestPage() {
     
     try {
       await verifyOTP(email, otp, 'LOGIN')
-      setMessage('✅ Login successful!')
+      setMessage(' Login successful!')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message)
@@ -56,7 +56,7 @@ export default function AuthTestPage() {
       
       {/* Status */}
       <div className="bg-gray-50 p-4 rounded-lg mb-4">
-        <p><strong>Status:</strong> {isAuthenticated ? '✅ Logged In' : '❌ Not Logged In'}</p>
+        <p><strong>Status:</strong> {isAuthenticated ? ' Logged In' : ' Not Logged In'}</p>
         {user && (
           <>
             <p><strong>Name:</strong> {user.firstName} {user.lastName}</p>

@@ -111,12 +111,12 @@ export function generateOtpText({
 }: OtpEmailProps): string {
   const currentYear = new Date().getFullYear();
 
-  // ✅ Updated keys to match database
+  // Updated keys to match database
   const purposeMessages = {
     REGISTER: 'to verify your email address and complete your registration',
     LOGIN: 'to securely log in to your account',
-    PASSWORD_RESET: 'to reset your password',  // ✅ Changed
-    EMAIL_VERIFICATION: 'for two-factor authentication',  // ✅ Changed
+    PASSWORD_RESET: 'to reset your password', 
+    EMAIL_VERIFICATION: 'for two-factor authentication',  
   };
 
   const purposeMessage = purposeMessages[purpose] || purposeMessages.REGISTER;

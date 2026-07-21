@@ -95,7 +95,7 @@ export interface ApiCar {
   totalReviews?: number
 }
 
-// ✅ Fixed Helper function to convert API car to FleetCar
+//  Fixed Helper function to convert API car to FleetCar
 export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
   const statusMap: Record<string, 'available' | 'reserved' | 'new-arrival'> = {
     'AVAILABLE': 'available',
@@ -104,7 +104,7 @@ export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
     'MAINTENANCE': 'reserved'
   }
 
-  // ✅ Return single object with all properties (no duplicates)
+  //  Return single object with all properties (no duplicates)
   return {
     id: apiCar.id,
     name: `${apiCar.manufacturer} ${apiCar.model}`,

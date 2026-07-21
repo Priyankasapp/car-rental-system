@@ -312,7 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // ✅ FIXED: resetPassword function - Simple validation
+  //  FIXED: resetPassword function - Simple validation
   const resetPassword = useCallback(async (resetData: ResetPasswordData) => {
     setError(null)
     
@@ -330,13 +330,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error
     }
     
-    // ✅ Check each requirement individually (allow ALL special characters)
+    //  Check each requirement individually (allow ALL special characters)
     const hasUpperCase = /[A-Z]/.test(resetData.newPassword)
     const hasLowerCase = /[a-z]/.test(resetData.newPassword)
     const hasNumber = /[0-9]/.test(resetData.newPassword)
     const hasSpecial = /[^A-Za-z0-9]/.test(resetData.newPassword)
     
-    // ✅ Build specific error message
+    //  Build specific error message
     if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecial) {
       let errorMsg = 'Password must contain:'
       if (!hasUpperCase) errorMsg += ' uppercase,'
@@ -351,7 +351,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
-      // ✅ Use verifyOTP with PASSWORD_RESET purpose
+      //  Use verifyOTP with PASSWORD_RESET purpose
       const result = await verifyOTP(
         resetData.email, 
         resetData.otp, 

@@ -107,9 +107,9 @@ export async function POST(request: NextRequest) {
         plainPassword,
         otp
       )
-      console.log(`✅ Welcome and OTP emails sent to ${email}`)
+      console.log(`Welcome and OTP emails sent to ${email}`)
     } catch (emailError) {
-      console.error('❌ Failed to send emails:', emailError)
+      console.error(' Failed to send emails:', emailError)
       emailErrors.push(emailError)
       
       // Don't fail the registration if email fails, but log it

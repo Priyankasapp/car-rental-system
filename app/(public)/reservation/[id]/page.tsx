@@ -116,13 +116,15 @@ export default function ReservationPage() {
       }
 
       //  Create booking using context
-      await createBooking(bookingData)
+      const result = await createBooking(bookingData)
 
-      setSuccessMessage(' Reservation confirmed! Redirecting...')
+      //  Show success message with booking reference
+      const bookingRef = result?.reservationRef || result?.id || ''
+      setSuccessMessage(` Booking request submitted! Reference: ${bookingRef}. Waiting for admin confirmation.`)
       
       setTimeout(() => {
         router.push('/bookings')
-      }, 2000)
+      }, 3000)
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create reservation')
     } finally {
@@ -410,7 +412,7 @@ export default function ReservationPage() {
               </button>
 
               <p className="text-xs text-gray-500 text-center">
-                You won&apos;t be charged yet. Payment will be collected at pickup.
+                You wont be charged yet. Payment will be collected at pickup.
               </p>
             </div>
           </div>

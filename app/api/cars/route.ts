@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       data: {
         cars,
         count: cars.length,
-        total: cars.length,  // ✅ ADD THIS
+        total: cars.length, 
       },
     })
   } catch (error) {
