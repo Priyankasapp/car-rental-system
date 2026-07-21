@@ -50,6 +50,39 @@ export interface AdminBooking {
   updatedAt: string
 }
 
+export interface AdminCar {
+  id: string
+  manufacturer: string
+  model: string
+  year: number
+  category: string
+  licensePlate: string
+  color: string | null
+  transmission: string
+  fuelType: string
+  seats: number
+  luggageCapacity: number
+  features: string[]
+  pricePerDay: number
+  pricePerWeek: number | null
+  pricePerMonth: number | null
+  securityDeposit: number
+  mileageFree: number | null
+  mileageExtraFee: number | null
+  locationAddress: string
+  locationCity: string
+  locationState: string
+  locationZipCode: string
+  locationLat: number | null
+  locationLng: number | null
+  imageMain: string
+  imageGallery: string[]
+  status: 'AVAILABLE' | 'RESERVED' | 'UNAVAILABLE' | 'MAINTENANCE'
+  isDeleted: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export interface AdminStats {
   totalUsers: number
   totalCars: number
@@ -69,13 +102,16 @@ interface BookingFilters {
 }
 
 interface AdminContextType {
-  // State
+  // State - Bookings
   bookings: AdminBooking[]
   currentBooking: AdminBooking | null
   stats: AdminStats | null
   isLoading: boolean
   error: string | null
   filters: BookingFilters
+  
+  // State - Cars
+  cars: AdminCar[]
   
   // Actions - Bookings
   fetchBookings: (filters?: BookingFilters) => Promise<void>
@@ -85,6 +121,12 @@ interface AdminContextType {
   
   // Actions - Stats
   fetchStats: () => Promise<void>
+  
+  // Actions - Cars
+  fetchCars: () => Promise<void>
+  addCar: (carData: any) => Promise<any>
+  updateCar: (id: string, carData: any) => Promise<any>
+  deleteCar: (id: string) => Promise<void>
   
   // Actions - Filters
   setFilters: (filters: BookingFilters) => void
@@ -97,15 +139,20 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
-  const hasInitialized = useRef(false)  
+  const hasInitialized = useRef(false)
   
-  // ============== STATE ==============
+  // ============== STATE - BOOKINGS ==============
   const [bookings, setBookings] = useState<AdminBooking[]>([])
   const [currentBooking, setCurrentBooking] = useState<AdminBooking | null>(null)
   const [stats, setStats] = useState<AdminStats | null>(null)
+  const [filters, setFiltersState] = useState<BookingFilters>({})
+
+  // ============== STATE - CARS ==============
+  const [cars, setCars] = useState<AdminCar[]>([])
+
+  // ============== STATE - UI ==============
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFiltersState] = useState<BookingFilters>({})
 
   // ============== CHECK ADMIN ACCESS ==============
   const isAdmin = user?.role === 'SUPERADMIN' || user?.role === 'ADMIN'
@@ -275,6 +322,125 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAdmin])
 
+  // ============== FETCH CARS ==============
+  const fetchCars = useCallback(async () => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/cars')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch cars')
+      }
+
+      setCars(data.data.cars)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== ADD CAR ==============
+  const addCar = useCallback(async (carData: any) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/cars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(carData),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add car')
+      }
+
+      setCars(prev => [...prev, data.data.car])
+      return data.data.car
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== UPDATE CAR ==============
+  const updateCar = useCallback(async (id: string, carData: any) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/cars/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(carData),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update car')
+      }
+
+      setCars(prev => prev.map(c => c.id === id ? data.data.car : c))
+      return data.data.car
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== DELETE CAR ==============
+  const deleteCar = useCallback(async (id: string) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/cars/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete car')
+      }
+
+      setCars(prev => prev.filter(c => c.id !== id))
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
   // ============== FILTERS ==============
   const setFilters = useCallback((newFilters: BookingFilters) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }))
@@ -285,18 +451,19 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     fetchBookings({})
   }, [fetchBookings])
 
-  // ============== INITIAL LOAD - FIXED ==============
+  // ============== INITIAL LOAD ==============
   useEffect(() => {
-    // Only run once when admin is available
     if (isAdmin && !hasInitialized.current) {
       hasInitialized.current = true
       fetchBookings()
       fetchStats()
+      fetchCars()  // ✅ Fetch cars on initial load
     }
-  }, [isAdmin, fetchBookings, fetchStats])
+  }, [isAdmin, fetchBookings, fetchStats, fetchCars])
 
   // ============== CONTEXT VALUE ==============
   const value = useMemo(() => ({
+    // Bookings
     bookings,
     currentBooking,
     stats,
@@ -310,6 +477,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     fetchStats,
     setFilters,
     clearFilters,
+    // Cars
+    cars,
+    fetchCars,
+    addCar,
+    updateCar,
+    deleteCar,
   }), [
     bookings,
     currentBooking,
@@ -324,6 +497,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     fetchStats,
     setFilters,
     clearFilters,
+    cars,
+    fetchCars,
+    addCar,
+    updateCar,
+    deleteCar,
   ])
 
   return (
