@@ -1,17 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/(public)/reservation/[id]/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCars } from '@/context/CarContext'
 import { useAuth } from '@/context/AuthContext'
+import { useBooking } from '@/context/BookingContext'
 
 export default function ReservationPage() {
   const params = useParams()
   const router = useRouter()
   const { cars, isLoading } = useCars()
   const { user } = useAuth()
+  const { createBooking, isLoading: bookingLoading } = useBooking()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
@@ -37,6 +40,16 @@ export default function ReservationPage() {
   // --- Find Car ---
   const car = cars.find((c) => c.id === params?.id)
 
+  //  Pre-fill user info if logged in
+  useEffect(() => {
+    if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFullName(`${user.firstName} ${user.lastName}`)
+      setEmail(user.email)
+      setPhone(user.phone || '')
+    }
+  }, [user])
+
   // --- Calculations ---
   const rentalDays = (() => {
     if (!pickupDate || !returnDate) return 1
@@ -51,10 +64,10 @@ export default function ReservationPage() {
   const baseRate = dailyRate * rentalDays
   const addOns = (hasChauffeur ? 100 * rentalDays : 0) + (hasDelivery ? 150 : 0) + (hasSatellite ? 45 * rentalDays : 0)
   const subtotal = baseRate + addOns
-  const tax = subtotal * 0.12
+  const tax = Math.round(subtotal * 0.12)
   const total = subtotal + tax
 
-  // --- Handle Submit ---
+  // --- Handle Submit with BookingContext ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -68,12 +81,53 @@ export default function ReservationPage() {
     setErrorMessage('')
     setSuccessMessage('')
 
-    // Simulate API call
-    setTimeout(() => {
-      setSuccessMessage('✅ Reservation confirmed! Redirecting...')
+    try {
+      //  Prepare booking data
+      const bookingData = {
+        carId: car?.id,
+        customer: {
+          name: fullName,
+          email: email,
+          phone: phone,
+        },
+        pickup: {
+          location: pickupLocation,
+          date: pickupDate,
+          time: pickupTime || '10:00',
+        },
+        dropoff: {
+          location: pickupLocation,
+          date: returnDate,
+          time: '10:00',
+        },
+        chauffeur: hasChauffeur,
+        enhancements: {
+          conciergeDelivery: hasDelivery,
+          platinumInsurance: hasInsurance,
+          satelliteConnectivity: hasSatellite,
+        },
+        pricing: {
+          dailyRate: dailyRate,
+          rentalDays: rentalDays,
+          subtotal: subtotal,
+          tax: tax,
+          total: total,
+        },
+      }
+
+      //  Create booking using context
+      await createBooking(bookingData)
+
+      setSuccessMessage(' Reservation confirmed! Redirecting...')
+      
+      setTimeout(() => {
+        router.push('/bookings')
+      }, 2000)
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to create reservation')
+    } finally {
       setIsSubmitting(false)
-      setTimeout(() => router.push('/bookings'), 2000)
-    }, 1500)
+    }
   }
 
   // --- Loading State ---
@@ -116,10 +170,10 @@ export default function ReservationPage() {
               <button
                 type="submit"
                 form="reservation-form"
-                disabled={isSubmitting}
+                disabled={isSubmitting || bookingLoading}
                 className="px-6 py-2 text-sm font-semibold text-white bg-black rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
               >
-                {isSubmitting ? 'Processing...' : 'Confirm Booking'}
+                {isSubmitting || bookingLoading ? 'Processing...' : 'Confirm Booking'}
               </button>
             </div>
           </div>
@@ -131,7 +185,7 @@ export default function ReservationPage() {
         {!user && (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between">
             <p className="text-sm text-yellow-800">
-              ⚠️ You are booking as a guest. Please{' '}
+               You are booking as a guest. Please{' '}
               <Link href={`/login?redirect=/reservation/${params?.id}`} className="font-semibold underline">
                 sign in
               </Link>{' '}
@@ -165,10 +219,10 @@ export default function ReservationPage() {
                   <p className="text-sm text-gray-500">{car.year} • {car.category}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full">
-                      🚗 {car.transmission}
+                      {car.transmission}
                     </span>
                     <span className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full">
-                      👤 {car.seats} Seats
+                      {car.seats} Seats
                     </span>
                   </div>
                 </div>
@@ -197,6 +251,7 @@ export default function ReservationPage() {
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="John Doe"
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                      disabled={!!user}
                     />
                   </div>
                   <div>
@@ -208,6 +263,7 @@ export default function ReservationPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="john@example.com"
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                      disabled={!!user}
                     />
                   </div>
                   <div>
@@ -219,6 +275,7 @@ export default function ReservationPage() {
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+91 98765 43210"
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                      disabled={!!user}
                     />
                   </div>
                 </div>
@@ -346,10 +403,10 @@ export default function ReservationPage() {
               <button
                 type="submit"
                 form="reservation-form"
-                disabled={isSubmitting}
+                disabled={isSubmitting || bookingLoading}
                 className="w-full py-3.5 bg-black text-white font-semibold rounded-xl hover:bg-gray-800 transition disabled:opacity-50"
               >
-                {isSubmitting ? 'Processing...' : 'Confirm Booking'}
+                {isSubmitting || bookingLoading ? 'Processing...' : 'Confirm Booking'}
               </button>
 
               <p className="text-xs text-gray-500 text-center">

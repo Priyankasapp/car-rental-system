@@ -12,6 +12,8 @@ const publicRoutes = [
   '/api/health',
   '/api/cars',
   '/api/cars/',
+  '/api/reservations',
+   '/api/reservations/',
 ]
 
 // Admin-only routes

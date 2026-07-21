@@ -1,9 +1,11 @@
+/* eslint-disable @next/next/no-page-custom-font */
 // app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CarProvider } from "@/context/CarContext";
+import { BookingProvider } from "@/context/BookingContext"; // ✅ Add this
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +34,7 @@ export default function RootLayout({
     <html 
       lang="en" 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
-        data-scroll-behavior="smooth" 
+      data-scroll-behavior="smooth" 
     >
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
@@ -41,7 +43,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background">
         <AuthProvider>
           <CarProvider>
-            {children}
+            <BookingProvider>  {/* ✅ Add BookingProvider here */}
+              {children}
+            </BookingProvider>
           </CarProvider>
         </AuthProvider>
       </body>
