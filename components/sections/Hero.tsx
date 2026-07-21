@@ -1,9 +1,7 @@
-
-
-
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import gsap from 'gsap'
 import Icon from '@/components/ui/Icon'
 import GlassCard from '@/components/ui/GlassCard'
@@ -11,8 +9,13 @@ import Input from '@/components/ui/Input'
 import { Button } from '../ui/Button'
 
 export default function Hero() {
+  const router = useRouter()
   const heroRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
+  
+  // ✅ State for search
+  const [location, setLocation] = useState('')
+  const [dates, setDates] = useState('')
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -26,6 +29,19 @@ export default function Hero() {
     return () => ctx.revert()
   }, [])
 
+  // ✅ Handle Search
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Build query params
+    const params = new URLSearchParams()
+    if (location) params.append('location', location)
+    if (dates) params.append('dates', dates)
+    
+    // ✅ Redirect to fleet page with filters
+    router.push(`/fleet?${params.toString()}`)
+  }
+
   return (
     <section ref={heroRef} className="relative h-screen min-h-[760px] flex items-center justify-center overflow-hidden">
       
@@ -37,7 +53,6 @@ export default function Hero() {
             backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCCtIICYk2IRYUA2e1YGnutDYyJF3C56bS3zh7xwMs2Jb7271j0sLB2rCyNxZgEh58Ml_7hZtJZy318Y6SZqm3Ou-xlMyFYFjIJDCW9O2o8q7PugJ7McPxP3lMyJOxDJzyWOT4FGmjS6T7XIvc43yRHy0RkrSyII8AlJ4WUh_qhl_fmMcowthZR6nFJ4JVTriq4JRLrIQDOe0BbXUBM_r-g4u5RNJGTVD5WcycChM_GCWZ57PZa1bbYY686I4XandEWQ8fQrI9R9agC')`
           }}
         />
-        {/* Darkening tint to make sure text is perfectly readable */}
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
@@ -51,26 +66,35 @@ export default function Hero() {
             Experience the pinnacle of automotive engineering with our curated fleet of ultra-luxury vehicles. Designed for those who demand precision and prestige.
           </p>
 
-          {/* Glassmorphism Search Control */}
-          <GlassCard className="p-2 flex flex-col md:flex-row items-center gap-2 max-w-3xl bg-white/15 backdrop-blur-md rounded-xl border border-white/20">
-            <div className="flex-1 w-full px-4 py-2 flex items-center gap-3 border-b md:border-b-0 md:border-r border-white/20">
-              <Icon name="location_on" className="text-white/70" />
-              <Input 
-                placeholder="Pickup Location" 
-                className="border-none bg-transparent text-white placeholder:text-white/50 focus:ring-0 w-full outline-none"
-              />
-            </div>
-            <div className="flex-1 w-full px-4 py-2 flex items-center gap-3">
-              <Icon name="calendar_today" className="text-white/70" />
-              <Input 
-                placeholder="Dates" 
-                className="border-none bg-transparent text-white placeholder:text-white/50 focus:ring-0 w-full outline-none"
-              />
-            </div>
-            <Button className="w-full md:w-auto bg-white text-black font-semibold px-10 py-4 rounded-lg hover:bg-white/90 transition-colors">
-              Search
-            </Button>
-          </GlassCard>
+          {/* ✅ Search Form */}
+          <form onSubmit={handleSearch}>
+            <GlassCard className="p-2 flex flex-col md:flex-row items-center gap-2 max-w-3xl bg-white/15 backdrop-blur-md rounded-xl border border-white/20">
+              <div className="flex-1 w-full px-4 py-2 flex items-center gap-3 border-b md:border-b-0 md:border-r border-white/20">
+                <Icon name="location_on" className="text-white/70" />
+                <Input 
+                  placeholder="Pickup Location" 
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="border-none bg-transparent text-white placeholder:text-white/50 focus:ring-0 w-full outline-none"
+                />
+              </div>
+              <div className="flex-1 w-full px-4 py-2 flex items-center gap-3">
+                <Icon name="calendar_today" className="text-white/70" />
+                <Input 
+                  placeholder="Dates" 
+                  value={dates}
+                  onChange={(e) => setDates(e.target.value)}
+                  className="border-none bg-transparent text-white placeholder:text-white/50 focus:ring-0 w-full outline-none"
+                />
+              </div>
+              <Button 
+                type="submit"
+                className="w-full md:w-auto bg-white text-black font-semibold px-10 py-4 rounded-lg hover:bg-white/90 transition-colors"
+              >
+                Search
+              </Button>
+            </GlassCard>
+          </form>
         </div>
       </div>
     </section>
