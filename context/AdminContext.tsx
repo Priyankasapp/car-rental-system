@@ -83,6 +83,25 @@ export interface AdminCar {
   updatedAt: string
 }
 
+export interface AdminUser {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  phone: string | null
+  role: string
+  isEmailVerified: boolean
+  isActive: boolean
+  profilePicture: string | null
+  createdAt: string
+  updatedAt: string
+  _count: {
+    reservations: number
+    sessions: number
+    emailLogs: number
+  }
+}
+
 export interface AdminStats {
   totalUsers: number
   totalCars: number
@@ -113,6 +132,9 @@ interface AdminContextType {
   // State - Cars
   cars: AdminCar[]
   
+  // State - Users
+  users: AdminUser[]
+  
   // Actions - Bookings
   fetchBookings: (filters?: BookingFilters) => Promise<void>
   fetchBookingById: (id: string) => Promise<void>
@@ -127,6 +149,12 @@ interface AdminContextType {
   addCar: (carData: any) => Promise<any>
   updateCar: (id: string, carData: any) => Promise<any>
   deleteCar: (id: string) => Promise<void>
+  
+  // Actions - Users
+  fetchUsers: () => Promise<void>
+  addUser: (userData: any) => Promise<any>
+  updateUser: (id: string, userData: any) => Promise<any>
+  deleteUser: (id: string) => Promise<void>
   
   // Actions - Filters
   setFilters: (filters: BookingFilters) => void
@@ -149,6 +177,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   // ============== STATE - CARS ==============
   const [cars, setCars] = useState<AdminCar[]>([])
+
+  // ============== STATE - USERS ==============
+  const [users, setUsers] = useState<AdminUser[]>([])
 
   // ============== STATE - UI ==============
   const [isLoading, setIsLoading] = useState(false)
@@ -441,6 +472,125 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAdmin])
 
+  // ============== FETCH USERS ==============
+  const fetchUsers = useCallback(async () => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/users')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch users')
+      }
+
+      setUsers(data.data.users)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== ADD USER ==============
+  const addUser = useCallback(async (userData: any) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add user')
+      }
+
+      setUsers(prev => [...prev, data.data.user])
+      return data.data.user
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== UPDATE USER ==============
+  const updateUser = useCallback(async (id: string, userData: any) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update user')
+      }
+
+      setUsers(prev => prev.map(u => u.id === id ? data.data.user : u))
+      return data.data.user
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== DELETE USER ==============
+  const deleteUser = useCallback(async (id: string) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete user')
+      }
+
+      setUsers(prev => prev.filter(u => u.id !== id))
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
   // ============== FILTERS ==============
   const setFilters = useCallback((newFilters: BookingFilters) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }))
@@ -457,9 +607,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       hasInitialized.current = true
       fetchBookings()
       fetchStats()
-      fetchCars()  // ✅ Fetch cars on initial load
+      fetchCars()
+      fetchUsers()  // ✅ Fetch users on initial load
     }
-  }, [isAdmin, fetchBookings, fetchStats, fetchCars])
+  }, [isAdmin, fetchBookings, fetchStats, fetchCars, fetchUsers])
 
   // ============== CONTEXT VALUE ==============
   const value = useMemo(() => ({
@@ -483,6 +634,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     addCar,
     updateCar,
     deleteCar,
+    // Users
+    users,
+    fetchUsers,
+    addUser,
+    updateUser,
+    deleteUser,
   }), [
     bookings,
     currentBooking,
@@ -502,6 +659,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     addCar,
     updateCar,
     deleteCar,
+    users,
+    fetchUsers,
+    addUser,
+    updateUser,
+    deleteUser,
   ])
 
   return (
