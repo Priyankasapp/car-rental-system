@@ -1,4 +1,3 @@
-// app/(public)/fleet/page.tsx
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -6,12 +5,21 @@ import { useSearchParams } from 'next/navigation'
 import { useCars } from '@/context/CarContext'
 
 import FleetHero from '@/components/sections/FleetHero'
-import FleetSidebar, { FleetFiltersState } from '@/components/fleet/FleetSidebar'
+import FleetSidebar from '@/components/fleet/FleetSidebar'
 import FleetGrid from '@/components/fleet/FleetGrid'
 import { fleetData } from '@/data/fleet'
 import { FleetFilterOption } from '@/types/fleet'
 
-//  Define filter type
+// Add this interface definition
+interface FleetFiltersState {
+  priceMin?: number
+  priceMax?: number
+  vehicleTypes?: string[]
+  brand?: string
+  transmission?: string
+  searchQuery?: string
+}
+
 interface FilterParams {
   category?: string
   city?: string
@@ -23,10 +31,9 @@ interface FilterParams {
 export default function FleetPage() {
   const searchParams = useSearchParams()
   
-  //  Use CarContext
   const { 
     filteredCars, 
-    isLoading, 
+    isLoading,
     error, 
     fetchCars, 
     applyFilters,
@@ -37,7 +44,7 @@ export default function FleetPage() {
   const { hero } = fleetData
   const [isFiltering, setIsFiltering] = useState(false)
 
-  //  Load cars on mount with URL filters
+  // Load cars on mount with URL filters
   useEffect(() => {
     const filters: FilterParams = {}
     const category = searchParams.get('category')
@@ -49,13 +56,13 @@ export default function FleetPage() {
     if (category) filters.category = category
     if (city) filters.city = city
     if (search) filters.search = search
-    if (minPrice) filters.minPrice = parseInt(minPrice)
-    if (maxPrice) filters.maxPrice = parseInt(maxPrice)
+    if (minPrice) filters.minPrice = parseInt(minPrice, 10)
+    if (maxPrice) filters.maxPrice = parseInt(maxPrice, 10)
     
     fetchCars(filters)
   }, [fetchCars, searchParams])
 
-  //  Handle filter changes from sidebar
+  // Handle filter changes from sidebar
   const handleFilterChange = useCallback((newFilters: FleetFiltersState) => {
     setIsFiltering(true)
     
@@ -78,7 +85,7 @@ export default function FleetPage() {
     setIsFiltering(false)
   }, [applyFilters])
 
-  //  Convert typeOptions to FleetFilterOption[] format
+  // Convert typeOptions to FleetFilterOption[] format
   const vehicleTypes: FleetFilterOption[] = typeOptions.map(opt => ({
     id: opt.id,
     label: opt.label,
@@ -86,7 +93,7 @@ export default function FleetPage() {
     checked: opt.checked || false
   }))
 
-  //  Get unique brands from cars
+  // Get unique brands from cars
   const brands: FleetFilterOption[] = [...new Set(filteredCars.map(car => car.brand))].map(brand => ({
     id: brand.toLowerCase().replace(/\s+/g, '-'),
     label: brand,
@@ -94,7 +101,7 @@ export default function FleetPage() {
     checked: false
   }))
 
-  //  Get unique transmissions
+  // Get unique transmissions
   const transmissions: FleetFilterOption[] = [...new Set(filteredCars.map(car => car.specs.transmission))].map(trans => ({
     id: trans.toLowerCase().replace(/\s+/g, '-'),
     label: trans,
@@ -102,7 +109,6 @@ export default function FleetPage() {
     checked: false
   }))
 
-  //  totalVehicles as number
   const totalVehicles = filteredCars.length
 
   return (
@@ -116,25 +122,29 @@ export default function FleetPage() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-6">
-           {error}
+          {error}
         </div>
       )}
 
-      <div className="flex gap-12">
-        <FleetSidebar
-          priceRange={priceRange}
-          vehicleTypes={vehicleTypes}
-          brands={brands}
-          transmissions={transmissions}
-          onFilterChange={handleFilterChange}
-          // loading={isLoading || isFiltering}
-        />
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
+        <div className="lg:sticky lg:top-24 lg:self-start lg:w-72 shrink-0">
+          <FleetSidebar
+            priceRange={priceRange}
+            vehicleTypes={vehicleTypes}
+            brands={brands}
+            transmissions={transmissions}
+            onFilterChange={handleFilterChange}
+            loading={isLoading || isFiltering}
+          />
+        </div>
 
-        <FleetGrid
-          cars={filteredCars}
-          totalVehicles={filteredCars.length}
-          onLoadMore={() => console.log('Load more clicked')}
-        />
+        <div className="flex-1 min-w-0">
+          <FleetGrid
+            cars={filteredCars}
+            totalVehicles={filteredCars.length}
+            onLoadMore={() => console.log('Load more clicked')}
+          />
+        </div>
       </div>
     </main>
   )
