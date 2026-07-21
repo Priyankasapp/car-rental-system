@@ -1,5 +1,7 @@
 // types/fleet.ts
 
+
+
 // Your existing types
 export interface FleetFilter {
   id: string
@@ -20,7 +22,7 @@ export interface FleetFilterOption {
 export interface FleetCar {
   id: string
   name: string
-  model?: string
+  model: string
   brand: string
   category: string
   price: number
@@ -31,6 +33,12 @@ export interface FleetCar {
   }
   status: 'available' | 'reserved' | 'new-arrival'
   favorite?: boolean
+  // Additional fields for display
+  year?: number
+  manufacturer?: string
+  seats?: number
+  transmission?: string
+  location?: string
 }
 
 export interface FleetData {
@@ -87,7 +95,7 @@ export interface ApiCar {
   totalReviews?: number
 }
 
-// Helper function to convert API car to FleetCar
+// ✅ Fixed Helper function to convert API car to FleetCar
 export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
   const statusMap: Record<string, 'available' | 'reserved' | 'new-arrival'> = {
     'AVAILABLE': 'available',
@@ -96,19 +104,26 @@ export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
     'MAINTENANCE': 'reserved'
   }
 
+  // ✅ Return single object with all properties (no duplicates)
   return {
     id: apiCar.id,
     name: `${apiCar.manufacturer} ${apiCar.model}`,
     model: apiCar.model,
     brand: apiCar.manufacturer,
     category: apiCar.category,
-    price: apiCar.pricePerDay / 100, // Convert cents to dollars
+    price: apiCar.pricePerDay, // Keep as is (in rupees)
     image: apiCar.imageMain,
     specs: {
       power: `${apiCar.seats} Seats`,
       transmission: apiCar.transmission,
     },
     status: statusMap[apiCar.status] || 'available',
-    favorite: apiCar.isFavorite || false
+    favorite: apiCar.isFavorite || false,
+    // Optional fields for display
+    year: apiCar.year,
+    manufacturer: apiCar.manufacturer,
+    seats: apiCar.seats,
+    transmission: apiCar.transmission,
+    location: apiCar.locationCity,
   }
 }

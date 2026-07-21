@@ -1,81 +1,453 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to UrbanDrive</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Porsche Taycan Turbo S | UrbanDrive</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "accent-success": "#22C55E",
+                        "surface": "#F8F8F8",
+                        "surface-container-high": "#e8e8e8",
+                        "background": "#f9f9f9",
+                        "text-secondary": "#666666",
+                        "surface-tint": "#5e5e5e",
+                        "inverse-on-surface": "#f1f1f1",
+                        "border": "#E5E5E5",
+                        "on-background": "#1b1b1b",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "surface-bright": "#f9f9f9",
+                        "on-secondary-container": "#616363",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e2e2e2",
+                        "primary-container": "#1b1b1b",
+                        "glass-fill": "rgba(255, 255, 255, 0.7)",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "surface-container-low": "#f3f3f3",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#1b1b1b",
+                        "outline-variant": "#cfc4c5",
+                        "on-surface-variant": "#4c4546",
+                        "secondary": "#5d5f5f",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "surface-container": "#eeeeee",
+                        "primary": "#000000",
+                        "inverse-surface": "#303030",
+                        "on-primary-container": "#848484",
+                        "inverse-primary": "#c6c6c6",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "tertiary": "#000000",
+                        "secondary-container": "#dfe0e0",
+                        "on-primary-fixed-variant": "#474747",
+                        "tertiary-fixed": "#e2e2e2",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-secondary-fixed-variant": "#454747",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-dim": "#dadada",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#e2e2e2",
+                        "on-error": "#ffffff",
+                        "on-surface": "#1b1b1b",
+                        "outline": "#7e7576",
+                        "on-tertiary-container": "#848484",
+                        "text-primary": "#111111",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#1b1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "margin-mobile": "20px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "display-lg": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9f9f9; color: #111111; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .executive-shadow { box-shadow: 0px 10px 40px rgba(0,0,0,0.04); }
+        .glass-nav { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-[#F8F8F8] text-[#000000] p-4 md:p-8">
-    <div class="max-w-2xl mx-auto bg-white border border-gray-100 shadow-sm overflow-hidden rounded-2xl">
-        <!-- Header -->
-        <div class="bg-black py-12 text-center">
-            <h1 class="text-white text-2xl font-bold tracking-[0.2em] uppercase">UrbanDrive</h1>
-            <p class="text-gray-400 text-xs mt-2 tracking-widest uppercase">Precision in Motion</p>
-        </div>
-
-        <!-- Hero Content -->
-        <div class="p-8 md:p-12">
-            <h2 class="text-3xl font-semibold mb-6">The Keys are Yours.</h2>
-            <p class="text-gray-600 leading-relaxed mb-8">
-                Welcome to UrbanDrive. You are now part of an elite collective of enthusiasts with access to the world's most exclusive automotive fleet. From high-performance electric sprints to timeless vintage icons, your next extraordinary journey begins here.
-            </p>
-
-            <!-- Credentials Box -->
-            <div class="bg-[#F3F3F3] rounded-xl p-8 mb-8 border border-gray-200">
-                <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-4 font-bold">Your Executive Credentials</p>
+<body class="antialiased">
+<!-- TopAppBar (Shared Component Desktop) -->
+<header class="fixed top-0 w-full z-50 bg-glass-fill backdrop-blur-md transition-all duration-300">
+<div class="max-w-[1440px] mx-auto flex justify-between items-center px-margin-desktop py-5">
+<div class="flex items-center gap-8">
+<img alt="UrbanDrive Logo" class="h-8 w-auto" src="https://lh3.googleusercontent.com/aida/AP1WRLty-NOA-uSgITCCrTDShkl7OFnqYxxfsFhz3ovBfkjAV959DBvw-X8UVTtbY3vgH3hCdznn5pX87IZ6cO2wKYp6KpGYQ620hDrQWOS7UyNeZkIMTkyM-UbaE5G1wjmhYVZ0lW_o-hJbXdVvGY6rR4hzO1Nmc_xHwnhc-WOwXd9vBDm53WWzv-YVFIS4PHUkcdiQNI9csA5oVQCea6BAZKR00-WIvDRvNu3fzJGywf9yuJMXWBaxDArS5xy-"/>
+<nav class="hidden md:flex items-center gap-6">
+<a class="font-label-sm text-label-sm text-primary uppercase tracking-widest hover:opacity-70 transition-opacity" href="#">Fleet</a>
+<a class="font-label-sm text-label-sm text-text-secondary uppercase tracking-widest hover:text-primary transition-colors" href="#">Locations</a>
+<a class="font-label-sm text-label-sm text-text-secondary uppercase tracking-widest hover:text-primary transition-colors" href="#">Membership</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<button class="material-symbols-outlined text-primary hover:opacity-70 transition-opacity">search</button>
+<button class="material-symbols-outlined text-primary hover:opacity-70 transition-opacity">account_circle</button>
+<button class="material-symbols-outlined md:hidden text-primary">menu</button>
+</div>
+</div>
+</header>
+<main class="pt-24 max-w-[1440px] mx-auto px-margin-desktop pb-32">
+<div class="flex flex-col lg:flex-row gap-12 relative">
+<!-- Left Column: Content Canvas -->
+<div class="flex-1 space-y-16">
+<!-- Hero Gallery -->
+<section class="space-y-4">
+<div class="aspect-[16/9] w-full bg-surface rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="A cinematic, high-fidelity profile shot of a sleek metallic silver Porsche Taycan Turbo S parked in a minimalist, brightly lit white studio. The lighting is sophisticated and directional, highlighting the car's aerodynamic curves and premium finish. The background is a clean, seamless white cove that emphasizes the vehicle's futuristic executive silhouette in a high-end light mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAZgLAo-BvhZPxff-_KazInI_ysipKr8rKB7mlFaaDQ0kopr83_Qi9er8kl10Ij_u-MkbFeOkDJjsZkRSJirK_8EesQCDVZCCtzFjDbuAvKwrLDKabEJ8FI4SvNfyQiSEHx2VNb-Z3IzmLZSl3_a9b5apvzd4KS8t8wqbSVJLH-hO6qZsDK370bbfgmPgQlh8D-BtJjD8oMyHAlIuHomDzJCv01X91KLKNgl0VbYgXq8IbmkGG8sXHOpu2cO8czlgS3IsRvdrq5rFI"/>
+</div>
+<div class="grid grid-cols-4 gap-4">
+<div class="aspect-square bg-surface rounded overflow-hidden cursor-pointer ring-1 ring-primary">
+<img class="w-full h-full object-cover opacity-100 hover:opacity-80 transition-opacity" data-alt="Close up detail of a Porsche Taycan Turbo S wheel with ceramic composite brakes, shot in a bright minimalist automotive studio with soft natural light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQduDIcDY6J8MZ2HWFur6_ocRo6XyWafM7xZK3MjDTllw5rstOvcnYkO4AcePHB5i3_EjDn3G6k85XbmbqJKSEWqNMLyb9NsLEA9XOx2bBc72tgshPOmgqnTmajhh3zdMBCfuZcTryY0MWlOsUOFclGEa43kw5o8Rpfw0cJKTyvTyS8WSDrWzqcsb28rffJE000Gs3jvp5VToq6Dv68xS-l8X5mXrHhV2NyWmBfF-tbWMRG6WXUNVIDhKWmF0kZf9SiCtTMd1wJno3"/>
+</div>
+<div class="aspect-square bg-surface rounded overflow-hidden cursor-pointer">
+<img class="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity" data-alt="Wide angle interior view of a luxury Porsche Taycan cockpit featuring a curved digital display and black leather minimalist seats, bright ambient lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2X31F-VyR191_ABvGLk_LEHazqFJ99OPutJBB5XAY_Ur9DVfWui_W-VJcgZwR5cdDZaUGHqhfPvXahnHdAmS01XwmLz0Zr3j9YNHm9oMOBaqWSq6Jzu3UBjwNs77y9g0Ct4XsoV5_w5ESRHMOvhMaQqHyI1XeTAJc-vrqdfYU_83sKxqPA9VsoCkH1HCKpgrur9X8jswcpbP5W1WKasqal5V4cI4tpGij1I12yHxl-uxd8Qsap1VpxTpwu9s0eyJgLShDrnaUpeud"/>
+</div>
+<div class="aspect-square bg-surface rounded overflow-hidden cursor-pointer">
+<img class="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity" data-alt="Close up of the rear LED light strip of a Porsche Taycan, metallic silver paint, clean reflections in a high-end luxury garage setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCW2dj1jiJOCWkxoW_P6lztBO7Q3iG22cv11fPPklWSNG58ab8p7ra5nlnpBt857GrHaDzR9IbK8Bc7CiYRuh3idQPKmk2KJ-jYCMn-SBIXWS7rp0DNXZZo_y2yXeZFKExklpxd8IjZ0um6kmpuctchtWbRnxGnGDg324IdWHQN1giV7Fbqx4HTc-MxdeCHMm2LcbeCu7IJxN1Ei54XqzQgcwOaxA2yVPLTAReoda-DmS0HKwUs7g3K8RSAqI-Z7UqdrCD0EujEUUsR"/>
+</div>
+<div class="aspect-square bg-surface rounded overflow-hidden cursor-pointer">
+<img class="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity" data-alt="Interior passenger side view of a Porsche Taycan showing the premium dashboard materials and panoramic roof glass, bright airy feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMZIdnlvMX3Zjxngv72nrfjLCBzNalfnL9PYaCcPywBRVtjm6fIhHri60Iy4fIe1J3rbecjIdvPHNPQyguvOMYtU4g23OuELIAgNHmOJej1eQTjjXoi6nhyzPcoqZBKEvTMJaljkH7ssClnPR9uPKTabWX1xk60VuPLq4WUdAZhfDA03W0PR3KNlHHepuhPWEEGBHIY42uoD0SB8YehEnMk-o-68PTK4yi99oTW_RpINNnZ33Y6Tx-e2uZhsvGWahbAUQ9T3FC_KPO"/>
+</div>
+</div>
+</section>
+<!-- Title & Specs -->
+<section class="space-y-8">
+<div class="space-y-4">
+<div class="flex items-center gap-4">
+<span class="px-3 py-1 bg-accent-success/10 text-accent-success font-label-sm text-label-sm rounded-full flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-accent-success rounded-full"></span>
+                                AVAILABLE
+                            </span>
+<span class="text-text-secondary font-label-sm text-label-sm">2024 MODEL</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">Porsche Taycan Turbo S</h1>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 border-y border-border py-8 gap-8">
+<div class="space-y-1">
+<span class="text-text-secondary font-label-sm text-label-sm uppercase tracking-widest">Acceleration</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">speed</span>
+<p class="font-headline-md text-headline-md">2.6s</p>
+</div>
+</div>
+<div class="space-y-1">
+<span class="text-text-secondary font-label-sm text-label-sm uppercase tracking-widest">Power</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">bolt</span>
+<p class="font-headline-md text-headline-md">750hp</p>
+</div>
+</div>
+<div class="space-y-1">
+<span class="text-text-secondary font-label-sm text-label-sm uppercase tracking-widest">Range</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">ev_station</span>
+<p class="font-headline-md text-headline-md">280mi</p>
+</div>
+</div>
+<div class="space-y-1">
+<span class="text-text-secondary font-label-sm text-label-sm uppercase tracking-widest">Drivetrain</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">settings_input_component</span>
+<p class="font-headline-md text-headline-md">AWD</p>
+</div>
+</div>
+</div>
+</section>
+<!-- The Experience -->
+<section class="grid md:grid-cols-2 gap-12 items-center">
+<div class="space-y-6">
+<h2 class="font-headline-lg text-headline-lg text-primary">The Future of Performance</h2>
+<p class="font-body-lg text-body-lg text-text-secondary leading-relaxed">
+                            The Taycan Turbo S is the soul of a Porsche, electrified. Experience the seamless fusion of high-end craftsmanship and disruptive technology. From the 800-volt architecture that enables lightning-fast charging to the precision of rear-axle steering, every detail is engineered for effortless control.
+                        </p>
+<p class="font-body-md text-body-md text-text-secondary">
+                            Inside, the minimalist cockpit surrounds you with sustainable luxury, featuring a curved glass display and materials that feel as premium as they are innovative.
+                        </p>
+</div>
+<div class="aspect-[4/5] bg-surface rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A top-down detailed shot of the Porsche Taycan center console and drive selector, featuring high-quality brushed metal finishes and haptic touch panels in a minimalist light mode interior. Bright white light pours in from the side, creating soft shadows and a high-end aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfcm6n0eAQKz3jjCjQrSDzNSgkcas5N4IfEEkR6zBahG1K6vXsCqEpbGtwe-VbPQJmz5glfFcUTbMgSj9fk9OCp-uzeovBDzxAT319UOoqn-sDZVwuAoukTm9kPcciHKjRVtE32ffhWdx-Rpcz7Qsej9KF9Jhhe_Hnve5AR1K_Jg7hmEv0l4DPDxQETWrpK220idE7BMeR_6l1W4SSLXCzCeU3q2kto7KJFwXOXjcAIdeDxaw0TwVsBRpbgqQEGdeK-83opkhdOlil"/>
+</div>
+</section>
+<!-- Technical Specs -->
+<section class="space-y-8 bg-surface p-10 rounded-xl">
+<h2 class="font-headline-md text-headline-md text-primary">Technical Specifications</h2>
+<div class="grid md:grid-cols-2 gap-x-16 gap-y-6">
+<div class="flex justify-between border-b border-border pb-4">
+<span class="text-text-secondary font-body-md text-body-md">Battery Capacity</span>
+<span class="text-primary font-semibold font-body-md text-body-md">93.4 kWh</span>
+</div>
+<div class="flex justify-between border-b border-border pb-4">
+<span class="text-text-secondary font-body-md text-body-md">Charging (5-80%)</span>
+<span class="text-primary font-semibold font-body-md text-body-md">22.5 mins</span>
+</div>
+<div class="flex justify-between border-b border-border pb-4">
+<span class="text-text-secondary font-body-md text-body-md">Top Speed</span>
+<span class="text-primary font-semibold font-body-md text-body-md">161 mph</span>
+</div>
+<div class="flex justify-between border-b border-border pb-4">
+<span class="text-text-secondary font-body-md text-body-md">Seating</span>
+<span class="text-primary font-semibold font-body-md text-body-md">4 Adults</span>
+</div>
+<div class="flex justify-between border-b border-border pb-4">
+<span class="text-text-secondary font-body-md text-body-md">Luggage Capacity</span>
+<span class="text-primary font-semibold font-body-md text-body-md">12.9 + 2.8 cu-ft</span>
+</div>
+<div class="flex justify-between border-b border-border pb-4">
+<span class="text-text-secondary font-body-md text-body-md">Suspension</span>
+<span class="text-primary font-semibold font-body-md text-body-md">Adaptive Air</span>
+</div>
+</div>
+</section>
+<!-- Comfort & Tech -->
+<section class="space-y-8">
+<h2 class="font-headline-md text-headline-md text-primary">Premium Amenities</h2>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+<div class="p-6 border border-border rounded-lg space-y-3 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">surround_sound</span>
+<h3 class="font-semibold text-primary">Burmester® Sound</h3>
+<p class="text-text-secondary text-sm">3D High-End Surround System for an immersive acoustic experience.</p>
+</div>
+<div class="p-6 border border-border rounded-lg space-y-3 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">deck</span>
+<h3 class="font-semibold text-primary">Panoramic Roof</h3>
+<p class="text-text-secondary text-sm">Fixed glass roof providing an expansive sense of space and light.</p>
+</div>
+<div class="p-6 border border-border rounded-lg space-y-3 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">thermostat</span>
+<h3 class="font-semibold text-primary">4-Zone Climate</h3>
+<p class="text-text-secondary text-sm">Individualized comfort for every passenger in the cabin.</p>
+</div>
+<div class="p-6 border border-border rounded-lg space-y-3 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">visibility</span>
+<h3 class="font-semibold text-primary">Night Vision</h3>
+<p class="text-text-secondary text-sm">Infrared thermal imaging for enhanced safety during evening drives.</p>
+</div>
+<div class="p-6 border border-border rounded-lg space-y-3 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">chair</span>
+<h3 class="font-semibold text-primary">18-Way Seats</h3>
+<p class="text-text-secondary text-sm">Adaptive sport seats with memory package for ultimate support.</p>
+</div>
+<div class="p-6 border border-border rounded-lg space-y-3 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">security</span>
+<h3 class="font-semibold text-primary">Driver Assist</h3>
+<p class="text-text-secondary text-sm">InnoDrive with adaptive cruise control and lane keep assist.</p>
+</div>
+</div>
+</section>
+<!-- UrbanDrive Certified -->
+<section class="bg-primary-container text-on-primary rounded-xl p-12 flex flex-col md:flex-row items-center justify-between gap-8">
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<h2 class="font-headline-md text-headline-md">UrbanDrive Certified</h2>
+</div>
+<p class="text-on-primary-container max-w-lg font-body-md text-body-md">
+                            Every vehicle undergoes a rigorous 200-point inspection and hospital-grade deep sanitation before every delivery. We guarantee a showroom-fresh experience, every single time.
+                        </p>
+</div>
+<div class="flex gap-12">
+<div class="text-center">
+<p class="text-3xl font-bold">200+</p>
+<p class="text-on-primary-container text-xs uppercase tracking-widest mt-1">Checkpoints</p>
+</div>
+<div class="text-center">
+<p class="text-3xl font-bold">99.9%</p>
+<p class="text-on-primary-container text-xs uppercase tracking-widest mt-1">Sanitized</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Sticky Booking Sidebar -->
+<aside class="w-full lg:w-[420px]">
+<div class="sticky top-28 executive-shadow bg-white border border-border rounded-xl p-8 space-y-8">
+<div class="flex justify-between items-end">
+<div>
+<span class="text-text-secondary font-label-sm text-label-sm uppercase tracking-widest">Starting at</span>
+<p class="text-4xl font-bold text-primary">$550<span class="text-lg font-normal text-text-secondary">/day</span></p>
+</div>
+<div class="flex items-center gap-1 text-accent-success">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-bold">4.9</span>
+<span class="text-text-secondary font-normal text-sm">(128)</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-px bg-border rounded-lg overflow-hidden border border-border">
+<div class="bg-white p-4 space-y-1">
+<label class="text-xs font-bold text-primary uppercase tracking-tighter">Delivery</label>
+<input class="w-full p-0 border-none text-sm focus:ring-0" type="text" value="Oct 12, 10:00 AM"/>
+</div>
+<div class="bg-white p-4 space-y-1">
+<label class="text-xs font-bold text-primary uppercase tracking-tighter">Return</label>
+<input class="w-full p-0 border-none text-sm focus:ring-0" type="text" value="Oct 15, 10:00 AM"/>
+</div>
+</div>
+<div class="bg-white p-4 border border-border rounded-lg space-y-1">
+<label class="text-xs font-bold text-primary uppercase tracking-tighter">Pickup Location</label>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-secondary text-lg">location_on</span>
+<input class="w-full p-0 border-none text-sm focus:ring-0" type="text" value="Beverly Hills, CA"/>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between text-sm">
+<span class="text-text-secondary">$550 x 3 days</span>
+<span class="text-primary font-medium">$1,650</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-secondary">Delivery Fee</span>
+<span class="text-primary font-medium">$45</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-secondary">Insurance (Executive Plan)</span>
+<span class="text-primary font-medium">$120</span>
+</div>
+<div class="pt-4 border-t border-border flex justify-between">
+<span class="font-bold text-primary">Total</span>
+<span class="font-bold text-primary text-xl">$1,815</span>
+</div>
+</div>
+<button class="w-full py-5 bg-primary text-on-primary font-bold rounded-lg hover:bg-zinc-800 transition-colors transform active:scale-[0.98] duration-150">
+                        Instant Book
+                    </button>
+<p class="text-center text-xs text-text-secondary">
+                        Free cancellation up to 48 hours before delivery.
+                    </p>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-white border-t border-border pt-20 pb-10">
+<div class="max-w-[1440px] mx-auto px-margin-desktop">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-16">
+<div class="space-y-6">
+<img alt="UrbanDrive Logo" class="h-8" src="https://lh3.googleusercontent.com/aida/AP1WRLty-NOA-uSgITCCrTDShkl7OFnqYxxfsFhz3ovBfkjAV959DBvw-X8UVTtbY3vgH3hCdznn5pX87IZ6cO2wKYp6KpGYQ620hDrQWOS7UyNeZkIMTkyM-UbaE5G1wjmhYVZ0lW_o-hJbXdVvGY6rR4hzO1Nmc_xHwnhc-WOwXd9vBDm53WWzv-YVFIS4PHUkcdiQNI9csA5oVQCea6BAZKR00-WIvDRvNu3fzJGywf9yuJMXWBaxDArS5xy-"/>
+<p class="text-text-secondary text-sm leading-relaxed max-w-xs">
+                        Redefining the luxury rental experience with an elite fleet and bespoke concierge services for the modern executive.
+                    </p>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:border-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">public</span>
+</a>
+<a class="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:border-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">camera</span>
+</a>
+<a class="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:border-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">chat_bubble</span>
+</a>
+</div>
+</div>
+<div class="space-y-6">
+<h4 class="font-bold text-primary uppercase tracking-widest text-xs">The Fleet</h4>
+<ul class="space-y-4 text-sm text-text-secondary">
+<li><a class="hover:text-primary transition-colors" href="#">Electric Performance</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Luxury Sedans</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Exotic Sport</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Executive SUVs</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h4 class="font-bold text-primary uppercase tracking-widest text-xs">Experience</h4>
+<ul class="space-y-4 text-sm text-text-secondary">
+<li><a class="hover:text-primary transition-colors" href="#">How it Works</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Member Perks</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Locations</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Gift Cards</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h4 class="font-bold text-primary uppercase tracking-widest text-xs">Support</h4>
+<ul class="space-y-4 text-sm text-text-secondary">
+<li><a class="hover:text-primary transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Safety</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
+</ul>
+</div>
+</div>
+<div class="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-xs text-text-secondary">© 2024 UrbanDrive Luxury Car Rental. All rights reserved.</p>
+<div class="flex gap-8 text-xs text-text-secondary">
+<span>Designed for Performance</span>
+<span>English (US)</span>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction for gallery thumbnails
+        document.querySelectorAll('.cursor-pointer').forEach((thumb, index) => {
+            thumb.addEventListener('click', function() {
+                // Reset all
+                document.querySelectorAll('.cursor-pointer').forEach(t => {
+                    t.classList.remove('ring-1', 'ring-primary');
+                    t.querySelector('img').classList.remove('opacity-100');
+                    t.querySelector('img').classList.add('opacity-60');
+                });
+                // Highlight active
+                this.classList.add('ring-1', 'ring-primary');
+                this.querySelector('img').classList.remove('opacity-60');
+                this.querySelector('img').classList.add('opacity-100');
                 
-                <div class="space-y-4">
-                    <div>
-                        <p class="text-xs text-gray-400 uppercase tracking-tighter">Email Address</p>
-                        <p class="text-lg font-medium">james.archibald@executive.com</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400 uppercase tracking-tighter">Temporary Password</p>
-                        <p class="text-lg font-mono tracking-widest font-bold">UD-992-GT3-X</p>
-                    </div>
-                </div>
+                // Logic to swap main image would go here in a full app
+            });
+        });
 
-                <div class="mt-8">
-                    <a href="#" class="inline-block bg-black text-white px-10 py-4 rounded-full text-sm font-semibold tracking-wide hover:bg-gray-800 transition-all">
-                        Sign In to Dashboard
-                    </a>
-                </div>
-            </div>
-
-            <p class="text-sm text-gray-500 italic mb-12 text-center">
-                *For your security, please update your password immediately upon your first login.
-            </p>
-
-            <!-- Service Pillars -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 border-t border-gray-100 pt-12">
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-widest mb-2">Curated Fleet</h3>
-                    <p class="text-xs text-gray-500 leading-relaxed">Hand-selected models maintained to showroom standards.</p>
-                </div>
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-widest mb-2">White-Glove</h3>
-                    <p class="text-xs text-gray-500 leading-relaxed">Bespoke delivery and 24/7 concierge support.</p>
-                </div>
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-widest mb-2">Total Discretion</h3>
-                    <p class="text-xs text-gray-500 leading-relaxed">Secure, encrypted, and anonymous logistics.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="bg-gray-50 p-8 text-center border-t border-gray-100">
-            <p class="text-[10px] text-gray-400 uppercase tracking-[0.2em] mb-4">&copy; 2024 UrbanDrive Global. All Rights Reserved.</p>
-            <div class="flex justify-center space-x-6 text-[10px] font-bold uppercase tracking-tighter text-gray-400">
-                <a href="#" class="hover:text-black">Privacy Policy</a>
-                <a href="#" class="hover:text-black">Terms of Service</a>
-                <a href="#" class="hover:text-black">Unsubscribe</a>
-            </div>
-        </div>
-    </div>
-</body>
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.classList.add('shadow-sm');
+                header.classList.remove('bg-glass-fill');
+                header.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+            } else {
+                header.classList.remove('shadow-sm');
+                header.classList.add('bg-glass-fill');
+            }
+        });
+    </script>
+</body></html>

@@ -3,7 +3,6 @@
 
 import { FleetCar } from '@/types/fleet'
 import FleetCarCard from './FleetCarCard'
-import LoadMoreCard from './LoadMoreCard'
 import { useCars } from '@/context/CarContext'
 
 interface FleetGridProps {
@@ -13,18 +12,13 @@ interface FleetGridProps {
 }
 
 export default function FleetGrid({
-  cars: propCars,
-  totalVehicles: propTotal,
-  onLoadMore
-}: FleetGridProps) {
+  cars: propCars}: FleetGridProps) {
   //  Use CarContext if no props provided
   const { filteredCars, isLoading } = useCars()
   
   //  Use props if provided, otherwise use context
   const cars = propCars || filteredCars
-  const totalVehicles = propTotal || cars.length
   
-  const hasMore = cars.length < totalVehicles
 
   //  Show loading state
   if (isLoading) {

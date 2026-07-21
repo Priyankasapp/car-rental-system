@@ -75,7 +75,7 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
       <article className={cn(
         'bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm',
         'transition-all duration-300 hover:shadow-xl hover:border-gray-200/80',
-        'relative flex flex-col h-full bg-gradient-to-b from-white to-gray-50/30',
+        'relative flex flex-col h-full bg-linear-to-b from-white to-gray-50/30',
         className
       )}>
         {/* Status Badge & Wishlist button */}
@@ -109,7 +109,7 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
             className="w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-500 group-hover:scale-105"
             style={{ backgroundImage: `url('${car.image}')` }}
           />
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white/80 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-white/80 to-transparent pointer-events-none" />
         </div>
 
         {/* Info Content Area */}
