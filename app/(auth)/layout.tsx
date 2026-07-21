@@ -10,7 +10,7 @@ export default function AuthLayout({
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
       {/* Branding */}
       <div className="mb-8">
-        <Link href="/" className="text-3xl font-bold text-blue-600">
+        <Link href="/" className="text-3xl font-bold text-black">
           UrbanDrive
         </Link>
         <p className="text-center text-sm text-gray-500 mt-1">

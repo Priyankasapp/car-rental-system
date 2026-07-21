@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 // app/(admin)/cars/page.tsx
 'use client'
 
@@ -16,7 +17,7 @@ export default function AdminCarsPage() {
   const hasInitialized = useRef(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  // ✅ Check admin access and fetch cars
+  //  Check admin access and fetch cars
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login')
@@ -34,7 +35,7 @@ export default function AdminCarsPage() {
     }
   }, [user, authLoading, router, fetchCars])
 
-  // ✅ Handle delete car
+  //  Handle delete car
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this car? This action cannot be undone.')) {
       return
@@ -50,7 +51,7 @@ export default function AdminCarsPage() {
     }
   }
 
-  // ✅ Loading state
+  //  Loading state
   if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -59,7 +60,7 @@ export default function AdminCarsPage() {
     )
   }
 
-  // ✅ Check admin access
+  //  Check admin access
   if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN')) {
     return null
   }
