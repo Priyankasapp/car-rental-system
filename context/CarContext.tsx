@@ -58,28 +58,7 @@ interface ApiCar {
   totalReviews?: number
 }
 
-interface ApiFilters {
-  categories: string[]
-  cities: string[]
-  priceRange: {
-    min: number
-    max: number
-  }
-}
 
-interface ApiResponse {
-  success: boolean
-  data: {
-    cars: ApiCar[]
-    filters: ApiFilters
-    pagination: {
-      total: number
-      page: number
-      limit: number
-      totalPages: number
-    }
-  }
-}
 
 export function CarProvider({ children }: { children: React.ReactNode }) {
   // State

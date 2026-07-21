@@ -28,6 +28,7 @@ model User {
   sessions        Session[]
   reservations    Reservation[]
   emailLogs       EmailLog[]
+  staffProfile    Staff?   // One-to-one with Staff
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -40,6 +41,7 @@ model User {
 enum Role {
   SUPERADMIN
   ADMIN
+  STAFF        
   CUSTOMER
 }
 
@@ -90,6 +92,8 @@ enum OTPScope {
   REGISTER
   PASSWORD_RESET
   EMAIL_VERIFICATION
+  BOOKING_CONFIRMATION  
+  BOOKING_CANCELLATION 
 }
 
 // ============== CAR MODEL ==============
@@ -135,6 +139,7 @@ model Car {
   
   // Relations
   reservations      Reservation[]
+  staffAssignments  Staff[]     // Cars assigned to staff
   
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
@@ -218,11 +223,12 @@ model Reservation {
   cancellationFee    Int?
   adminNotes         String?
   
-  // Soft delete
-  isDeleted          Boolean           @default(false)
-  
   // Relations
   emailLogs          EmailLog[]
+  staffShifts        StaffShift[]      // Shifts related to this booking
+  
+  // Soft delete
+  isDeleted          Boolean           @default(false)
   
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
@@ -240,6 +246,99 @@ enum ReservationStatus {
   CANCELLED
   COMPLETED
   EXPIRED
+}
+
+// ============== STAFF MODEL ==============
+model Staff {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String      @db.ObjectId
+  user            User        @relation(fields: [userId], references: [id])
+  
+  // Staff Details
+  employeeCode    String      @unique
+  staffRole       StaffRole   @default(DRIVER)
+  joiningDate     DateTime    @default(now())
+  isActive        Boolean     @default(true)
+  isDeleted       Boolean     @default(false)
+  
+  // Current Status
+  isOnDuty        Boolean     @default(false)
+  currentShiftId  String?     @db.ObjectId
+  assignedCarId   String?     @db.ObjectId
+  assignedCar     Car?        @relation(fields: [assignedCarId], references: [id])
+  
+  // Relations
+  shifts          StaffShift[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([assignedCarId])
+  @@index([staffRole])
+  @@map("staff")
+}
+
+enum StaffRole {
+  DRIVER
+  CLEANER
+}
+
+// ============== STAFF SHIFT MODEL ==============
+model StaffShift {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  staffId         String      @db.ObjectId
+  staff           Staff       @relation(fields: [staffId], references: [id])
+  
+  // Related Booking (if any)
+  bookingId       String?     @db.ObjectId
+  booking         Reservation? @relation(fields: [bookingId], references: [id])
+  
+  // Car Information
+  carId           String      @db.ObjectId
+  car             Car         @relation(fields: [carId], references: [id])
+  
+  // Shift Timing
+  clockIn         DateTime    @default(now())
+  clockOut        DateTime?
+  
+  // Mileage Tracking
+  startMileage    Int?
+  endMileage      Int?
+  
+  // For Cleaners - Checklist
+  cleaningChecklist Json?     // { 
+                              //   interior: boolean, 
+                              //   exterior: boolean, 
+                              //   sanitized: boolean,
+                              //   vacuumed: boolean,
+                              //   windows: boolean
+                              // }
+  
+  // For Drivers - Trip Details
+  tripStartLocation String?
+  tripEndLocation   String?
+  tripDistance      Int?      // in km
+  
+  // Status & Notes
+  status          ShiftStatus @default(ACTIVE)
+  notes           String?
+  photos          String[]    // Uploaded photos
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([staffId])
+  @@index([bookingId])
+  @@index([carId])
+  @@index([status])
+  @@map("staff_shifts")
+}
+
+enum ShiftStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
 
 // ============== EMAIL LOG MODEL ==============
@@ -295,6 +394,10 @@ enum EmailType {
   PASSWORD_RESET
   EMAIL_VERIFICATION
   ACCOUNT_UPDATE
+  
+  // Staff related
+  SHIFT_STARTED
+  SHIFT_COMPLETED
   
   // Promotional
   PROMOTIONAL
