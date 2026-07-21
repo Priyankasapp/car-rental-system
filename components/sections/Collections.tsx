@@ -11,18 +11,24 @@ export default function Collections() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.collection-card',
-        { opacity: 0, y: 30 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          duration: 0.8, 
-          stagger: 0.15,
-          ease: "power3.out",
-          delay: 0.3
-        }
-      )
+      //  Get all collection cards
+      const cards = gsap.utils.toArray('.collection-card')
+      
+      //  Set initial state
+      gsap.set(cards, {
+        opacity: 0,
+        y: 40
+      })
+      
+      // ✅ Animate with stagger
+      gsap.to(cards, {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: "power3.out",
+        delay: 0.3
+      })
     }, sectionRef)
 
     return () => ctx.revert()
@@ -42,7 +48,6 @@ export default function Collections() {
         }}
       />
 
-      {/* Grid container updated with proper standard Tailwind responsive spacing */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-8 md:mt-12">
         {collections.map((collection) => (
           <CollectionCard 

@@ -1,3 +1,4 @@
+// data/index.ts
 import { Car, Collection, Feature, Stat, NavLink, FooterSection } from '@/types'
 
 // Navigation Links
@@ -5,11 +6,11 @@ export const navLinks: NavLink[] = [
   { href: '/', label: 'Home' },
   { href: '/fleet', label: 'Fleet' },
   { href: '/about', label: 'About' },
-  { href: '/locations', label: 'Locations' },
-  { href: '/support', label: 'Support' },
+  { href:'/contact', label:"Contact"}
+
 ]
 
-// Collections Data
+// Collections Data with category
 export const collections: Collection[] = [
   {
     id: 'sports',
@@ -17,6 +18,7 @@ export const collections: Collection[] = [
     icon: 'speed',
     description: 'High-performance machines',
     count: 24,
+    category: 'sports', 
   },
   {
     id: 'suv',
@@ -24,6 +26,7 @@ export const collections: Collection[] = [
     icon: 'grid_view',
     description: 'Luxury and space',
     count: 18,
+    category: 'suv', 
   },
   {
     id: 'electric',
@@ -31,6 +34,7 @@ export const collections: Collection[] = [
     icon: 'bolt',
     description: 'Sustainable power',
     count: 12,
+    category: 'electric',  // ✅ For filtering
   },
   {
     id: 'vintage',
@@ -38,6 +42,7 @@ export const collections: Collection[] = [
     icon: 'history',
     description: 'Classic elegance',
     count: 8,
+    category: 'vintage',  // ✅ For filtering
   },
 ]
 

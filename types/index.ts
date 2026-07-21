@@ -27,6 +27,7 @@ export interface Collection {
   icon: string
   description?: string
   count?: number
+  category?: string 
 }
 
 export interface Feature {

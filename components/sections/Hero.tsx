@@ -7,13 +7,13 @@ import Icon from '@/components/ui/Icon'
 import GlassCard from '@/components/ui/GlassCard'
 import Input from '@/components/ui/Input'
 import { Button } from '../ui/Button'
-
+import Image from 'next/image' 
 export default function Hero() {
   const router = useRouter()
   const heroRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
   
-  // ✅ State for search
+  //  State for search
   const [location, setLocation] = useState('')
   const [dates, setDates] = useState('')
 
@@ -29,7 +29,7 @@ export default function Hero() {
     return () => ctx.revert()
   }, [])
 
-  // ✅ Handle Search
+  //  Handle Search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -38,26 +38,29 @@ export default function Hero() {
     if (location) params.append('location', location)
     if (dates) params.append('dates', dates)
     
-    // ✅ Redirect to fleet page with filters
+    //  Redirect to fleet page with filters
     router.push(`/fleet?${params.toString()}`)
   }
 
   return (
-    <section ref={heroRef} className="relative h-screen min-h-[760px] flex items-center justify-center overflow-hidden">
+    <section ref={heroRef} className="relative h-screen min-h-190 flex items-center justify-center overflow-hidden">
       
       {/* Background Image & Overlay */}
       <div className="absolute inset-0 z-0">
-        <div 
-          className="w-full h-full bg-cover bg-center transition-transform duration-1000 scale-105"
-          style={{
-            backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCCtIICYk2IRYUA2e1YGnutDYyJF3C56bS3zh7xwMs2Jb7271j0sLB2rCyNxZgEh58Ml_7hZtJZy318Y6SZqm3Ou-xlMyFYFjIJDCW9O2o8q7PugJ7McPxP3lMyJOxDJzyWOT4FGmjS6T7XIvc43yRHy0RkrSyII8AlJ4WUh_qhl_fmMcowthZR6nFJ4JVTriq4JRLrIQDOe0BbXUBM_r-g4u5RNJGTVD5WcycChM_GCWZ57PZa1bbYY686I4XandEWQ8fQrI9R9agC')`
-          }}
+        
+        
+          <Image
+          src="/images/car3.jpeg"
+          alt="Luxury car hero background"
+          fill
+          priority
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-[1440px] px-5 md:px-16 text-center md:text-left">
+      <div className="relative z-10 w-full max-w-360 px-5 md:px-16 text-center md:text-left">
         <div ref={textRef} className="max-w-2xl">
           <h2 className="text-4xl md:text-6xl lg:text-[72px] font-bold tracking-tighter text-black mb-6 leading-[1.1]">
             Elite Drive.<br />Urban Soul.
@@ -66,7 +69,7 @@ export default function Hero() {
             Experience the pinnacle of automotive engineering with our curated fleet of ultra-luxury vehicles. Designed for those who demand precision and prestige.
           </p>
 
-          {/* ✅ Search Form */}
+          {/*  Search Form */}
           <form onSubmit={handleSearch}>
             <GlassCard className="p-2 flex flex-col md:flex-row items-center gap-2 max-w-3xl bg-white/15 backdrop-blur-md rounded-xl border border-white/20">
               <div className="flex-1 w-full px-4 py-2 flex items-center gap-3 border-b md:border-b-0 md:border-r border-white/20">
