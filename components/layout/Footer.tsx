@@ -1,20 +1,135 @@
+'use client'
+
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { footerSections, socialLinks } from '@/data'
 import Icon from '@/components/ui/Icon'
 import Input from '@/components/ui/Input'
 import { Button } from '../ui/Button'
 
+//  Register ScrollTrigger
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger)
+}
+
 export default function Footer() {
   const currentYear = new Date().getFullYear()
+  const footerRef = useRef<HTMLElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      //  1. Fade in entire footer content
+      gsap.fromTo(
+        '.footer-content',
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: footerRef.current,
+            start: "top 90%",
+            toggleActions: "play none none none"
+          }
+        }
+      )
+
+      //  2. Stagger animation for brand and sections
+      gsap.fromTo(
+        '.footer-item',
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          stagger: 0.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: contentRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none"
+          }
+        }
+      )
+
+      //  3. Social icons hover animation (bounce)
+      document.querySelectorAll('.social-link').forEach((link) => {
+        const element = link as HTMLElement
+        
+        element.addEventListener('mouseenter', () => {
+          gsap.to(element, {
+            y: -4,
+            scale: 1.1,
+            duration: 0.2,
+            ease: "power2.out"
+          })
+        })
+        
+        element.addEventListener('mouseleave', () => {
+          gsap.to(element, {
+            y: 0,
+            scale: 1,
+            duration: 0.2,
+            ease: "power2.in"
+          })
+        })
+      })
+
+      //  4. Newsletter button hover pulse
+      const newsletterBtn = document.querySelector('.newsletter-btn')
+      if (newsletterBtn) {
+        newsletterBtn.addEventListener('mouseenter', () => {
+          gsap.to(newsletterBtn, {
+            scale: 1.05,
+            duration: 0.2,
+            ease: "power2.out"
+          })
+        })
+        
+        newsletterBtn.addEventListener('mouseleave', () => {
+          gsap.to(newsletterBtn, {
+            scale: 1,
+            duration: 0.2,
+            ease: "power2.in"
+          })
+        })
+      }
+
+      //  5. Bottom bar fade in
+      gsap.fromTo(
+        '.bottom-bar',
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          delay: 0.5,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: footerRef.current,
+            start: "top 80%",
+            toggleActions: "play none none none"
+          }
+        }
+      )
+
+    }, footerRef)
+
+    return () => ctx.revert()
+  }, [])
 
   return (
-    <footer className="bg-white pt-24 pb-12 border-t border-gray-100">
-      {/* Fixed responsive layout padding */}
-      <div className="max-w-[1440px] mx-auto px-5 md:px-16">
+    <footer ref={footerRef} className="bg-white pt-24 pb-12 border-t border-gray-100 overflow-hidden">
+      {/*  Content with animation class */}
+      <div ref={contentRef} className="footer-content max-w-360 mx-auto px-5 md:px-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
           
-          {/* Brand Block */}
-          <div className="flex flex-col">
+          {/*  Brand Block */}
+          <div className="footer-item flex flex-col">
             <h2 className="text-2xl font-bold tracking-tight text-black mb-4">
               UrbanDrive
             </h2>
@@ -26,7 +141,7 @@ export default function Footer() {
                 <Link
                   key={social.label}
                   href={social.href}
-                  className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all duration-300"
+                  className="social-link w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-black hover:bg-black hover:text-white transition-colors duration-300"
                 >
                   <Icon name={social.icon} className="text-base" />
                 </Link>
@@ -34,9 +149,9 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Map Section Navigation Links */}
+          {/*  Navigation Links */}
           {footerSections.map((section) => (
-            <div key={section.title} className="lg:justify-self-center">
+            <div key={section.title} className="footer-item lg:justify-self-center">
               <h5 className="text-[10px] font-bold text-black uppercase tracking-[0.15em] mb-6">
                 {section.title}
               </h5>
@@ -55,29 +170,28 @@ export default function Footer() {
             </div>
           ))}
 
-          {/* Newsletter Box Layout */}
-          <div className="lg:justify-self-end w-full max-w-xs">
+          {/*  Newsletter */}
+          <div className="footer-item lg:justify-self-end w-full max-w-xs">
             <h5 className="text-[10px] font-bold text-black uppercase tracking-[0.15em] mb-6">
               Newsletter
             </h5>
             <p className="text-xs text-gray-400 mb-5 leading-relaxed">
               Stay updated with our latest fleet arrivals.
             </p>
-            {/* Clean Flex input alignment setup */}
             <div className="flex gap-2 w-full">
               <Input
                 placeholder="Email Address"
                 className="bg-gray-50 border border-gray-100 rounded-full px-4 py-2.5 text-xs focus:outline-none focus:border-gray-300 flex-1"
               />
-              <Button className="bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-zinc-800 transition-colors">
+              <Button className="newsletter-btn bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-zinc-800 transition-colors">
                 Join
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Bottom Bar Content Alignment Block */}
-        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-100 gap-4">
+        {/*  Bottom Bar */}
+        <div className="bottom-bar flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-100 gap-4">
           <p className="text-[10px] font-medium text-gray-400 tracking-wider">
             © {currentYear} URBAN DRIVE EXECUTIVE. ALL RIGHTS RESERVED.
           </p>

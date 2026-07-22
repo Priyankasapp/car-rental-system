@@ -217,10 +217,10 @@ export const footerSections: FooterSection[] = [
   {
     title: 'Fleet',
     links: [
-      { href: '/fleet/exotic-sports', label: 'Exotic Sports' },
-      { href: '/fleet/executive-suvs', label: 'Executive SUVs' },
-      { href: '/fleet/next-gen-electric', label: 'Next-Gen Electric' },
-      { href: '/fleet/classic-collection', label: 'Classic Collection' },
+      { href: '/fleet', label: 'Exotic Sports' },
+      { href: '/fleet', label: 'Executive SUVs' },
+      { href: '/fleet', label: 'Next-Gen Electric' },
+      { href: '/fleet', label: 'Classic Collection' },
     ],
   },
   {
