@@ -15,7 +15,7 @@ export const contactHero: ContactHero = {
   description:
     "Whether you're reserving a weekend supercar or arranging executive transportation, our concierge team is ready to assist.",
 
-  image: "/assets/car1.jpeg",
+  image: "https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=800",
 
   primaryButton: "Book a Vehicle",
 
