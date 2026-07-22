@@ -1,4 +1,4 @@
-// About page specific types
+// types/about.ts
 
 export interface AboutHero {
   label: string
@@ -32,6 +32,14 @@ export interface AboutFeature {
   text: string
 }
 
+export interface AboutWheel {
+  label: string
+  title: string
+  description: string
+  image: string
+  features: AboutFeature[]
+}
+
 export interface AboutCTA {
   title: string
   subtitle: string
@@ -50,5 +58,6 @@ export interface AboutData {
   story: AboutStory
   brandCards: AboutBrandCard[]
   features: AboutFeature[]
+  wheel: AboutWheel     
   cta: AboutCTA
 }

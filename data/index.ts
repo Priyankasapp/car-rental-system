@@ -34,7 +34,7 @@ export const collections: Collection[] = [
     icon: 'bolt',
     description: 'Sustainable power',
     count: 12,
-    category: 'electric',  // ✅ For filtering
+    category: 'electric',  
   },
   {
     id: 'vintage',
@@ -42,7 +42,7 @@ export const collections: Collection[] = [
     icon: 'history',
     description: 'Classic elegance',
     count: 8,
-    category: 'vintage',  // ✅ For filtering
+    category: 'vintage',  
   },
 ]
 
