@@ -6,19 +6,27 @@ import {
   generateOtpText,
   generateBookingPendingHTML,
   generateBookingPendingText,
-  type BookingEmailProps
+  generateContactConfirmationHTML,
+  generateContactConfirmationText,
+  generateAdminNotificationHTML,
+  generateAdminNotificationText,
+  type BookingEmailProps,
+  type ContactEmailProps
 } from '@/lib/email/templates'
 import nodemailer from 'nodemailer'
 
+// Updated interface with new types
 interface SendEmailParams {
   to: string
-  type: 'WELCOME' | 'OTP' | 'BOOKING_PENDING'
+  type: 'WELCOME' | 'OTP' | 'BOOKING_PENDING' | 'CONTACT_CONFIRMATION' | 'ADMIN_NOTIFICATION'
   data: {
     firstName?: string
+    lastName?: string
     password?: string
     otp?: string
     purpose?: string
     bookingDetails?: BookingEmailProps
+    contactDetails?: ContactEmailProps
   }
 }
 
@@ -51,7 +59,7 @@ async function getTransporter() {
       await transporter.verify()
       console.log(' Email connection verified')
       if (isEthereal) {
-        console.log(`Ethereal account: ${process.env.EMAIL_USER}`)
+        console.log(` Ethereal account: ${process.env.EMAIL_USER}`)
       }
     } catch (error) {
       console.error(' Email connection failed:', error)
@@ -61,7 +69,7 @@ async function getTransporter() {
   } 
   // Fallback to Ethereal for development
   else if (process.env.NODE_ENV === 'development') {
-    console.log('No email config found. Creating Ethereal test account...')
+    console.log(' No email config found. Creating Ethereal test account...')
     const testAccount = await nodemailer.createTestAccount()
     
     transporter = nodemailer.createTransport({
@@ -74,7 +82,7 @@ async function getTransporter() {
       },
     })
     
-    console.log('Ethereal test account created')
+    console.log(' Ethereal test account created')
     console.log(' Email:', testAccount.user)
     console.log(' Password:', testAccount.pass)
     console.log('\n Add these to your .env.local:')
@@ -99,21 +107,38 @@ export async function sendEmail({ to, type, data }: SendEmailParams): Promise<vo
     subject = 'Welcome to UrbanDrive - Your Account Details'
     html = generateWelcomeHTML(data.firstName, to, data.password)
     text = generateWelcomeText(data.firstName, to, data.password)
-  } else if (type === 'OTP' && data.otp) {
+  } 
+  else if (type === 'OTP' && data.otp) {
     subject = 'UrbanDrive - Your Verification Code'
     const customerName = data.firstName || 'Customer'
     html = generateOtpHTML({ customerName, otp: data.otp })
     text = generateOtpText({ customerName, otp: data.otp })
-  } else if (type === 'BOOKING_PENDING' && data.bookingDetails) {
+  } 
+  else if (type === 'BOOKING_PENDING' && data.bookingDetails) {
     subject = `Booking Request Received (#${data.bookingDetails.bookingId}) - UrbanDrive`
     html = generateBookingPendingHTML(data.bookingDetails)
     text = generateBookingPendingText(data.bookingDetails)
-  } else {
+  } 
+  // NEW: Contact Confirmation
+  else if (type === 'CONTACT_CONFIRMATION' && data.contactDetails) {
+    const contact = data.contactDetails
+    subject = `Thank You for Contacting UrbanDrive`
+    html = generateContactConfirmationHTML(contact)
+    text = generateContactConfirmationText(contact)
+  } 
+  // NEW: Admin Notification
+  else if (type === 'ADMIN_NOTIFICATION' && data.contactDetails) {
+    const contact = data.contactDetails
+    subject = `New Contact Request: ${contact.service.replace(/_/g, ' ')} from ${contact.firstName} ${contact.lastName}`
+    html = generateAdminNotificationHTML(contact)
+    text = generateAdminNotificationText(contact)
+  } 
+  else {
     throw new Error('Invalid email type or missing required parameters.')
   }
 
-  console.log(`Sending ${type} email to ${to}`)
-  console.log('Subject:', subject)
+  console.log(` Sending ${type} email to ${to}`)
+  console.log(' Subject:', subject)
 
   try {
     const transporter = await getTransporter()
@@ -148,6 +173,7 @@ export async function sendEmail({ to, type, data }: SendEmailParams): Promise<vo
   }
 }
 
+// Existing function for welcome and OTP
 export async function sendWelcomeAndOtpEmails(
   email: string,
   firstName: string,
@@ -181,6 +207,86 @@ export async function sendWelcomeAndOtpEmails(
     console.log(` Welcome and OTP emails sent to ${email}`)
   } catch (error) {
     console.error(` Failed to send emails to ${email}:`, error)
+    throw error
+  }
+}
+
+// NEW: Send contact confirmation email
+export async function sendContactConfirmationEmail(
+  contactData: ContactEmailProps
+): Promise<void> {
+  const { email, firstName } = contactData
+  
+  console.log(` Sending contact confirmation email to ${email}`)
+  
+  try {
+    await sendEmail({
+      to: email,
+      type: 'CONTACT_CONFIRMATION',
+      data: {
+        firstName,
+        lastName: contactData.lastName,
+        contactDetails: contactData,
+      },
+    })
+    
+    console.log(` Contact confirmation email sent to ${email}`)
+  } catch (error) {
+    console.error(` Failed to send contact confirmation to ${email}:`, error)
+    throw error
+  }
+}
+
+// NEW: Send admin notification email
+export async function sendAdminNotificationEmail(
+  contactData: ContactEmailProps,
+  adminEmails: string[]
+): Promise<void> {
+  const { firstName, lastName } = contactData
+  
+  console.log(`Sending admin notification to ${adminEmails.length} admins`)
+  
+  try {
+    // Send to all admin emails in parallel
+    await Promise.all(
+      adminEmails.map((adminEmail) =>
+        sendEmail({
+          to: adminEmail.trim(),
+          type: 'ADMIN_NOTIFICATION',
+          data: {
+            firstName,
+            lastName,
+            contactDetails: contactData,
+          },
+        })
+      )
+    )
+    
+    console.log(` Admin notification sent to ${adminEmails.length} admins`)
+  } catch (error) {
+    console.error(` Failed to send admin notifications:`, error)
+    throw error
+  }
+}
+
+// NEW: Send both contact emails (user + admin) in parallel
+export async function sendContactEmails(
+  contactData: ContactEmailProps,
+  adminEmails: string[]
+): Promise<void> {
+  const { email } = contactData
+  
+  console.log(` Sending contact emails to user (${email}) and admins`)
+  
+  try {
+    await Promise.all([
+      sendContactConfirmationEmail(contactData),
+      sendAdminNotificationEmail(contactData, adminEmails),
+    ])
+    
+    console.log(` All contact emails sent successfully`)
+  } catch (error) {
+    console.error(` Failed to send contact emails:`, error)
     throw error
   }
 }

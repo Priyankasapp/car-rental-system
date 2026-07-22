@@ -13,7 +13,9 @@ const publicRoutes = [
   '/api/cars',
   '/api/cars/',
   '/api/reservations',
-   '/api/reservations/',
+  '/api/reservations/',
+  '/api/contact',
+  '/api/contact/',
 ]
 
 // Admin-only routes
@@ -22,11 +24,13 @@ const adminRoutes = [
   '/api/admin/',
 ]
 
-// In Next.js 16, this MUST be named "proxy" instead of "middleware"
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function proxy(request: { nextUrl: { pathname: any }; cookies: { get: (arg0: string) => { (): any; new(): any; value: any } }; headers: HeadersInit | undefined }) {
+export function proxy(request: { 
+  nextUrl: { pathname: string }
+  cookies: { get: (key: string) => { value: string } | undefined }
+  headers: Headers
+}) {
   const path = request.nextUrl.pathname
-  
+
   // Skip proxy for public routes
   if (publicRoutes.some(route => path.startsWith(route))) {
     return NextResponse.next()
@@ -42,7 +46,7 @@ export function proxy(request: { nextUrl: { pathname: any }; cookies: { get: (ar
     )
   }
 
-  // Verify token (Works perfectly here now because proxy.js uses standard Node.js runtime)
+  // Verify token
   const payload = verifyToken(token)
   if (!payload) {
     return NextResponse.json(
@@ -74,6 +78,5 @@ export function proxy(request: { nextUrl: { pathname: any }; cookies: { get: (ar
 }
 
 export const config = {
-  // Tells Next.js to run this proxy logic specifically for API routes
   matcher: '/api/:path*',
 }

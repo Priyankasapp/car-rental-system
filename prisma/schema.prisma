@@ -41,7 +41,7 @@ model User {
 enum Role {
   SUPERADMIN
   ADMIN
-  STAFF       // ✅ Added STAFF role
+  STAFF
   CUSTOMER
 }
 
@@ -84,11 +84,15 @@ model OTP {
   ipAddress   String?
   userAgent   String?
   
+  // For booking related OTPs
+  bookingId   String?  @db.ObjectId
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([email, purpose])
   @@index([expiresAt])
+  @@index([bookingId])
   @@map("otps")
 }
 
@@ -97,6 +101,8 @@ enum OTPScope {
   REGISTER
   PASSWORD_RESET
   EMAIL_VERIFICATION
+  BOOKING_CONFIRMATION
+  BOOKING_CANCELLATION
 }
 
 // ============== CAR MODEL ==============
@@ -249,6 +255,58 @@ enum ReservationStatus {
   EXPIRED
 }
 
+// ============== CONTACT MODEL ==============
+model Contact {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  service     ContactService
+  message     String
+  status      ContactStatus @default(NEW)
+  
+  // Admin fields
+  adminNotes  String?
+  assignedTo  String?       // Admin ID who is handling this
+  resolvedAt  DateTime?
+  
+  // Tracking
+  ipAddress   String?
+  userAgent   String?
+  source      String?       // 'website', 'landing', 'referral'
+  
+  // Soft delete
+  isDeleted   Boolean       @default(false)
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@map("contacts")
+}
+
+enum ContactService {
+  CAR_RENTAL
+  CHAUFFEUR
+  CONCIERGE
+  CORPORATE
+  WEDDING
+  AIRPORT_TRANSFER
+  TOUR_PACKAGE
+  OTHER
+}
+
+enum ContactStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  SPAM
+  ARCHIVED
+}
+
 // ============== EMAIL LOG MODEL ==============
 model EmailLog {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
@@ -302,6 +360,11 @@ enum EmailType {
   PASSWORD_RESET
   EMAIL_VERIFICATION
   ACCOUNT_UPDATE
+  
+  // Contact related
+  CONTACT_CONFIRMATION
+  CONTACT_NOTIFICATION
+  
   
   // Promotional
   PROMOTIONAL
