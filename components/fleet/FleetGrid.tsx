@@ -6,8 +6,8 @@ import FleetCarCard from './FleetCarCard'
 import { useCars } from '@/context/CarContext'
 
 interface FleetGridProps {
-  cars?: FleetCar[]           // Optional - agar parent se aaye
-  totalVehicles?: number      // Optional
+  cars?: FleetCar[]          
+  totalVehicles?: number      
   onLoadMore?: () => void
 }
 

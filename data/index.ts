@@ -214,22 +214,34 @@ export const stats: Stat[] = [
 
 // Footer Links
 export const footerSections: FooterSection[] = [
-  {
+   {
     title: 'Fleet',
     links: [
-      { href: '/fleet', label: 'Exotic Sports' },
-      { href: '/fleet', label: 'Executive SUVs' },
-      { href: '/fleet', label: 'Next-Gen Electric' },
-      { href: '/fleet', label: 'Classic Collection' },
+      { id: 'fleet-sports', href: '/fleet?category=sports', label: 'Exotic Sports' },
+      { id: 'fleet-suv', href: '/fleet?category=suv', label: 'Executive SUVs' },
+      { id: 'fleet-electric', href: '/fleet?category=electric', label: 'Next-Gen Electric' },
+      { id: 'fleet-vintage', href: '/fleet?category=vintage', label: 'Classic Collection' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { href: '/about', label: 'About Us' },
-      { href: '/process', label: 'Our Process' },
-      { href: '/contact', label: 'Contact' },
-      { href: '/locations', label: 'Locations' },
+      {
+        href: '/about', label: 'About Us',
+        id: undefined
+      },
+      {
+        href: '/process', label: 'Our Process',
+        id: undefined
+      },
+      {
+        href: '/contact', label: 'Contact',
+        id: undefined
+      },
+      {
+        href: '/locations', label: 'Locations',
+        id: undefined
+      },
     ],
   },
 ]

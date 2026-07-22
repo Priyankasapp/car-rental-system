@@ -17,7 +17,7 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
   const isFav = isFavorite(car.id)
   
   //  CONSOLE LOG 1: Check if car data is received
-  console.log('🚗 FleetCarCard received car:', {
+  console.log('FleetCarCard received car:', {
     id: car.id,
     name: car.name,
     brand: car.brand,
@@ -159,7 +159,7 @@ export default function FleetCarCard({ car, className = '' }: FleetCarCardProps)
               </span>
               <div className="flex items-baseline">
                 <span className="text-xl font-extrabold text-gray-900">
-                  ${car.price || 0}
+                  ₹{car.price || 0}
                 </span>
                 <span className="text-xs text-gray-500 ml-0.5 font-medium">/day</span>
               </div>

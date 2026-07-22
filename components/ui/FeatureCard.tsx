@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'  // ✅ Add Link import
+import Link from 'next/link'  
 import gsap from 'gsap'
 import SectionHeader from '@/components/ui/SectionHeader'
 
@@ -49,7 +49,7 @@ export default function FeaturedFleet() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="py-16 md:py-24 max-w-[1440px] mx-auto px-5 md:px-16">
+    <section ref={sectionRef} className="py-16 md:py-24 max-w-360 mx-auto px-5 md:px-16">
       
       <SectionHeader
         title="Featured Fleet"
@@ -60,7 +60,7 @@ export default function FeaturedFleet() {
       <div className="flex justify-center w-full mt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
           {fleetData.map((car) => (
-            // ✅ Wrap with Link to make it clickable
+            //  Wrap with Link to make it clickable
             <Link 
               key={car.id} 
               href={`/cars/${car.id}`} 
@@ -68,7 +68,7 @@ export default function FeaturedFleet() {
             >
               <div className="fleet-card bg-white rounded-[24px] overflow-hidden border border-gray-100 shadow-sm transition-shadow hover:shadow-md flex flex-col">
                 {/* Image Container */}
-                <div className="relative aspect-[4/3] w-full bg-gray-50 overflow-hidden">
+                <div className="relative aspect-4/3 w-full bg-gray-50 overflow-hidden">
                   <span className="absolute top-4 left-4 z-10 bg-black text-white text-[9px] font-bold tracking-wider uppercase px-2.5 py-1.5 rounded-full">
                     {car.tag}
                   </span>
@@ -95,7 +95,7 @@ export default function FeaturedFleet() {
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="text-lg md:text-xl font-bold text-black">${car.price}</span>
+                      <span className="text-lg md:text-xl font-bold text-black">₹{car.price}</span>
                       <span className="text-[9px] font-bold text-gray-400 tracking-wider uppercase"> / DAY</span>
                     </div>
                   </div>

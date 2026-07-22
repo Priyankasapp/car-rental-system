@@ -9,7 +9,7 @@ import Icon from '@/components/ui/Icon'
 import Input from '@/components/ui/Input'
 import { Button } from '../ui/Button'
 
-//  Register ScrollTrigger
+// Register ScrollTrigger
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
 }
@@ -21,7 +21,7 @@ export default function Footer() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      //  1. Fade in entire footer content
+      // 1. Fade in entire footer content
       gsap.fromTo(
         '.footer-content',
         { opacity: 0, y: 40 },
@@ -38,7 +38,7 @@ export default function Footer() {
         }
       )
 
-      //  2. Stagger animation for brand and sections
+      // 2. Stagger animation for brand and sections
       gsap.fromTo(
         '.footer-item',
         { opacity: 0, y: 30 },
@@ -56,7 +56,7 @@ export default function Footer() {
         }
       )
 
-      //  3. Social icons hover animation (bounce)
+      // 3. Social icons hover animation (bounce)
       document.querySelectorAll('.social-link').forEach((link) => {
         const element = link as HTMLElement
         
@@ -79,7 +79,7 @@ export default function Footer() {
         })
       })
 
-      //  4. Newsletter button hover pulse
+      // 4. Newsletter button hover pulse
       const newsletterBtn = document.querySelector('.newsletter-btn')
       if (newsletterBtn) {
         newsletterBtn.addEventListener('mouseenter', () => {
@@ -99,7 +99,7 @@ export default function Footer() {
         })
       }
 
-      //  5. Bottom bar fade in
+      // 5. Bottom bar fade in
       gsap.fromTo(
         '.bottom-bar',
         { opacity: 0, y: 20 },
@@ -124,11 +124,10 @@ export default function Footer() {
 
   return (
     <footer ref={footerRef} className="bg-white pt-24 pb-12 border-t border-gray-100 overflow-hidden">
-      {/*  Content with animation class */}
       <div ref={contentRef} className="footer-content max-w-360 mx-auto px-5 md:px-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
           
-          {/*  Brand Block */}
+          {/* Brand Block */}
           <div className="footer-item flex flex-col">
             <h2 className="text-2xl font-bold tracking-tight text-black mb-4">
               UrbanDrive
@@ -149,15 +148,15 @@ export default function Footer() {
             </div>
           </div>
 
-          {/*  Navigation Links */}
+          {/* Navigation Links - ✅ FIXED: Using index as key */}
           {footerSections.map((section) => (
             <div key={section.title} className="footer-item lg:justify-self-center">
               <h5 className="text-[10px] font-bold text-black uppercase tracking-[0.15em] mb-6">
                 {section.title}
               </h5>
               <ul className="flex flex-col gap-3">
-                {section.links.map((link) => (
-                  <li key={link.href}>
+                {section.links.map((link, index) => (
+                  <li key={index}>
                     <Link
                       href={link.href}
                       className="text-xs text-gray-400 hover:text-black transition-colors duration-200"
@@ -170,7 +169,7 @@ export default function Footer() {
             </div>
           ))}
 
-          {/*  Newsletter */}
+          {/* Newsletter */}
           <div className="footer-item lg:justify-self-end w-full max-w-xs">
             <h5 className="text-[10px] font-bold text-black uppercase tracking-[0.15em] mb-6">
               Newsletter
@@ -190,7 +189,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/*  Bottom Bar */}
+        {/* Bottom Bar */}
         <div className="bottom-bar flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-100 gap-4">
           <p className="text-[10px] font-medium text-gray-400 tracking-wider">
             © {currentYear} URBAN DRIVE EXECUTIVE. ALL RIGHTS RESERVED.

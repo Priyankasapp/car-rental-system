@@ -1,5 +1,7 @@
 // Types for the car rental system
 
+import { Key } from "react"
+
 export interface Car {
   id: string
   name: string
@@ -43,6 +45,7 @@ export interface NavLink {
 }
 
 export interface FooterLink {
+  id: Key | null | undefined
   href: string
   label: string
 }
