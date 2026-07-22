@@ -62,7 +62,7 @@ export const contactForm: ContactFormSection = {
   subtitle:
     "Share your travel plans and we'll recommend the perfect luxury vehicle.",
 
-  image: "/images/contact/form.jpg",
+  image: "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&q=80&w=800",
 
   services: [
     "Luxury Sedan",

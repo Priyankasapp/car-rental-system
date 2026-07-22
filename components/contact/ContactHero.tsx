@@ -20,7 +20,7 @@ export default function ContactHero() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       
-      //  1. Image Scale Animation (Parallax)
+      // Image Scale Animation (Parallax)
       gsap.to('.contact-image', {
         scale: 1.05,
         duration: 8,
@@ -33,7 +33,7 @@ export default function ContactHero() {
         }
       })
 
-      //  2. Badge Fade In
+      //  Badge Fade In
       gsap.fromTo(
         '.contact-badge',
         { opacity: 0, y: 20 },
@@ -46,7 +46,7 @@ export default function ContactHero() {
         }
       )
 
-      //  3. Title Stagger Animation (Letter by Letter effect)
+      //  Title Stagger Animation (Letter by Letter effect)
       const titleChars = document.querySelectorAll('.title-char');
       gsap.fromTo(
         titleChars,
@@ -62,7 +62,7 @@ export default function ContactHero() {
         }
       )
 
-      //  4. Description Fade In
+      //  Description Fade In
       gsap.fromTo(
         '.contact-description',
         { opacity: 0, y: 30 },
@@ -75,7 +75,7 @@ export default function ContactHero() {
         }
       )
 
-      //  5. Buttons Stagger
+      //   Buttons Stagger
       gsap.fromTo(
         '.contact-button',
         { opacity: 0, y: 30, scale: 0.9 },
@@ -90,7 +90,7 @@ export default function ContactHero() {
         }
       )
 
-      //  6. Shimmer Effect on Buttons
+      //   Shimmer Effect on Buttons
       document.querySelectorAll('.contact-button').forEach((btn) => {
         const element = btn as HTMLElement
         
@@ -126,7 +126,7 @@ export default function ContactHero() {
   ))
 
   return (
-    <section ref={sectionRef} className="relative flex min-h-[90vh] items-center overflow-hidden">
+    <section ref={sectionRef} className="relative flex min-h-[90vh] mt-20 items-center overflow-hidden">
       
       {/* ===== BACKGROUND IMAGE ===== */}
       <div className="absolute inset-0">
