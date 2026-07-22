@@ -6,19 +6,10 @@ import { useCars } from '@/context/CarContext'
 import { useAuth } from '@/context/AuthContext'
 import { CarGallery } from '@/components/car/CarGallery'
 import { CarInfo } from '@/components/car/CarInfo'
-import { CarAmenities } from '@/components/car/CarAmenities'
 import { CarBookingSidebar } from '@/components/car/CarBookingSidebar'
 import Link from 'next/link'
 
 // Mock data (will be replaced with real data)
-const amenities = [
-  { icon: '🔊', title: 'Burmester® Sound', description: '3D High-End Surround System' },
-  { icon: '🌤️', title: 'Panoramic Roof', description: 'Expansive glass roof' },
-  { icon: '🌡️', title: '4-Zone Climate', description: 'Individualized comfort' },
-  { icon: '👁️', title: 'Night Vision', description: 'Infrared thermal imaging' },
-  { icon: '💺', title: '18-Way Seats', description: 'Adaptive sport seats' },
-  { icon: '🛡️', title: 'Driver Assist', description: 'InnoDrive with cruise control' },
-]
 
 export default function CarDetailPage() {
   const params = useParams()
@@ -68,11 +59,11 @@ export default function CarDetailPage() {
           <div className="flex-1 space-y-12">
             <CarGallery mainImage={car.image} images={images} />
             <CarInfo car={car} />
-            <CarAmenities amenities={amenities} />
+          
           </div>
 
           {/* Right Column */}
-          <aside className="w-full lg:w-[420px]">
+          <aside className="w-full lg:w-105">
             <CarBookingSidebar
               carId={car.id}
               price={car.price}

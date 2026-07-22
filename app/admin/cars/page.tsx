@@ -21,8 +21,7 @@ import {
   Search,
   SlidersHorizontal,
   CheckCircle2,
-  Wrench,
-  XCircle
+  Wrench
 } from 'lucide-react'
 import { CarStatusBadge } from '@/components/admin/CarStatusBadge'
 

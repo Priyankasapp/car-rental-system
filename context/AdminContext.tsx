@@ -608,7 +608,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       fetchBookings()
       fetchStats()
       fetchCars()
-      fetchUsers()  // ✅ Fetch users on initial load
+      fetchUsers() 
     }
   }, [isAdmin, fetchBookings, fetchStats, fetchCars, fetchUsers])
 

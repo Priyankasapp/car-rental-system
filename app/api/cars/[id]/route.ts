@@ -163,7 +163,7 @@ export async function DELETE(
     }
 
     // Check if car exists
-    const existingCar = await prisma.car.findUnique({
+    const existingCar = await prisma.car.findUnique({ 
       where: { id },
     })
 
