@@ -21,16 +21,26 @@ import {
   Search,
   SlidersHorizontal,
   CheckCircle2,
-  Wrench
+  Wrench,
+  X
 } from 'lucide-react'
 import { CarStatusBadge } from '@/components/admin/CarStatusBadge'
+
+type CarToDelete = {
+  id: string
+  name: string
+}
 
 export default function AdminCarsPage() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { cars, isLoading, error, fetchCars, deleteCar } = useAdmin()
   const hasInitialized = useRef(false)
+
+  // Deletion State
+  const [carToDelete, setCarToDelete] = useState<CarToDelete | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('')
@@ -80,24 +90,32 @@ export default function AdminCarsPage() {
     }
   }, [cars])
 
-  // Handle delete car
-  const handleDelete = async (id: string, carName: string, e: React.MouseEvent) => {
-    e.stopPropagation() 
-    if (!confirm(`Are you sure you want to delete ${carName}? This action cannot be undone.`)) {
-      return
-    }
+  // Open confirmation modal
+  const openDeleteModal = (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeleteError(null)
+    setCarToDelete({ id, name })
+  }
 
-    setDeletingId(id)
+  // Execute deletion request
+  const confirmDelete = async () => {
+    if (!carToDelete) return
+
+    setDeletingId(carToDelete.id)
+    setDeleteError(null)
+
     try {
-      await deleteCar(id)
-    } catch (err) {
-      console.error('Failed to delete car:', err)
+      await deleteCar(carToDelete.id)
+      setCarToDelete(null)
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete car. Please try again.'
+      setDeleteError(errorMessage)
     } finally {
       setDeletingId(null)
     }
   }
 
-  //  Handle card click - navigate to car detail
+  // Handle card click - navigate to car detail
   const handleCardClick = (carId: string) => {
     router.push(`/admin/cars/${carId}`)
   }
@@ -250,11 +268,13 @@ export default function AdminCarsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredCars.map((car) => {
             const carTitle = `${car.manufacturer} ${car.model}`
+            const isDeleting = deletingId === car.id
+
             return (
               <div
                 key={car.id}
                 onClick={() => handleCardClick(car.id)} 
-                className="group bg-white border border-gray-200/80 rounded-2xl overflow-hidden hover:border-gray-300 hover:shadow-md transition-all duration-200 flex flex-col cursor-pointer"
+                className="group bg-white border border-gray-200/80 rounded-2xl overflow-hidden hover:border-gray-300 hover:shadow-md transition-all duration-200 flex flex-col cursor-pointer relative"
               >
                 {/* Visual Header / Image Container */}
                 <div className="relative aspect-16/10 bg-gray-100 overflow-hidden">
@@ -285,12 +305,13 @@ export default function AdminCarsPage() {
                         <Edit3 className="w-3.5 h-3.5" />
                       </Link>
                       <button
-                        onClick={(e) => handleDelete(car.id, carTitle, e)} 
-                        disabled={deletingId === car.id}
+                        type="button"
+                        onClick={(e) => openDeleteModal(car.id, carTitle, e)} 
+                        disabled={isDeleting}
                         className="p-2 bg-red-600/90 backdrop-blur-sm rounded-lg hover:bg-red-600 text-white transition-colors disabled:opacity-50"
                         title="Delete Vehicle"
                       >
-                        {deletingId === car.id ? (
+                        {isDeleting ? (
                           <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         ) : (
                           <Trash2 className="w-3.5 h-3.5" />
@@ -373,6 +394,71 @@ export default function AdminCarsPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* ===== DELETE CONFIRMATION MODAL ===== */}
+      {carToDelete && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setCarToDelete(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <button 
+                onClick={() => setCarToDelete(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Delete Vehicle</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Are you sure you want to delete <span className="font-semibold text-gray-900">{carToDelete.name}</span>? This action soft-deletes the vehicle and sets its status to Unavailable.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCarToDelete(null)}
+                disabled={deletingId !== null}
+                className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deletingId !== null}
+                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 text-sm font-medium rounded-xl transition-colors shadow-xs inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                {deletingId ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Confirm Delete</span>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

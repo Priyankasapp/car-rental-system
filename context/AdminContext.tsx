@@ -140,6 +140,7 @@ interface AdminContextType {
   fetchBookingById: (id: string) => Promise<void>
   confirmBooking: (id: string) => Promise<void>
   rejectBooking: (id: string, reason?: string) => Promise<void>
+  deleteBooking: (id: string) => Promise<void> 
   
   // Actions - Stats
   fetchStats: () => Promise<void>
@@ -319,6 +320,39 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       }
 
       return data
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin, currentBooking])
+
+  //  ============== DELETE BOOKING (NEW) ==============
+  const deleteBooking = useCallback(async (id: string) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/bookings/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete booking')
+      }
+
+      setBookings(prev => prev.filter(b => b.id !== id))
+      
+      if (currentBooking?.id === id) {
+        setCurrentBooking(null)
+      }
     } catch (err: any) {
       setError(err.message)
       throw err
@@ -625,6 +659,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     fetchBookingById,
     confirmBooking,
     rejectBooking,
+    deleteBooking,
     fetchStats,
     setFilters,
     clearFilters,
@@ -651,6 +686,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     fetchBookingById,
     confirmBooking,
     rejectBooking,
+    deleteBooking,
     fetchStats,
     setFilters,
     clearFilters,
