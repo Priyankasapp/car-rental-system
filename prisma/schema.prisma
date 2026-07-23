@@ -29,6 +29,9 @@ model User {
   sessions        Session[]
   reservations    Reservation[]
   emailLogs       EmailLog[]
+  payments        Payment[]
+  auditLogs       AuditLog[]      // Admin audit logs
+  bookingAuditLogs BookingAuditLog[] // ✅ Added opposite relation
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -236,6 +239,8 @@ model Reservation {
   
   // Relations
   emailLogs             EmailLog[]
+  payments              Payment[]
+  auditLogs             BookingAuditLog[]
   
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
@@ -253,6 +258,100 @@ enum ReservationStatus {
   CANCELLED
   COMPLETED
   EXPIRED
+}
+
+// ============== PAYMENT MODEL ==============
+model Payment {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId     String          @db.ObjectId
+  booking       Reservation     @relation(fields: [bookingId], references: [id])
+  userId        String?         @db.ObjectId
+  user          User?           @relation(fields: [userId], references: [id])
+  
+  // Payment details
+  amount        Int             // In cents/paise
+  currency      String          @default("INR")
+  method        PaymentMethod
+  status        PaymentStatus   @default(PENDING)
+  
+  // Transaction details
+  transactionId String?         @unique
+  razorpayOrderId String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  
+  // Refund details
+  refundAmount  Int?
+  refundId      String?
+  refundStatus  RefundStatus?
+  refundReason  String?
+  
+  // Metadata
+  metadata      Json?
+  
+  // Soft delete
+  isDeleted     Boolean         @default(false)
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  completedAt   DateTime?
+
+  @@index([bookingId])
+  @@index([userId])
+  @@index([status])
+  // ✅ Removed duplicate index on transactionId (already has @unique)
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  UPI
+  NET_BANKING
+  WALLET
+  CASH
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+  COMPLETED
+}
+
+// ============== BOOKING AUDIT LOG MODEL ==============
+model BookingAuditLog {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId       String   @db.ObjectId
+  booking         Reservation @relation(fields: [bookingId], references: [id])
+  
+  // Audit details
+  action          String   // STATUS_CHANGED_TO_CONFIRMED, STATUS_CHANGED_TO_CANCELLED, etc.
+  previousStatus  String?
+  newStatus       String?
+  performedBy     String   @db.ObjectId
+  performedByUser User     @relation(fields: [performedBy], references: [id])
+  notes           String?
+  
+  // Metadata
+  ipAddress       String?
+  userAgent       String?
+  
+  createdAt       DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([createdAt])
+  @@index([performedBy])
+  @@map("booking_audit_logs")
 }
 
 // ============== CONTACT MODEL ==============
@@ -387,4 +486,30 @@ enum EmailStatus {
   BOUNCED
   SPAM
   UNSUBSCRIBED
+}
+
+// ============== GENERAL AUDIT LOG (System wide) ==============
+model AuditLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String?  @db.ObjectId
+  user        User?    @relation(fields: [userId], references: [id])
+  
+  // Audit details
+  action      String   // LOGIN, LOGOUT, CREATE, UPDATE, DELETE, etc.
+  entityType  String   // USER, CAR, BOOKING, PAYMENT, etc.
+  entityId    String?
+  changes     Json?    // Before/after changes
+  performedBy String?  // User ID who performed the action
+  
+  // Metadata
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([action])
+  @@map("audit_logs")
 }

@@ -173,15 +173,15 @@ export default function BookingTable({
                 </td>
 
                 {/* Actions */}
-                <td className="px-6 py-4 text-right">
-                  <Link
-                    href={`/admin/bookings/${booking.id}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-                  >
-                    <Eye className="h-4 w-4" />
-                    View
-                  </Link>
-                </td>
+               <td className="px-6 py-4 text-right">
+  <Link
+    href={`/admin/bookings/${booking.id}`}  
+    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+  >
+    <Eye className="h-4 w-4" />
+    View
+  </Link>
+</td>
               </tr>
             ))}
           </tbody>
