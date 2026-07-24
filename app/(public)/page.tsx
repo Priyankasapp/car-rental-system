@@ -1,6 +1,5 @@
 "use client";
 
-import Header from "@/components/layout/Header";
 import Hero from "@/components/sections/Hero";
 import Collections from "@/components/sections/Collections";
 

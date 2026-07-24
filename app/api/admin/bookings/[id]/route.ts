@@ -533,7 +533,7 @@ export async function PUT(
       })
     }
 
-    // ✅ Send email notification if status changed
+    //  Send email notification if status changed
     if (status && status !== existingBooking.status) {
       try {
         // Prepare email data
@@ -549,10 +549,10 @@ export async function PUT(
           adminEmails
         )
         
-        console.log(`✅ Booking ${status} email sent for booking #${updatedBooking.reservationRef}`)
+        console.log(` Booking ${status} email sent for booking #${updatedBooking.reservationRef}`)
       } catch (emailError) {
         // Don't fail the API if email fails, just log it
-        console.error('❌ Failed to send booking email:', emailError)
+        console.error(' Failed to send booking email:', emailError)
       }
     }
 
@@ -810,7 +810,7 @@ export async function PATCH(
       },
     })
 
-    // ✅ Send email notification
+    //  Send email notification
     try {
       // Prepare email data
       const emailData = prepareBookingEmailData(updatedBooking, status, cancellationReason)
@@ -825,10 +825,10 @@ export async function PATCH(
         adminEmails
       )
       
-      console.log(`✅ Booking ${status} email sent for booking #${updatedBooking.reservationRef}`)
+      console.log(` Booking ${status} email sent for booking #${updatedBooking.reservationRef}`)
     } catch (emailError) {
       // Don't fail the API if email fails, just log it
-      console.error('❌ Failed to send booking email:', emailError)
+      console.error(' Failed to send booking email:', emailError)
     }
 
     return NextResponse.json({
@@ -967,7 +967,7 @@ export async function DELETE(
       },
     })
 
-    // ✅ Send cancellation email for deleted booking
+    //  Send cancellation email for deleted booking
     try {
       // Prepare email data with cancellation reason
       const emailData = prepareBookingEmailData(
@@ -986,10 +986,10 @@ export async function DELETE(
         adminEmails
       )
       
-      console.log(`✅ Booking cancellation email sent for deleted booking #${existingBooking.reservationRef}`)
+      console.log(` Booking cancellation email sent for deleted booking #${existingBooking.reservationRef}`)
     } catch (emailError) {
       // Don't fail the API if email fails, just log it
-      console.error('❌ Failed to send cancellation email:', emailError)
+      console.error(' Failed to send cancellation email:', emailError)
     }
 
     return NextResponse.json({

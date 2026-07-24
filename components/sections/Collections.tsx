@@ -20,7 +20,7 @@ export default function Collections() {
         y: 40
       })
       
-      // ✅ Animate with stagger
+      //  Animate with stagger
       gsap.to(cards, {
         opacity: 1,
         y: 0,
@@ -37,15 +37,12 @@ export default function Collections() {
   return (
     <section 
       ref={sectionRef} 
-      className="py-16 md:py-24 max-w-[1440px] mx-auto px-5 md:px-16"
+      className="py-16 md:py-24 max-w-360 mx-auto px-5 md:px-16"
     >
       <SectionHeader
         label="Curated selection"
         title="Collections"
-        action={{
-          label: 'VIEW ALL',
-          href: '/collections'
-        }}
+        
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-8 md:mt-12">

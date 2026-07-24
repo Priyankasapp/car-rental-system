@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 
-// GET - Get all users (admin only)
+// GET - Get all customer users 
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access
@@ -28,13 +28,13 @@ export async function GET(request: NextRequest) {
     // Get query params for filtering
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get('search')
-    const role = searchParams.get('role')
     const isActive = searchParams.get('isActive')
     const limit = parseInt(searchParams.get('limit') || '100')
 
-    // Build filter conditions
+    // Build filter conditions — strictly filter by CUSTOMER role
     const where: any = {
       isDeleted: false,
+      role: 'CUSTOMER',
     }
 
     if (search) {
@@ -44,10 +44,6 @@ export async function GET(request: NextRequest) {
         { lastName: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
       ]
-    }
-
-    if (role) {
-      where.role = role
     }
 
     if (isActive !== null && isActive !== undefined) {
@@ -103,7 +99,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-//  POST - Create new user (admin only)
+// POST - Create new customer user (admin only)
 export async function POST(request: NextRequest) {
   try {
     // Verify admin access
@@ -154,7 +150,7 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(body.password, 10)
 
-    // Create user
+    // Create user explicitly as a CUSTOMER
     const user = await prisma.user.create({
       data: {
         email: body.email,
@@ -162,7 +158,7 @@ export async function POST(request: NextRequest) {
         lastName: body.lastName,
         phone: body.phone || null,
         password: hashedPassword,
-        role: body.role || 'CUSTOMER',
+        role: 'CUSTOMER', // Strictly enforce CUSTOMER role
         isEmailVerified: body.isEmailVerified || false,
         isActive: body.isActive !== undefined ? body.isActive : true,
         profilePicture: body.profilePicture || null,
@@ -184,7 +180,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'User created successfully',
+      message: 'Customer created successfully',
       data: { user },
     })
   } catch (error) {

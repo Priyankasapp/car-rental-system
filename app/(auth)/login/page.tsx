@@ -42,12 +42,12 @@ export default function LoginPage() {
     try {
       const result = await login(email, password)
       
-      // ✅ Check if OTP is required
+      //  Check if OTP is required
       if (result.requiresOTP) {
-        setMessage('📧 Please enter the OTP sent to your email.')
+        setMessage(' Please enter the OTP sent to your email.')
         setStep('otp')
       } else {
-        // ✅ Use redirectUrl from API response
+        //  Use redirectUrl from API response
         const redirectUrl = result.redirectUrl || '/'
         setMessage('Login successful! Redirecting...')
         setTimeout(() => {

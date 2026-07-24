@@ -22,7 +22,7 @@ const fleetData = [
     tag: 'LUXURY SUV',
     tagline: 'Unmatched Comfort',
     price: 350,
-    image: 'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',  // ✅ Fixed URL
+    image: 'https://images.unsplash.com/photo-1580274455191-1c62238fa333?auto=format&fit=crop&q=80&w=600',  
     specs: { transmission: 'Auto', power: '523 HP', metric: '5', metricLabel: 'PASSENGERS' }
   }
 ]

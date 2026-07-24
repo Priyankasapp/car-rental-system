@@ -131,13 +131,13 @@ export async function sendEmail({ to, type, data }: SendEmailParams): Promise<vo
     html = generateBookingPendingHTML(data.bookingDetails)
     text = generateBookingPendingText(data.bookingDetails)
   } 
-  // ✅ NEW: Booking Confirmed
+  //  Booking Confirmed
   else if (type === 'BOOKING_CONFIRMED' && data.bookingDetails) {
     subject = `Booking Confirmed (#${data.bookingDetails.bookingId}) - UrbanDrive`
     html = generateBookingConfirmedHTML(data.bookingDetails)
     text = generateBookingConfirmedText(data.bookingDetails)
   } 
-  // ✅ NEW: Booking Cancelled
+  //  Booking Cancelled
   else if (type === 'BOOKING_CANCELLED' && data.bookingDetails) {
     subject = `Booking Cancelled (#${data.bookingDetails.bookingId}) - UrbanDrive`
     html = generateBookingCancelledHTML(data.bookingDetails)
@@ -235,7 +235,7 @@ export async function sendWelcomeAndOtpEmails(
   }
 }
 
-// ✅ NEW: Send booking email based on status
+// Send booking email based on status
 export async function sendBookingStatusEmail(
   bookingDetails: BookingEmailProps,
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED'
@@ -277,7 +277,7 @@ export async function sendBookingStatusEmail(
   }
 }
 
-// ✅ NEW: Send booking email to admin (for notifications)
+//  Send booking email to admin (for notifications)
 export async function sendBookingAdminNotification(
   bookingDetails: BookingEmailProps,
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED',
@@ -327,7 +327,7 @@ ${bookingDetails.cancellationReason ? `Cancellation Reason: ${bookingDetails.can
   }
 }
 
-// ✅ NEW: Send booking email with all notifications (user + admin)
+//  Send booking email with all notifications (user + admin)
 export async function sendBookingEmails(
   bookingDetails: BookingEmailProps,
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED',

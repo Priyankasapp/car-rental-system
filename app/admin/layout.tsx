@@ -12,8 +12,6 @@ import {
   Menu, 
   X,
   LogOut,
-  UserPlus,
-  Briefcase,
   ShieldCheck,
   ChevronDown,
   ChevronRight
@@ -31,16 +29,6 @@ const sidebarLinks = [
 
 // Management section links
 const managementLinks = [
-  { 
-    href: '/admin/staff', 
-    label: 'Staff Master', 
-    icon: Briefcase,
-  },
-  { 
-    href: '/admin/staff/users', 
-    label: 'Staff Users', 
-    icon: UserPlus,
-  },
   { 
     href: '/admin/permissions', 
     label: 'Permissions', 

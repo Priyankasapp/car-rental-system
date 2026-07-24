@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 import { useAdmin } from '@/context/AdminContext'
 import { useAuth } from '@/context/AuthContext'
 import { 
-  Plus, 
   Users, 
   AlertCircle, 
   Edit, 
@@ -15,13 +14,14 @@ import {
   Mail, 
   Phone, 
   Calendar,
-  Shield,
   CheckCircle,
   XCircle,
-  Search
+  Search,
+  Check,
+  X
 } from 'lucide-react'
 
-//  User Role Badge Component
+// User Role Badge Component
 const UserRoleBadge = ({ role }: { role: string }) => {
   const styles: Record<string, string> = {
     SUPERADMIN: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -44,7 +44,7 @@ const UserRoleBadge = ({ role }: { role: string }) => {
   )
 }
 
-//  User Status Badge Component
+// User Status Badge Component
 const UserStatusBadge = ({ isActive }: { isActive: boolean }) => {
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${
@@ -69,9 +69,8 @@ export default function AdminUsersPage() {
   const hasInitialized = useRef(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterRole, setFilterRole] = useState('')
 
-  //  Check admin access and fetch users
+  // Check admin access and fetch users
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login')
@@ -107,17 +106,14 @@ export default function AdminUsersPage() {
 
   // Filter users
   const filteredUsers = users.filter((u) => {
-    const matchesSearch = 
+    return (
       u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesRole = filterRole === '' || u.role === filterRole
-    
-    return matchesSearch && matchesRole
+    )
   })
 
-  //  Loading state
+  // Loading state
   if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -126,7 +122,7 @@ export default function AdminUsersPage() {
     )
   }
 
-  //  Check admin access
+  // Check admin access
   if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN')) {
     return null
   }
@@ -138,16 +134,9 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Users</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Manage all registered users
+            Manage all registered customers
           </p>
         </div>
-        <Link
-          href="/admin/users/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add User
-        </Link>
       </div>
 
       {/* ===== ERROR MESSAGE ===== */}
@@ -170,20 +159,6 @@ export default function AdminUsersPage() {
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm"
           />
         </div>
-        <div className="relative min-w-45">
-          <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none appearance-none bg-white text-sm"
-          >
-            <option value="">All Roles</option>
-            <option value="SUPERADMIN">Super Admin</option>
-            <option value="ADMIN">Admin</option>
-            <option value="STAFF">Staff</option>
-            <option value="CUSTOMER">Customer</option>
-          </select>
-        </div>
       </div>
 
       {/* ===== USERS GRID ===== */}
@@ -197,23 +172,15 @@ export default function AdminUsersPage() {
           </div>
           <h3 className="text-lg font-medium text-gray-900">No users found</h3>
           <p className="text-sm text-gray-500 mt-1">
-            {searchTerm || filterRole ? 'Try adjusting your filters' : 'Add your first user'}
+            {searchTerm ? 'Try adjusting your search query' : 'No registered users available.'}
           </p>
-          {!searchTerm && !filterRole && (
-            <Link
-              href="/admin/users/new"
-              className="inline-block mt-4 px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Add User
-            </Link>
-          )}
         </div>
       ) : (
         /* Users Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map((user) => (
+          {filteredUsers.map((u) => (
             <div
-              key={user.id}
+              key={u.id}
               className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300"
             >
               {/* User Header */}
@@ -222,18 +189,18 @@ export default function AdminUsersPage() {
                   <div className="flex items-center gap-3">
                     {/* Avatar */}
                     <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold text-lg">
-                      {user.firstName?.[0]}{user.lastName?.[0]}
+                      {u.firstName?.[0]}{u.lastName?.[0]}
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {user.firstName} {user.lastName}
+                        {u.firstName} {u.lastName}
                       </h3>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <UserRoleBadge role={user.role} />
+                        <UserRoleBadge role={u.role} />
                       </div>
                     </div>
                   </div>
-                  <UserStatusBadge isActive={user.isActive} />
+                  <UserStatusBadge isActive={u.isActive} />
                 </div>
               </div>
 
@@ -242,37 +209,41 @@ export default function AdminUsersPage() {
                 {/* Email */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Mail className="w-4 h-4 text-gray-400" />
-                  <span>{user.email}</span>
+                  <span>{u.email}</span>
                 </div>
 
                 {/* Phone */}
-                {user.phone && (
+                {u.phone && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Phone className="w-4 h-4 text-gray-400" />
-                    <span>{user.phone}</span>
+                    <span>{u.phone}</span>
                   </div>
                 )}
 
                 {/* Joined Date */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Calendar className="w-4 h-4 text-gray-400" />
-                  <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+                  <span>Joined {new Date(u.createdAt).toLocaleDateString()}</span>
                 </div>
 
                 {/* Stats */}
                 <div className="flex items-center gap-4 pt-2 border-t border-gray-100">
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-900">{user._count?.reservations || 0}</p>
+                  <div className="text-center flex-1">
+                    <p className="text-lg font-semibold text-gray-900">{u._count?.reservations || 0}</p>
                     <p className="text-xs text-gray-500">Bookings</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-900">{user._count?.sessions || 0}</p>
+                  <div className="text-center flex-1">
+                    <p className="text-lg font-semibold text-gray-900">{u._count?.sessions || 0}</p>
                     <p className="text-xs text-gray-500">Sessions</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-900">
-                      {user.isEmailVerified ? '✅' : '❌'}
-                    </p>
+                  <div className="text-center flex-1">
+                    <div className="h-7 flex items-center justify-center">
+                      {u.isEmailVerified ? (
+                        <Check className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <X className="w-5 h-5 text-red-500" />
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500">Verified</p>
                   </div>
                 </div>
@@ -281,19 +252,19 @@ export default function AdminUsersPage() {
               {/* Actions */}
               <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2">
                 <Link
-                  href={`/admin/users/${user.id}/edit`}
+                  href={`/admin/users/${u.id}/edit`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <Edit className="w-4 h-4" />
                   Edit
                 </Link>
                 <button
-                  onClick={() => handleDelete(user.id)}
-                  disabled={deletingId === user.id || user.id === user.id} // Can't delete yourself
+                  onClick={() => handleDelete(u.id)}
+                  disabled={deletingId === u.id || u.id === user.id} // Can't delete yourself
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={user.id === user.id ? "You cannot delete yourself" : "Delete user"}
+                  title={u.id === user.id ? "You cannot delete yourself" : "Delete user"}
                 >
-                  {deletingId === user.id ? (
+                  {deletingId === u.id ? (
                     <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Trash2 className="w-4 h-4" />

@@ -15,7 +15,6 @@ export const tokens = {
     amberBg: '#fff8e6',
     amberBorder: '#ffe599',
     amberText: '#8a5d00',
-    // ✅ New colors for status badges
     greenBg: '#d1fae5',
     greenBorder: '#a7f3d0',
     greenText: '#065f46',

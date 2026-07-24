@@ -300,7 +300,7 @@ model Payment {
   @@index([bookingId])
   @@index([userId])
   @@index([status])
-  // ✅ Removed duplicate index on transactionId (already has @unique)
+  
   @@map("payments")
 }
 
