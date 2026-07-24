@@ -15,7 +15,7 @@ interface Payment {
   refundAmount?: number | null
 }
 
-// Helper: Map action to valid status
+//  Map action to valid status
 function mapActionToStatus(action: string): string {
   const mapping: Record<string, string> = {
     'CONFIRM': 'CONFIRMED',
@@ -25,7 +25,7 @@ function mapActionToStatus(action: string): string {
   return mapping[action] || action
 }
 
-// Helper: Get available actions based on status
+//  Get available actions based on status
 function getAvailableActions(status: string): string[] {
   const actions: Record<string, string[]> = {
     'PENDING': ['CONFIRM', 'CANCEL'],
@@ -37,7 +37,7 @@ function getAvailableActions(status: string): string[] {
   return actions[status] || []
 }
 
-// Helper: Validate status transition
+//  Validate status transition
 function isValidStatusTransition(currentStatus: string, newStatus: string): { valid: boolean; message?: string } {
   const transitions: Record<string, string[]> = {
     'PENDING': ['CONFIRMED', 'CANCELLED', 'EXPIRED'],
@@ -65,7 +65,7 @@ function isValidStatusTransition(currentStatus: string, newStatus: string): { va
   return { valid: true }
 }
 
-// ✅ Helper: Format date for email
+//  Format date for email
 function formatDateForEmail(date: Date): string {
   return new Date(date).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -75,7 +75,7 @@ function formatDateForEmail(date: Date): string {
   })
 }
 
-// ✅ Helper: Prepare booking email data
+//  Prepare booking email data
 function prepareBookingEmailData(booking: any, status: string, cancellationReason?: string) {
   return {
     customerName: booking.customerName,
