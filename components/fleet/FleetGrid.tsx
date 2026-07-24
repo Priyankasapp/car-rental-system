@@ -76,14 +76,7 @@ export default function FleetGrid({
           <FleetCarCard key={car.id} car={car} />
         ))}
         
-        {/* Load More Card - Uncomment when pagination is ready */}
-        {/* {hasMore && onLoadMore && (
-          <LoadMoreCard
-            title="Unlock More"
-            description={`View the complete collection of over ${totalVehicles} exclusive vehicles.`}
-            onClick={onLoadMore}
-          />
-        )} */}
+        
       </div>
     </div>
   )

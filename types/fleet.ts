@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // types/fleet.ts
 
 
@@ -28,6 +29,10 @@ export interface FleetCar {
   price: number
   image: string
   specs: {
+    fuelType: string
+    seats: any
+    location: string
+    year: any
     power: string
     transmission: string
   }
@@ -116,6 +121,10 @@ export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
     specs: {
       power: `${apiCar.seats} Seats`,
       transmission: apiCar.transmission,
+      fuelType: "",
+      seats: undefined,
+      location: "",
+      year: undefined
     },
     status: statusMap[apiCar.status] || 'available',
     favorite: apiCar.isFavorite || false,
