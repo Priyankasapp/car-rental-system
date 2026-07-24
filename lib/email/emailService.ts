@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/email/emailService.ts
 import { 
   generateWelcomeHTML, 
@@ -6,6 +7,10 @@ import {
   generateOtpText,
   generateBookingPendingHTML,
   generateBookingPendingText,
+  generateBookingConfirmedHTML,
+  generateBookingConfirmedText,
+  generateBookingCancelledHTML,
+  generateBookingCancelledText,
   generateContactConfirmationHTML,
   generateContactConfirmationText,
   generateAdminNotificationHTML,
@@ -15,10 +20,17 @@ import {
 } from '@/lib/email/templates'
 import nodemailer from 'nodemailer'
 
-// Updated interface with new types
+// Updated interface with all booking types
 interface SendEmailParams {
   to: string
-  type: 'WELCOME' | 'OTP' | 'BOOKING_PENDING' | 'CONTACT_CONFIRMATION' | 'ADMIN_NOTIFICATION'
+  type: 
+    | 'WELCOME' 
+    | 'OTP' 
+    | 'BOOKING_PENDING' 
+    | 'BOOKING_CONFIRMED' 
+    | 'BOOKING_CANCELLED'
+    | 'CONTACT_CONFIRMATION' 
+    | 'ADMIN_NOTIFICATION'
   data: {
     firstName?: string
     lastName?: string
@@ -119,14 +131,26 @@ export async function sendEmail({ to, type, data }: SendEmailParams): Promise<vo
     html = generateBookingPendingHTML(data.bookingDetails)
     text = generateBookingPendingText(data.bookingDetails)
   } 
-  // NEW: Contact Confirmation
+  // ✅ NEW: Booking Confirmed
+  else if (type === 'BOOKING_CONFIRMED' && data.bookingDetails) {
+    subject = `Booking Confirmed (#${data.bookingDetails.bookingId}) - UrbanDrive`
+    html = generateBookingConfirmedHTML(data.bookingDetails)
+    text = generateBookingConfirmedText(data.bookingDetails)
+  } 
+  // ✅ NEW: Booking Cancelled
+  else if (type === 'BOOKING_CANCELLED' && data.bookingDetails) {
+    subject = `Booking Cancelled (#${data.bookingDetails.bookingId}) - UrbanDrive`
+    html = generateBookingCancelledHTML(data.bookingDetails)
+    text = generateBookingCancelledText(data.bookingDetails)
+  } 
+  // Contact Confirmation
   else if (type === 'CONTACT_CONFIRMATION' && data.contactDetails) {
     const contact = data.contactDetails
     subject = `Thank You for Contacting UrbanDrive`
     html = generateContactConfirmationHTML(contact)
     text = generateContactConfirmationText(contact)
   } 
-  // NEW: Admin Notification
+  // Admin Notification
   else if (type === 'ADMIN_NOTIFICATION' && data.contactDetails) {
     const contact = data.contactDetails
     subject = `New Contact Request: ${contact.service.replace(/_/g, ' ')} from ${contact.firstName} ${contact.lastName}`
@@ -211,7 +235,124 @@ export async function sendWelcomeAndOtpEmails(
   }
 }
 
-// NEW: Send contact confirmation email
+// ✅ NEW: Send booking email based on status
+export async function sendBookingStatusEmail(
+  bookingDetails: BookingEmailProps,
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED'
+): Promise<void> {
+  const { customerEmail, customerName,  } = bookingDetails as any
+  
+  console.log(` Sending booking ${status} email to ${customerEmail}`)
+  
+  let type: 'BOOKING_PENDING' | 'BOOKING_CONFIRMED' | 'BOOKING_CANCELLED'
+  
+  switch (status) {
+    case 'PENDING':
+      type = 'BOOKING_PENDING'
+      break
+    case 'CONFIRMED':
+      type = 'BOOKING_CONFIRMED'
+      break
+    case 'CANCELLED':
+      type = 'BOOKING_CANCELLED'
+      break
+    default:
+      throw new Error(`Invalid booking status: ${status}`)
+  }
+  
+  try {
+    await sendEmail({
+      to: customerEmail,
+      type,
+      data: {
+        firstName: customerName,
+        bookingDetails,
+      },
+    })
+    
+    console.log(` Booking ${status} email sent to ${customerEmail}`)
+  } catch (error) {
+    console.error(` Failed to send booking ${status} email to ${customerEmail}:`, error)
+    throw error
+  }
+}
+
+// ✅ NEW: Send booking email to admin (for notifications)
+export async function sendBookingAdminNotification(
+  bookingDetails: BookingEmailProps,
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED',
+  adminEmails: string[]
+): Promise<void> {
+  const { bookingId, customerName, carName } = bookingDetails as any
+  
+  console.log(` Sending booking ${status} admin notification to ${adminEmails.length} admins`)
+  
+  try {
+    // Create a simplified admin notification
+    const adminData: ContactEmailProps = {
+      firstName: 'Admin',
+      lastName: 'Team',
+      email: 'admin@urbandrive.com',
+      service: `BOOKING_${status}`,
+      message: `
+Booking ID: ${bookingId}
+Customer: ${customerName}
+Vehicle: ${carName}
+Status: ${status}
+Pick-up: ${bookingDetails.startDate}
+Return: ${bookingDetails.endDate}
+Total: ₹${bookingDetails.totalPrice}
+${bookingDetails.cancellationReason ? `Cancellation Reason: ${bookingDetails.cancellationReason}` : ''}
+      `,
+    }
+    
+    await Promise.all(
+      adminEmails.map((adminEmail) =>
+        sendEmail({
+          to: adminEmail.trim(),
+          type: 'ADMIN_NOTIFICATION',
+          data: {
+            firstName: 'Admin',
+            lastName: 'Team',
+            contactDetails: adminData,
+          },
+        })
+      )
+    )
+    
+    console.log(` Booking ${status} admin notifications sent`)
+  } catch (error) {
+    console.error(` Failed to send booking admin notifications:`, error)
+    throw error
+  }
+}
+
+// ✅ NEW: Send booking email with all notifications (user + admin)
+export async function sendBookingEmails(
+  bookingDetails: BookingEmailProps,
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED',
+  adminEmails: string[] = []
+): Promise<void> {
+  
+  console.log(` Sending booking ${status} emails for booking #${bookingDetails.bookingId}`)
+  
+  try {
+    // Send to customer
+    await sendBookingStatusEmail(bookingDetails, status)
+    
+    // Send to admins if provided
+    if (adminEmails.length > 0) {
+      await sendBookingAdminNotification(bookingDetails, status, adminEmails)
+    }
+    
+    console.log(` All booking ${status} emails sent successfully`)
+  } catch (error) {
+    console.error(` Failed to send booking emails:`, error)
+    throw error
+  }
+}
+
+// Send contact confirmation email
 export async function sendContactConfirmationEmail(
   contactData: ContactEmailProps
 ): Promise<void> {
@@ -237,7 +378,7 @@ export async function sendContactConfirmationEmail(
   }
 }
 
-// NEW: Send admin notification email
+// Send admin notification email
 export async function sendAdminNotificationEmail(
   contactData: ContactEmailProps,
   adminEmails: string[]
@@ -269,7 +410,7 @@ export async function sendAdminNotificationEmail(
   }
 }
 
-// NEW: Send both contact emails (user + admin) in parallel
+// Send both contact emails (user + admin) in parallel
 export async function sendContactEmails(
   contactData: ContactEmailProps,
   adminEmails: string[]

@@ -15,6 +15,16 @@ export const tokens = {
     amberBg: '#fff8e6',
     amberBorder: '#ffe599',
     amberText: '#8a5d00',
+    // ✅ New colors for status badges
+    greenBg: '#d1fae5',
+    greenBorder: '#a7f3d0',
+    greenText: '#065f46',
+    redBg: '#fee2e2',
+    redBorder: '#fca5a5',
+    redText: '#991b1b',
+    blueBg: '#dbeafe',
+    blueBorder: '#93c5fd',
+    blueText: '#1e40af',
   },
   fonts: {
     sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
@@ -78,10 +88,42 @@ export const emailStyles = {
   otpContainer: `background: ${tokens.colors.lightGray}; border-radius: 16px; padding: 24px; text-align: center; border: 1px dashed ${tokens.colors.borderGray}; margin: 24px 0;`,
   otpText: `font-family: ${tokens.fonts.mono}; font-size: 36px; font-weight: 700; letter-spacing: 0.15em; color: ${tokens.colors.black}; margin: 0; padding: 4px 0; max-width: 100%; word-break: break-all;`,
 
-  // Booking Specific Styles
+  //  Booking Specific Styles - 
   statusBadgePending: `display: inline-block; background: ${tokens.colors.amberBg}; border: 1px solid ${tokens.colors.amberBorder}; color: ${tokens.colors.amberText}; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 14px; border-radius: 30px; margin-bottom: 16px;`,
+  
+  //  Confirmed status badge
+  statusBadgeConfirmed: `display: inline-block; background: ${tokens.colors.greenBg}; border: 1px solid ${tokens.colors.greenBorder}; color: ${tokens.colors.greenText}; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 14px; border-radius: 30px; margin-bottom: 16px;`,
+  
+  //  Cancelled status badge
+  statusBadgeCancelled: `display: inline-block; background: ${tokens.colors.redBg}; border: 1px solid ${tokens.colors.redBorder}; color: ${tokens.colors.redText}; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 14px; border-radius: 30px; margin-bottom: 16px;`,
+  
+  // Table styles for booking details
   tableRow: `border-bottom: 1px solid ${tokens.colors.borderGray};`,
   tableCellLabel: `padding: 10px 0; font-size: 13px; color: ${tokens.colors.textMuted}; font-weight: 500; width: 40%;`,
   tableCellValue: `padding: 10px 0; font-size: 14px; color: ${tokens.colors.black}; font-weight: 600; text-align: right; width: 60%;`,
-  totalHighlight: `font-size: 18px; font-weight: 700; color: ${tokens.colors.black};`
+  totalHighlight: `font-size: 18px; font-weight: 700; color: ${tokens.colors.black};`,
+  
+  //  Divider style
+  divider: `border: none; border-top: 1px solid ${tokens.colors.borderGray}; margin: 24px 0;`,
+  
+  //  Section title for booking details
+  sectionTitle: `font-size: 16px; font-weight: 600; color: ${tokens.colors.black}; margin-bottom: 12px;`,
+  
+  //  Highlight box for important messages
+  highlightBox: `background: ${tokens.colors.lightGray}; border-left: 3px solid ${tokens.colors.black}; padding: 16px; border-radius: 4px; margin-bottom: 24px;`,
+  
+  //  Important notice styles
+  noticeBox: `background: #fef2f2; border-left: 3px solid #ef4444; padding: 16px; border-radius: 4px; margin-bottom: 24px;`,
+  noticeTitle: `font-size: 13px; font-weight: 600; color: #ef4444; margin-bottom: 4px;`,
+  noticeText: `font-size: 13px; color: #555; line-height: 1.5;`,
+  
+  //  Success notice box
+  successBox: `background: #f0faf0; border-left: 3px solid #22c55e; padding: 16px; border-radius: 4px; margin-bottom: 24px;`,
+  successTitle: `font-size: 13px; font-weight: 600; color: #22c55e; margin-bottom: 4px;`,
+  successText: `font-size: 13px; color: #555; line-height: 1.5;`,
+  
+  //  Info box for pending status
+  infoBox: `background: #fafafa; border-left: 3px solid #000000; padding: 16px; border-radius: 4px; margin-bottom: 24px;`,
+  infoTitle: `font-size: 13px; font-weight: 600; color: #111; margin-bottom: 4px;`,
+  infoText: `font-size: 13px; color: #555; line-height: 1.5;`,
 };

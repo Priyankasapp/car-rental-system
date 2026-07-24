@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable react-hooks/set-state-in-effect */
 // app/(admin)/bookings/[id]/page.tsx
 'use client'
@@ -22,9 +23,6 @@ import {
   XCircle,
   Clock as ClockIcon,
   AlertCircle,
-  Download,
-  Printer,
-  Send,
   Trash2,
   Shield,
   Users,
@@ -33,7 +31,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 
-// ✅ Define BookingDetail interface
+//  Define BookingDetail interface
 interface BookingDetail {
   id: string
   reservationRef: string
@@ -113,10 +111,10 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     fetchBookings,
   } = useAdmin()
 
-  // ✅ Unwrap params using use()
+  //  Unwrap params using use()
   const { id } = use(params)
   
-  // ✅ Use all state variables
+  //  Use all state variables
   const [booking, setBooking] = useState<BookingDetail | null>(null)
   const [isLoadingLocal, setIsLoadingLocal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
@@ -124,14 +122,14 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
-  // ✅ Update booking when currentBooking changes
+  //  Update booking when currentBooking changes
   useEffect(() => {
     if (currentBooking) {
       setBooking(currentBooking as unknown as BookingDetail)
     }
   }, [currentBooking])
 
-  // ✅ Fetch booking when id changes
+  //  Fetch booking when id changes
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login')
@@ -148,7 +146,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     }
   }, [user, authLoading, router, fetchBookingById, id])
 
-  // ✅ Status change handler
+  //  Status change handler
   const handleStatusChange = async (status: string, reason?: string) => {
     if (!booking) return
     setIsLoadingLocal(true)
@@ -180,7 +178,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  // ✅ Delete handler
+  //  Delete handler
   const handleDelete = async () => {
     if (!booking) return
     setIsLoadingLocal(true)
@@ -197,7 +195,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  // ✅ Helper functions
+  //  Helper functions
   const getStatusColor = (status: string) => {
     const colors = {
       PENDING: 'bg-yellow-50 text-yellow-800 border-yellow-200',
@@ -368,18 +366,9 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Printer className="w-4 h-4" />
-            Print
-          </button>
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Download className="w-4 h-4" />
-            Download
-          </button>
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
-            <Send className="w-4 h-4" />
-            Email
-          </button>
+         
+         
+          
           <button
             onClick={() => setShowDeleteModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
@@ -647,7 +636,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
               Vehicle
             </h2>
             <div className="flex items-start gap-4">
-              <div className="w-24 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+              <div className="w-24 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                 {booking.car.imageMain ? (
                   <img 
                     src={booking.car.imageMain} 

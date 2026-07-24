@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable prefer-const */
 // app/api/admin/bookings/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 import { ReservationStatus } from '@prisma/client'
+import { sendBookingEmails } from '@/lib/email/emailService'
 
 // Types
 interface Payment {
@@ -13,7 +15,7 @@ interface Payment {
   refundAmount?: number | null
 }
 
-//  Helper: Map action to valid status
+// Helper: Map action to valid status
 function mapActionToStatus(action: string): string {
   const mapping: Record<string, string> = {
     'CONFIRM': 'CONFIRMED',
@@ -61,6 +63,31 @@ function isValidStatusTransition(currentStatus: string, newStatus: string): { va
   }
 
   return { valid: true }
+}
+
+// ✅ Helper: Format date for email
+function formatDateForEmail(date: Date): string {
+  return new Date(date).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+// ✅ Helper: Prepare booking email data
+function prepareBookingEmailData(booking: any, status: string, cancellationReason?: string) {
+  return {
+    customerName: booking.customerName,
+    customerEmail: booking.customerEmail,
+    bookingId: booking.reservationRef,
+    carName: `${booking.car.manufacturer} ${booking.car.model}`,
+    startDate: formatDateForEmail(booking.pickupDate),
+    endDate: formatDateForEmail(booking.dropoffDate),
+    pickupLocation: booking.pickupLocation,
+    totalPrice: booking.total,
+    cancellationReason: cancellationReason || undefined,
+  }
 }
 
 // ============================================================
@@ -288,7 +315,7 @@ export async function PUT(
     const body = await request.json()
     let { status, adminNotes, cancellationReason } = body
 
-    //  Map action to valid status if needed
+    // Map action to valid status if needed
     if (status) {
       status = mapActionToStatus(status)
     }
@@ -506,6 +533,29 @@ export async function PUT(
       })
     }
 
+    // ✅ Send email notification if status changed
+    if (status && status !== existingBooking.status) {
+      try {
+        // Prepare email data
+        const emailData = prepareBookingEmailData(updatedBooking, status, cancellationReason)
+        
+        // Get admin emails from environment or config
+        const adminEmails = process.env.ADMIN_EMAILS?.split(',') || []
+        
+        // Send booking email
+        await sendBookingEmails(
+          emailData,
+          status as 'PENDING' | 'CONFIRMED' | 'CANCELLED',
+          adminEmails
+        )
+        
+        console.log(`✅ Booking ${status} email sent for booking #${updatedBooking.reservationRef}`)
+      } catch (emailError) {
+        // Don't fail the API if email fails, just log it
+        console.error('❌ Failed to send booking email:', emailError)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Booking updated successfully',
@@ -573,12 +623,12 @@ export async function PATCH(
     const body = await request.json()
     let { status, cancellationReason } = body
 
-    //  Map action to valid status
+    // Map action to valid status
     if (status) {
       status = mapActionToStatus(status)
     }
 
-    //  Validate status
+    // Validate status
     const validStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'EXPIRED']
     if (!status || !validStatuses.includes(status)) {
       return NextResponse.json(
@@ -617,7 +667,7 @@ export async function PATCH(
       })
     }
 
-    //  Validate status transition
+    // Validate status transition
     const transitionCheck = isValidStatusTransition(existingBooking.status, status)
     if (!transitionCheck.valid) {
       return NextResponse.json(
@@ -760,6 +810,27 @@ export async function PATCH(
       },
     })
 
+    // ✅ Send email notification
+    try {
+      // Prepare email data
+      const emailData = prepareBookingEmailData(updatedBooking, status, cancellationReason)
+      
+      // Get admin emails from environment or config
+      const adminEmails = process.env.ADMIN_EMAILS?.split(',') || []
+      
+      // Send booking email
+      await sendBookingEmails(
+        emailData,
+        status as 'PENDING' | 'CONFIRMED' | 'CANCELLED',
+        adminEmails
+      )
+      
+      console.log(`✅ Booking ${status} email sent for booking #${updatedBooking.reservationRef}`)
+    } catch (emailError) {
+      // Don't fail the API if email fails, just log it
+      console.error('❌ Failed to send booking email:', emailError)
+    }
+
     return NextResponse.json({
       success: true,
       message: `Booking status updated to ${status}`,
@@ -896,6 +967,31 @@ export async function DELETE(
       },
     })
 
+    // ✅ Send cancellation email for deleted booking
+    try {
+      // Prepare email data with cancellation reason
+      const emailData = prepareBookingEmailData(
+        existingBooking, 
+        'CANCELLED', 
+        'Booking was deleted by admin'
+      )
+      
+      // Get admin emails from environment or config
+      const adminEmails = process.env.ADMIN_EMAILS?.split(',') || []
+      
+      // Send cancellation email
+      await sendBookingEmails(
+        emailData,
+        'CANCELLED',
+        adminEmails
+      )
+      
+      console.log(`✅ Booking cancellation email sent for deleted booking #${existingBooking.reservationRef}`)
+    } catch (emailError) {
+      // Don't fail the API if email fails, just log it
+      console.error('❌ Failed to send cancellation email:', emailError)
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Booking deleted successfully',
@@ -916,4 +1012,3 @@ export async function DELETE(
     )
   }
 }
-
