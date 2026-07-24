@@ -1,10 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // lib/auth.ts
-import jwt from 'jsonwebtoken'
-import { randomBytes } from 'crypto'
+import jwt, { Secret, SignOptions } from 'jsonwebtoken'
+import { randomInt, randomBytes } from 'crypto'
 import bcrypt from 'bcryptjs'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
+const JWT_SECRET: Secret = process.env.JWT_SECRET || ''
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d'
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 
 export interface JWTPayload {
   userId: string
@@ -14,14 +19,15 @@ export interface JWTPayload {
 
 // ============ JWT Functions ============
 export function generateToken(payload: JWTPayload): string {
-  // Casting JWT_EXPIRY as any satisfies the strict SignOptions['expiresIn'] requirement
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY as any })
+  const options: SignOptions = {
+    expiresIn: JWT_EXPIRY as SignOptions['expiresIn']
+  }
+  return jwt.sign(payload, JWT_SECRET, options)
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload
+    return jwt.verify(token, JWT_SECRET) as unknown as JWTPayload
   } catch (error) {
     return null
   }
@@ -29,7 +35,8 @@ export function verifyToken(token: string): JWTPayload | null {
 
 // ============ OTP Functions ============
 export function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+  // Cryptographically secure
+  return randomInt(100000, 999999).toString()
 }
 
 // ============ Reservation Functions ============

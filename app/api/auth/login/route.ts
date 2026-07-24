@@ -1,30 +1,82 @@
 // app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, generateToken } from '@/lib/auth'
+import { randomBytes } from 'crypto'
+
+// --- In-Memory Rate Limiter Configuration ---
+const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 5       // 5 attempts per IP per minute
+
+interface RateLimitRecord {
+  count: number
+  resetTime: number
+}
+
+const rateLimitMap = new Map<string, RateLimitRecord>()
+
+function checkRateLimit(ip: string): { success: boolean; remaining: number } {
+  const now = Date.now()
+  const record = rateLimitMap.get(ip)
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS,
+    })
+    return { success: true, remaining: MAX_REQUESTS_PER_WINDOW - 1 }
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return { success: false, remaining: 0 }
+  }
+
+  record.count += 1
+  return { success: true, remaining: MAX_REQUESTS_PER_WINDOW - record.count }
+}
+
+// --- Zod Input Validation Schema ---
+const loginSchema = z.object({
+  email: z.string().trim().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+})
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. Rate Limiting Check
+    const clientIp =
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      request.headers.get('x-real-ip') ||
+      'anonymous'
+
+    const { success: rateLimitPassed } = checkRateLimit(clientIp)
+
+    if (!rateLimitPassed) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Too many login attempts. Please try again after 1 minute.',
+        },
+        { status: 429 }
+      )
+    }
+
+    // 2. Validate Request Body
     const body = await request.json()
-    const { email, password } = body
+    const validationResult = loginSchema.safeParse(body)
 
-    //  Validate email
-    if (!email || !email.includes('@')) {
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.issues[0]?.message || 'Invalid input'
       return NextResponse.json(
-        { success: false, message: 'Invalid email' },
+        { success: false, message: errorMessage },
         { status: 400 }
       )
     }
 
-    // Validate password
-    if (!password || password.length < 1) {
-      return NextResponse.json(
-        { success: false, message: 'Password required' },
-        { status: 400 }
-      )
-    }
+    const { email, password } = validationResult.data
 
-    //  Find user with role information
+    // 3. Find User
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -49,7 +101,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    //  Check if account is active
+    // 4. Status & Verification Checks
     if (!user.isActive || user.isDeleted) {
       return NextResponse.json(
         { success: false, message: 'Your account has been disabled' },
@@ -57,7 +109,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    //  Check if email is verified
     if (!user.isEmailVerified) {
       return NextResponse.json(
         { success: false, message: 'Please verify your email first' },
@@ -65,7 +116,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    //  Verify password
     if (!user.password) {
       return NextResponse.json(
         { success: false, message: 'Account not set up properly' },
@@ -73,6 +123,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 5. Verify Password
     const isValidPassword = await verifyPassword(password, user.password)
     if (!isValidPassword) {
       return NextResponse.json(
@@ -81,32 +132,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate JWT token
+    // 6. Generate JWT Token
     const token = generateToken({
       userId: user.id,
       email: user.email,
       role: user.role,
     })
 
-    //  Create session
+    // 7. Create DB Session
     await prisma.session.create({
       data: {
         userId: user.id,
         token,
-        refreshToken: token,
+        refreshToken: randomBytes(32).toString('hex'),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        ipAddress: request.headers.get('x-forwarded-for') || undefined,
+        ipAddress: clientIp,
         userAgent: request.headers.get('user-agent') || undefined,
       },
     })
 
-    //  Determine redirect URL based on role
+    // 8. Role-based Redirect
     let redirectUrl = '/'
     if (user.role === 'SUPERADMIN' || user.role === 'ADMIN') {
       redirectUrl = '/admin'
     }
 
-    //  Create response with user data
+    // 9. Return Response & Set Auth Cookie
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
@@ -121,11 +172,10 @@ export async function POST(request: NextRequest) {
           isEmailVerified: user.isEmailVerified,
           profilePicture: user.profilePicture,
         },
-        redirectUrl, //  Send redirect URL to frontend
+        redirectUrl,
       },
     })
 
-    //  Set HTTP-only cookie
     response.cookies.set({
       name: 'token',
       value: token,

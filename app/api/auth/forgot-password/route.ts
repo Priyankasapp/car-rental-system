@@ -1,5 +1,6 @@
 // app/api/auth/forgot-password/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { generateOTP } from '@/lib/auth'
 import { sendEmail } from '@/lib/email/emailService'
@@ -11,41 +12,43 @@ const OTP_CONFIG = {
   RESEND_COOLDOWN_SECONDS: 60,
 }
 
+// Zod validation schema
+const schema = z.object({
+  email: z.string().trim().email('Invalid email format'),
+})
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email } = body
 
-    //  Validate email
-    if (!email || typeof email !== 'string') {
+    // Validate request body with Zod
+    const validationResult = schema.safeParse(body)
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.issues[0]?.message || 'Invalid input'
       return NextResponse.json(
-        { success: false, message: 'Email is required' },
+        { success: false, message: errorMessage },
         { status: 400 }
       )
     }
 
-    if (!email.includes('@')) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid email format' },
-        { status: 400 }
-      )
-    }
+    const { email } = validationResult.data
 
-    //  Check if user exists
+    // Check if user exists
     const user = await prisma.user.findUnique({
       where: { email },
     })
 
-    //  Security: Always return success even if user not found
+    // Security: Always return success even if user not found
     if (!user) {
-      console.log(` Password reset requested for non-existent email: ${email}`)
+      console.log(`Password reset requested for non-existent email: ${email}`)
       return NextResponse.json({
         success: true,
         message: 'If this email exists in our system, you will receive a password reset OTP.',
       })
     }
 
-    //  Check if user is active
+    // Check if user is active
     if (!user.isActive || user.isDeleted) {
       return NextResponse.json(
         { success: false, message: 'Account is deactivated. Please contact support.' },
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    //  Check if user has password (not OAuth user)
+    // Check if user has password (not OAuth user)
     if (!user.password) {
       return NextResponse.json(
         { 
@@ -90,7 +93,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      //  Delete existing OTP to create fresh one
+      // Delete existing OTP to create fresh one
       await prisma.oTP.delete({
         where: { id: existingOTP.id },
       })
@@ -100,9 +103,9 @@ export async function POST(request: NextRequest) {
     const otp = generateOTP()
     const expiresAt = new Date(Date.now() + OTP_CONFIG.EXPIRY_MINUTES * 60 * 1000)
 
-    //  Console mein OTP dikhega (Development only)
+    // Log OTP in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(' [DEV] Password Reset OTP:', {
+      console.log('[DEV] Password Reset OTP:', {
         email,
         otp, 
         purpose: 'PASSWORD_RESET',
@@ -136,9 +139,8 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log(` Password reset OTP sent to ${email}`)
+    console.log(`Password reset OTP sent to ${email}`)
 
-    //  Response mein OTP dikhega (Development only)
     return NextResponse.json({
       success: true,
       message: 'Password reset OTP sent to your email.',
@@ -149,14 +151,14 @@ export async function POST(request: NextRequest) {
         
         ...(process.env.NODE_ENV === 'development' && {
           _debug: {
-            otp,  //  Response mein OTP dikhega
+            otp,
           }
         }),
       },
     })
 
   } catch (error) {
-    console.error(' Forgot password error:', error)
+    console.error('Forgot password error:', error)
     
     return NextResponse.json(
       {

@@ -6,7 +6,7 @@ import { generateToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { $Enums } from '@prisma/client'
 import { JsonValue } from '@prisma/client/runtime/library'
-
+import { randomBytes } from 'crypto'
 //  types
 type OTPPurpose = 'REGISTER' | 'LOGIN' | 'PASSWORD_RESET' | 'EMAIL_VERIFICATION'
 
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user!.id,
           token,
-          refreshToken: token,
+          refreshToken: randomBytes(32).toString('hex'),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           ipAddress: request.headers.get('x-forwarded-for') || undefined,
           userAgent: request.headers.get('user-agent') || undefined,
