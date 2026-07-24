@@ -15,7 +15,6 @@ import {
   Users, 
   MapPin, 
   DollarSign, 
-  Calendar, 
   Car as CarIcon, 
   ExternalLink, 
   AlertCircle,
@@ -221,7 +220,7 @@ export default function AdminCarDetailPage({ params }: PageProps) {
         <div className="lg:col-span-2 space-y-6">
           {/* Main Image Showcase */}
           <div className="bg-white border border-gray-200/80 rounded-2xl overflow-hidden p-4 space-y-4">
-            <div className="relative aspect-16/9 bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
+            <div className="relative aspect-video bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
               {activeImage ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
