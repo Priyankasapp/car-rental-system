@@ -2,13 +2,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-//  GET: Get single car by ID
+// Helper to ensure image gallery is always handled as a clean string array
+function parseImageGallery(galleryInput: unknown, mainImage?: string): string[] {
+  let gallery: string[] = []
+
+  if (Array.isArray(galleryInput)) {
+    gallery = galleryInput.filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
+  } else if (typeof galleryInput === 'string' && galleryInput.trim().length > 0) {
+    try {
+      const parsed = JSON.parse(galleryInput)
+      if (Array.isArray(parsed)) {
+        gallery = parsed.filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
+      } else {
+        gallery = galleryInput.split(',').map((url) => url.trim()).filter(Boolean)
+      }
+    } catch {
+      gallery = galleryInput.split(',').map((url) => url.trim()).filter(Boolean)
+    }
+  }
+
+  // Include imageMain as the first image if provided and not already present
+  if (mainImage && !gallery.includes(mainImage)) {
+    gallery.unshift(mainImage)
+  }
+
+  // Deduplicate image URLs
+  return Array.from(new Set(gallery))
+}
+
+// 🟢 GET: Get single car with multiple images by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const car = await prisma.car.findUnique({
       where: {
@@ -24,9 +52,18 @@ export async function GET(
       )
     }
 
+    // Process and ensure multiple images exist as an array
+    const imageGallery = parseImageGallery(car.imageGallery, car.imageMain)
+
     return NextResponse.json({
       success: true,
-      data: { car },
+      data: {
+        car: {
+          ...car,
+          imageGallery, // Clean string array of image URLs
+          images: imageGallery, // Alias field for UI compatibility
+        },
+      },
     })
   } catch (error) {
     console.error('Error fetching car:', error)
@@ -37,13 +74,13 @@ export async function GET(
   }
 }
 
-//  PUT: Update car (Admin only)
+// 🟡 PUT: Update car & multiple images (Admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Verify admin access
     const token = request.cookies.get('token')?.value
@@ -97,8 +134,11 @@ export async function PUT(
       )
     }
 
-    // Update car
-    const car = await prisma.car.update({
+    // Process multiple images for gallery update
+    const processedGallery = parseImageGallery(imageGallery, imageMain)
+
+    // Update car record
+    const updatedCar = await prisma.car.update({
       where: { id },
       data: {
         manufacturer,
@@ -124,8 +164,8 @@ export async function PUT(
         locationZipCode,
         locationLat,
         locationLng,
-        imageMain,
-        imageGallery,
+        imageMain: imageMain || processedGallery[0] || null,
+        imageGallery: processedGallery,
         status,
         isDeleted,
       },
@@ -134,7 +174,13 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: 'Car updated successfully',
-      data: { car },
+      data: {
+        car: {
+          ...updatedCar,
+          imageGallery: processedGallery,
+          images: processedGallery,
+        },
+      },
     })
   } catch (error) {
     console.error('Error updating car:', error)
@@ -145,13 +191,13 @@ export async function PUT(
   }
 }
 
-//  DELETE: Delete car (Admin only)
+// 🔴 DELETE: Delete car (Admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Verify admin access
     const token = request.cookies.get('token')?.value

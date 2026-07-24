@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // types/fleet.ts
-
-
 
 // Your existing types
 export interface FleetFilter {
@@ -28,11 +25,9 @@ export interface FleetCar {
   category: string
   price: number
   image: string
+  imageGallery?: string[] // Primary array of extra gallery images
+  images?: string[]       // Optional alias for image gallery compatibility
   specs: {
-    fuelType: string
-    seats: any
-    location: string
-    year: any
     power: string
     transmission: string
   }
@@ -89,6 +84,8 @@ export interface ApiCar {
   category: string
   pricePerDay: number
   imageMain: string
+  imageGallery?: string[]
+  images?: string[]
   transmission: string
   fuelType: string
   seats: number
@@ -100,7 +97,7 @@ export interface ApiCar {
   totalReviews?: number
 }
 
-//  Fixed Helper function to convert API car to FleetCar
+// Helper function to convert API car to FleetCar
 export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
   const statusMap: Record<string, 'available' | 'reserved' | 'new-arrival'> = {
     'AVAILABLE': 'available',
@@ -109,26 +106,28 @@ export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
     'MAINTENANCE': 'reserved'
   }
 
-  //  Return single object with all properties (no duplicates)
+  // Parse or normalize gallery images
+  const gallery = 
+    apiCar.imageGallery?.length ? apiCar.imageGallery :
+    apiCar.images?.length ? apiCar.images :
+    apiCar.imageMain ? [apiCar.imageMain] : []
+
   return {
     id: apiCar.id,
     name: `${apiCar.manufacturer} ${apiCar.model}`,
     model: apiCar.model,
     brand: apiCar.manufacturer,
     category: apiCar.category,
-    price: apiCar.pricePerDay, // Keep as is (in rupees)
+    price: apiCar.pricePerDay,
     image: apiCar.imageMain,
+    imageGallery: gallery,
+    images: gallery,
     specs: {
       power: `${apiCar.seats} Seats`,
       transmission: apiCar.transmission,
-      fuelType: "",
-      seats: undefined,
-      location: "",
-      year: undefined
     },
     status: statusMap[apiCar.status] || 'available',
     favorite: apiCar.isFavorite || false,
-    // Optional fields for display
     year: apiCar.year,
     manufacturer: apiCar.manufacturer,
     seats: apiCar.seats,

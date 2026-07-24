@@ -357,32 +357,44 @@ export default function ContactForm() {
               </div>
             </div>
 
-            <div className="relative">
-              <select
-                name="service"
-                value={formData.service}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className={`form-field w-full rounded-2xl border px-5 py-4 outline-none transition ${
-                  getFieldError('service') 
-                    ? 'border-red-500 focus:border-red-500' 
-                    : 'border-gray-300 focus:border-black'
-                }`}
-                disabled={loading}
-              >
-                <option value="">Select Service</option>
-                {contactForm.services.map((service) => (
-                  <option key={service} value={service.toUpperCase().replace(/ /g, '_')}>
-                    {service}
-                  </option>
-                ))}
-              </select>
-              {getFieldError('service') && (
-                <p className="mt-1 text-xs text-red-500">{getFieldError('service')}</p>
-              )}
-            </div>
+            <div className="relative w-full">
+  <select
+    name="service"
+    value={formData.service}
+    onChange={handleChange}
+    onBlur={handleBlur}
+    disabled={loading}
+    className={`form-field block w-full min-w-0 appearance-none rounded-2xl border bg-white px-4 py-3.5 pr-10 text-sm outline-none transition sm:px-5 sm:py-4 sm:text-base ${
+      getFieldError("service")
+        ? "border-red-500 focus:border-red-500"
+        : "border-gray-300 focus:border-black"
+    }`}
+  >
+    <option value="">Select Service</option>
 
-            <div className="relative">
+    {contactForm.services.map((service) => (
+      <option
+        key={service}
+        value={service.toUpperCase().replace(/ /g, "_")}
+      >
+        {service}
+      </option>
+    ))}
+  </select>
+
+  {/* Custom dropdown arrow */}
+  <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
+    ▼
+  </div>
+
+  {getFieldError("service") && (
+    <p className="mt-1 text-xs text-red-500">
+      {getFieldError("service")}
+    </p>
+  )}
+</div>
+
+            <div className="relative">  
               <textarea
                 name="message"
                 rows={6}
