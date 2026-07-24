@@ -14,6 +14,7 @@ import {
   LogOut,
   UserPlus,
   Briefcase,
+  ShieldCheck,
   ChevronDown,
   ChevronRight
 } from 'lucide-react'
@@ -34,13 +35,16 @@ const managementLinks = [
     href: '/admin/staff', 
     label: 'Staff Master', 
     icon: Briefcase,
-
   },
   { 
     href: '/admin/staff/users', 
     label: 'Staff Users', 
     icon: UserPlus,
-  
+  },
+  { 
+    href: '/admin/permissions', 
+    label: 'Permissions', 
+    icon: ShieldCheck,
   },
 ]
 
@@ -50,7 +54,7 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [managementOpen, setManagementOpen] = useState(true) // Management section expanded by default
+  const [managementOpen, setManagementOpen] = useState(true)
   const pathname = usePathname()
   const router = useRouter()
   const { logout } = useAuth()
@@ -68,8 +72,6 @@ export default function AdminLayout({
     }
     return pathname.startsWith(href)
   }
-
-  // Check if any management link is active
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -150,12 +152,10 @@ export default function AdminLayout({
                           ? 'bg-gray-900 text-white'
                           : 'text-gray-600 hover:bg-gray-100'
                       )}
-                     
                     >
                       <Icon className="h-5 w-5" />
                       <div className="flex flex-col">
                         <span className="font-medium text-sm">{link.label}</span>
-                      
                       </div>
                     </Link>
                   )
@@ -202,7 +202,7 @@ export default function AdminLayout({
               <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold text-sm cursor-pointer">
                 A
               </div>
-              {/* Dropdown menu - optional */}
+              {/* Dropdown menu */}
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                 <div className="py-1">
                   <Link href="/admin/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">

@@ -24,14 +24,15 @@ model User {
   isDeleted       Boolean     @default(false)
   profilePicture  String?
   preferences     Json?       // { language, currency, notifications }
+  permissions      String[]  @default([])  
   
   // Relations
   sessions        Session[]
   reservations    Reservation[]
   emailLogs       EmailLog[]
   payments        Payment[]
-  auditLogs       AuditLog[]      // Admin audit logs
-  bookingAuditLogs BookingAuditLog[] // ✅ Added opposite relation
+  auditLogs       AuditLog[]      
+  bookingAuditLogs BookingAuditLog[] 
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

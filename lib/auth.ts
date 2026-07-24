@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // lib/auth.ts
 import jwt, { Secret, SignOptions } from 'jsonwebtoken'
 import { randomInt, randomBytes } from 'crypto'
@@ -28,15 +27,15 @@ export function generateToken(payload: JWTPayload): string {
 export function verifyToken(token: string): JWTPayload | null {
   try {
     return jwt.verify(token, JWT_SECRET) as unknown as JWTPayload
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 }
 
 // ============ OTP Functions ============
 export function generateOTP(): string {
-  // Cryptographically secure
-  return randomInt(100000, 999999).toString()
+  // Cryptographically secure 6-digit OTP
+  return randomInt(100000, 1000000).toString()
 }
 
 // ============ Reservation Functions ============
@@ -54,9 +53,9 @@ export function calculateRentalDays(startDate: Date, endDate: Date): number {
 
 // ============ Password Functions ============
 /**
- * Generate a random secure password
+ * Generate a random cryptographically secure password with character requirements
  * @param length - Length of the password (default: 12)
- * @returns Random password string
+ * @returns Cryptographically secure password string
  */
 export function generatePassword(length: number = 12): string {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -66,20 +65,26 @@ export function generatePassword(length: number = 12): string {
   
   const allChars = uppercase + lowercase + numbers + special
   
-  // Ensure at least one of each type
-  let password = ''
-  password += uppercase[Math.floor(Math.random() * uppercase.length)]
-  password += lowercase[Math.floor(Math.random() * lowercase.length)]
-  password += numbers[Math.floor(Math.random() * numbers.length)]
-  password += special[Math.floor(Math.random() * special.length)]
+  const chars: string[] = []
   
-  // Fill the rest randomly
+  // Guarantee at least one character from each set using crypto.randomInt
+  chars.push(uppercase[randomInt(0, uppercase.length)])
+  chars.push(lowercase[randomInt(0, lowercase.length)])
+  chars.push(numbers[randomInt(0, numbers.length)])
+  chars.push(special[randomInt(0, special.length)])
+  
+  // Fill the remainder using cryptographically secure random characters
   for (let i = 4; i < length; i++) {
-    password += allChars[Math.floor(Math.random() * allChars.length)]
+    chars.push(allChars[randomInt(0, allChars.length)])
   }
   
-  // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('')
+  // Cryptographic Fisher-Yates shuffle
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomInt(0, i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]]
+  }
+  
+  return chars.join('')
 }
 
 /**

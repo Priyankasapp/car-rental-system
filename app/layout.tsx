@@ -8,6 +8,7 @@ import { CarProvider } from "@/context/CarContext";
 import { BookingProvider } from "@/context/BookingContext"; 
 import { AdminProvider } from "@/context/AdminContext";
 import { ContactProvider } from "@/context/ContactContext";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -46,10 +47,10 @@ export default function RootLayout({
           <CarProvider>
             <BookingProvider> 
               <AdminProvider>
-                 <ContactProvider> {children}</ContactProvider>
-               
+                <ContactProvider>
+                  {children}
+                </ContactProvider>
               </AdminProvider>
-              
             </BookingProvider>
           </CarProvider>
         </AuthProvider>

@@ -103,16 +103,6 @@ export async function POST(request: NextRequest) {
     const otp = generateOTP()
     const expiresAt = new Date(Date.now() + OTP_CONFIG.EXPIRY_MINUTES * 60 * 1000)
 
-    // Log OTP in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[DEV] Password Reset OTP:', {
-        email,
-        otp, 
-        purpose: 'PASSWORD_RESET',
-        expiresAt,
-      })
-    }
-
     // Save OTP in database
     await prisma.oTP.create({
       data: {
@@ -139,7 +129,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log(`Password reset OTP sent to ${email}`)
+    console.log(`Password reset OTP generated and sent via email to ${email}`)
 
     return NextResponse.json({
       success: true,
@@ -148,12 +138,6 @@ export async function POST(request: NextRequest) {
         email,
         expiresIn: OTP_CONFIG.EXPIRY_MINUTES * 60,
         purpose: 'PASSWORD_RESET',
-        
-        ...(process.env.NODE_ENV === 'development' && {
-          _debug: {
-            otp,
-          }
-        }),
       },
     })
 
