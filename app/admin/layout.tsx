@@ -13,6 +13,7 @@ import {
   X,
   LogOut,
   ShieldCheck,
+  Briefcase,
   ChevronDown,
   ChevronRight
 } from 'lucide-react'
@@ -29,6 +30,11 @@ const sidebarLinks = [
 
 // Management section links
 const managementLinks = [
+  { 
+    href: '/admin/staff-master', 
+    label: 'Staff Master', 
+    icon: Briefcase,
+  },
   { 
     href: '/admin/permissions', 
     label: 'Permissions', 

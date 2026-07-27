@@ -90,6 +90,9 @@ export interface AdminUser {
   lastName: string
   phone: string | null
   role: string
+  staffType?: 'DRIVER' | 'CLEANER' | null
+  staffMasterId?: string | null
+  permissions?: string[]
   isEmailVerified: boolean
   isActive: boolean
   profilePicture: string | null
@@ -99,6 +102,21 @@ export interface AdminUser {
     reservations: number
     sessions: number
     emailLogs: number
+  }
+}
+
+export interface StaffMaster {
+  id: string
+  title: string
+  department: string
+  staffType: 'DRIVER' | 'CLEANER' | null
+  defaultPermissions: string[]
+  description?: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  _count?: {
+    staffMembers: number
   }
 }
 
@@ -134,6 +152,9 @@ interface AdminContextType {
   
   // State - Users
   users: AdminUser[]
+
+  // State - Staff Master
+  staffMasters: StaffMaster[]
   
   // Actions - Bookings
   fetchBookings: (filters?: BookingFilters) => Promise<void>
@@ -156,6 +177,12 @@ interface AdminContextType {
   addUser: (userData: any) => Promise<any>
   updateUser: (id: string, userData: any) => Promise<any>
   deleteUser: (id: string) => Promise<void>
+
+  // Actions - Staff Master
+  fetchStaffMasters: () => Promise<void>
+  addStaffMaster: (data: any) => Promise<any>
+  updateStaffMaster: (id: string, data: any) => Promise<any>
+  deleteStaffMaster: (id: string) => Promise<void>
   
   // Actions - Filters
   setFilters: (filters: BookingFilters) => void
@@ -181,6 +208,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   // ============== STATE - USERS ==============
   const [users, setUsers] = useState<AdminUser[]>([])
+
+  // ============== STATE - STAFF MASTER ==============
+  const [staffMasters, setStaffMasters] = useState<StaffMaster[]>([])
 
   // ============== STATE - UI ==============
   const [isLoading, setIsLoading] = useState(false)
@@ -328,7 +358,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAdmin, currentBooking])
 
-  //  ============== DELETE BOOKING (NEW) ==============
+  // ============== DELETE BOOKING ==============
   const deleteBooking = useCallback(async (id: string) => {
     if (!isAdmin) {
       setError('Admin access required')
@@ -625,6 +655,125 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAdmin])
 
+  // ============== FETCH STAFF MASTERS ==============
+  const fetchStaffMasters = useCallback(async () => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/staff-master')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch staff masters')
+      }
+
+      setStaffMasters(data.data.staffMasters)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== ADD STAFF MASTER ==============
+  const addStaffMaster = useCallback(async (masterData: any) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/staff-master', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(masterData),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add staff master')
+      }
+
+      setStaffMasters(prev => [data.data.staffMaster, ...prev])
+      return data.data.staffMaster
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== UPDATE STAFF MASTER ==============
+  const updateStaffMaster = useCallback(async (id: string, masterData: any) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/staff-master/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(masterData),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update staff master')
+      }
+
+      setStaffMasters(prev => prev.map(m => m.id === id ? data.data.staffMaster : m))
+      return data.data.staffMaster
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== DELETE STAFF MASTER ==============
+  const deleteStaffMaster = useCallback(async (id: string) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/staff-master/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete staff master')
+      }
+
+      setStaffMasters(prev => prev.filter(m => m.id !== id))
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
   // ============== FILTERS ==============
   const setFilters = useCallback((newFilters: BookingFilters) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }))
@@ -643,8 +792,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       fetchStats()
       fetchCars()
       fetchUsers() 
+      fetchStaffMasters()
     }
-  }, [isAdmin, fetchBookings, fetchStats, fetchCars, fetchUsers])
+  }, [isAdmin, fetchBookings, fetchStats, fetchCars, fetchUsers, fetchStaffMasters])
 
   // ============== CONTEXT VALUE ==============
   const value = useMemo(() => ({
@@ -675,6 +825,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     addUser,
     updateUser,
     deleteUser,
+    // Staff Master
+    staffMasters,
+    fetchStaffMasters,
+    addStaffMaster,
+    updateStaffMaster,
+    deleteStaffMaster,
   }), [
     bookings,
     currentBooking,
@@ -700,6 +856,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     addUser,
     updateUser,
     deleteUser,
+    staffMasters,
+    fetchStaffMasters,
+    addStaffMaster,
+    updateStaffMaster,
+    deleteStaffMaster,
   ])
 
   return (

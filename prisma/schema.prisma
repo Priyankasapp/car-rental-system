@@ -9,35 +9,63 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============== STAFF MASTER MODEL ==============
+// Master blueprint/template for staff roles and permissions
+model StaffMaster {
+  id                 String     @id @default(auto()) @map("_id") @db.ObjectId
+  title              String     @unique // e.g. "Senior Chauffeur", "Fleet Cleaner", "Manager"
+  department         String     // e.g. "Operations", "Maintenance", "Customer Service"
+  staffType          StaffType? // DRIVER, CLEANER, etc.
+  defaultPermissions String[]   @default([]) // Pre-configured permissions for this job role
+  description        String?
+  isActive           Boolean    @default(true)
+  isDeleted          Boolean    @default(false)
+
+  // Relations
+  staffMembers       User[]     @relation("StaffMasterToUser")
+
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([isActive, isDeleted])
+  @@map("staff_masters")
+}
+
 // ============== USER MODEL ==============
 model User {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  email           String      @unique
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  email           String        @unique
   phone           String?
   firstName       String
   lastName        String
   password        String?  
-  role            Role        @default(CUSTOMER)
-  staffType       StaffType?  // Optional: DRIVER or CLEANER if role == STAFF
-  isEmailVerified Boolean     @default(false)
-  isActive        Boolean     @default(true)
-  isDeleted       Boolean     @default(false)
+  role            Role          @default(CUSTOMER)
+  staffType       StaffType?    // Optional: DRIVER or CLEANER if role == STAFF
+  
+  // Link to Staff Master (if user is staff)
+  staffMasterId   String?       @db.ObjectId
+  staffMaster     StaffMaster?  @relation("StaffMasterToUser", fields: [staffMasterId], references: [id])
+
+  isEmailVerified Boolean       @default(false)
+  isActive        Boolean       @default(true)
+  isDeleted       Boolean       @default(false)
   profilePicture  String?
-  preferences     Json?       // { language, currency, notifications }
-  permissions      String[]  @default([])  
+  preferences     Json?         // { language, currency, notifications }
+  permissions     String[]      @default([])  
   
   // Relations
-  sessions        Session[]
-  reservations    Reservation[]
-  emailLogs       EmailLog[]
-  payments        Payment[]
-  auditLogs       AuditLog[]      
+  sessions         Session[]
+  reservations     Reservation[]
+  emailLogs        EmailLog[]
+  payments         Payment[]
+  auditLogs        AuditLog[]      
   bookingAuditLogs BookingAuditLog[] 
   
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   @@index([role])
+  @@index([staffMasterId])
   @@index([isActive, isDeleted])
   @@map("users")
 }
@@ -111,50 +139,50 @@ enum OTPScope {
 
 // ============== CAR MODEL ==============
 model Car {
-  id               String       @id @default(auto()) @map("_id") @db.ObjectId
-  manufacturer     String
-  model            String
-  year             Int
-  category         CarCategory
-  licensePlate     String       @unique
-  color            String?
-  transmission     Transmission
-  fuelType         FuelType
-  seats            Int
-  luggageCapacity  Int
-  features         String[]
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  manufacturer    String
+  model           String
+  year            Int
+  category        CarCategory
+  licensePlate    String        @unique
+  color           String?
+  transmission    Transmission
+  fuelType        FuelType
+  seats           Int
+  luggageCapacity Int
+  features        String[]
   
   // Pricing (in cents / paise)
-  pricePerDay      Int
-  pricePerWeek     Int?
-  pricePerMonth    Int?
-  securityDeposit  Int
+  pricePerDay     Int
+  pricePerWeek    Int?
+  pricePerMonth   Int?
+  securityDeposit Int
   
   // Mileage
-  mileageFree      Int?
-  mileageExtraFee  Int?
+  mileageFree     Int?
+  mileageExtraFee Int?
   
   // Location
-  locationAddress  String
-  locationCity     String
-  locationState    String
-  locationZipCode  String
-  locationLat      Float?
-  locationLng      Float?
+  locationAddress String
+  locationCity    String
+  locationState   String
+  locationZipCode String
+  locationLat     Float?
+  locationLng     Float?
   
   // Images
-  imageMain        String
-  imageGallery     String[]
+  imageMain       String
+  imageGallery    String[]
   
   // Status
-  status           CarStatus    @default(AVAILABLE)
-  isDeleted        Boolean      @default(false)
+  status          CarStatus     @default(AVAILABLE)
+  isDeleted       Boolean       @default(false)
   
   // Relations
-  reservations     Reservation[]
+  reservations    Reservation[]
   
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([status, isDeleted])
   @@index([category, status])
@@ -263,39 +291,39 @@ enum ReservationStatus {
 
 // ============== PAYMENT MODEL ==============
 model Payment {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  bookingId     String          @db.ObjectId
-  booking       Reservation     @relation(fields: [bookingId], references: [id])
-  userId        String?         @db.ObjectId
-  user          User?           @relation(fields: [userId], references: [id])
+  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId         String        @db.ObjectId
+  booking           Reservation   @relation(fields: [bookingId], references: [id])
+  userId            String?       @db.ObjectId
+  user              User?         @relation(fields: [userId], references: [id])
   
   // Payment details
-  amount        Int             // In cents/paise
-  currency      String          @default("INR")
-  method        PaymentMethod
-  status        PaymentStatus   @default(PENDING)
+  amount            Int           // In cents/paise
+  currency          String        @default("INR")
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
   
   // Transaction details
-  transactionId String?         @unique
-  razorpayOrderId String?
+  transactionId     String?       @unique
+  razorpayOrderId   String?
   razorpayPaymentId String?
   razorpaySignature String?
   
   // Refund details
-  refundAmount  Int?
-  refundId      String?
-  refundStatus  RefundStatus?
-  refundReason  String?
+  refundAmount      Int?
+  refundId          String?
+  refundStatus      RefundStatus?
+  refundReason      String?
   
   // Metadata
-  metadata      Json?
+  metadata          Json?
   
   // Soft delete
-  isDeleted     Boolean         @default(false)
+  isDeleted         Boolean       @default(false)
   
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  completedAt   DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  completedAt       DateTime?
 
   @@index([bookingId])
   @@index([userId])
@@ -331,23 +359,23 @@ enum RefundStatus {
 
 // ============== BOOKING AUDIT LOG MODEL ==============
 model BookingAuditLog {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  bookingId       String   @db.ObjectId
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId       String      @db.ObjectId
   booking         Reservation @relation(fields: [bookingId], references: [id])
   
   // Audit details
-  action          String   // STATUS_CHANGED_TO_CONFIRMED, STATUS_CHANGED_TO_CANCELLED, etc.
+  action          String      // STATUS_CHANGED_TO_CONFIRMED, etc.
   previousStatus  String?
   newStatus       String?
-  performedBy     String   @db.ObjectId
-  performedByUser User     @relation(fields: [performedBy], references: [id])
+  performedBy     String      @db.ObjectId
+  performedByUser User        @relation(fields: [performedBy], references: [id])
   notes           String?
   
   // Metadata
   ipAddress       String?
   userAgent       String?
   
-  createdAt       DateTime @default(now())
+  createdAt       DateTime    @default(now())
 
   @@index([bookingId])
   @@index([createdAt])
@@ -409,31 +437,31 @@ enum ContactStatus {
 
 // ============== EMAIL LOG MODEL ==============
 model EmailLog {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String?     @db.ObjectId
-  user          User?       @relation(fields: [userId], references: [id])
-  reservationId String?     @db.ObjectId
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String?      @db.ObjectId
+  user          User?        @relation(fields: [userId], references: [id])
+  reservationId String?      @db.ObjectId
   reservation   Reservation? @relation(fields: [reservationId], references: [id])
   
   emailType     EmailType
   recipient     String
   recipientName String?
   subject       String
-  content       String?     // Store email content for reference
-  status        EmailStatus @default(PENDING)
+  content       String?      // Store email content for reference
+  status        EmailStatus  @default(PENDING)
   messageId     String?
   error         String?
   sentAt        DateTime?
-  retryCount    Int         @default(0)
-  openedAt      DateTime?   // For tracking if email was opened
-  clickedAt     DateTime?   // For tracking if links were clicked
+  retryCount    Int          @default(0)
+  openedAt      DateTime?    // For tracking if email was opened
+  clickedAt     DateTime?    // For tracking if links were clicked
   
   // Metadata
   ipAddress     String?
   userAgent     String?
   
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([userId])
   @@index([reservationId])
@@ -444,34 +472,22 @@ model EmailLog {
 }
 
 enum EmailType {
-  // Reservation related
   RESERVATION_CONFIRMATION
   RESERVATION_REMINDER
   RESERVATION_MODIFIED
   RESERVATION_CANCELLED
   RESERVATION_COMPLETED
-  
-  // Car related
   CAR_AVAILABLE
   CAR_REVIEW_REQUEST
-  
-  // Account related
   WELCOME
   PASSWORD_RESET
   EMAIL_VERIFICATION
   ACCOUNT_UPDATE
-  
-  // Contact related
   CONTACT_CONFIRMATION
   CONTACT_NOTIFICATION
-  
-  
-  // Promotional
   PROMOTIONAL
   NEWSLETTER
   OFFER
-  
-  // Admin
   ADMIN_NOTIFICATION
   SUPPORT_REPLY
 }
@@ -489,7 +505,7 @@ enum EmailStatus {
   UNSUBSCRIBED
 }
 
-// ============== GENERAL AUDIT LOG (System wide) ==============
+// ============== GENERAL AUDIT LOG ==============
 model AuditLog {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String?  @db.ObjectId
