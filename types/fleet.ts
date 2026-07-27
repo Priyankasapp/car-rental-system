@@ -18,6 +18,7 @@ export interface FleetFilterOption {
 }
 
 export interface FleetCar {
+  fuelType: string
   id: string
   name: string
   model: string
@@ -113,6 +114,7 @@ export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
     apiCar.imageMain ? [apiCar.imageMain] : []
 
   return {
+   
     id: apiCar.id,
     name: `${apiCar.manufacturer} ${apiCar.model}`,
     model: apiCar.model,
@@ -132,6 +134,7 @@ export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
     manufacturer: apiCar.manufacturer,
     seats: apiCar.seats,
     transmission: apiCar.transmission,
+     fuelType: apiCar.fuelType,
     location: apiCar.locationCity,
   }
 }
