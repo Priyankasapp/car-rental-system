@@ -1,209 +1,165 @@
-'use client'
+"use client";
 
-import { useEffect, useRef } from 'react'
-import Link from 'next/link'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { footerSections, socialLinks } from '@/data'
-import Icon from '@/components/ui/Icon'
-import Input from '@/components/ui/Input'
-import { Button } from '../ui/Button'
+import Link from "next/link";
+import Image from "next/image";
+import { Send } from "lucide-react";
 
-// Register ScrollTrigger
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger)
-}
+const fleetLinks = [
+  "Exotic Sports",
+  "Executive SUVs",
+  "Next-Gen Electric",
+  "Classic Collection",
+];
+
+const companyLinks = ["About Us", "Our Process", "Contact", "Locations"];
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear()
-  const footerRef = useRef<HTMLElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // 1. Fade in entire footer content
-      gsap.fromTo(
-        '.footer-content',
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: footerRef.current,
-            start: "top 90%",
-            toggleActions: "play none none none"
-          }
-        }
-      )
-
-      // 2. Stagger animation for brand and sections
-      gsap.fromTo(
-        '.footer-item',
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.7,
-          stagger: 0.1,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: contentRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none"
-          }
-        }
-      )
-
-      // 3. Social icons hover animation (bounce)
-      document.querySelectorAll('.social-link').forEach((link) => {
-        const element = link as HTMLElement
-        
-        element.addEventListener('mouseenter', () => {
-          gsap.to(element, {
-            y: -4,
-            scale: 1.1,
-            duration: 0.2,
-            ease: "power2.out"
-          })
-        })
-        
-        element.addEventListener('mouseleave', () => {
-          gsap.to(element, {
-            y: 0,
-            scale: 1,
-            duration: 0.2,
-            ease: "power2.in"
-          })
-        })
-      })
-
-      // 4. Newsletter button hover pulse
-      const newsletterBtn = document.querySelector('.newsletter-btn')
-      if (newsletterBtn) {
-        newsletterBtn.addEventListener('mouseenter', () => {
-          gsap.to(newsletterBtn, {
-            scale: 1.05,
-            duration: 0.2,
-            ease: "power2.out"
-          })
-        })
-        
-        newsletterBtn.addEventListener('mouseleave', () => {
-          gsap.to(newsletterBtn, {
-            scale: 1,
-            duration: 0.2,
-            ease: "power2.in"
-          })
-        })
-      }
-
-      // 5. Bottom bar fade in
-      gsap.fromTo(
-        '.bottom-bar',
-        { opacity: 0, y: 20 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          delay: 0.5,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: footerRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none"
-          }
-        }
-      )
-
-    }, footerRef)
-
-    return () => ctx.revert()
-  }, [])
-
   return (
-    <footer ref={footerRef} className="bg-white pt-24 pb-12 border-t border-gray-100 overflow-hidden">
-      <div ref={contentRef} className="footer-content max-w-360 mx-auto px-5 md:px-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
-          
-          {/* Brand Block */}
-          <div className="footer-item flex flex-col">
-            <h2 className="text-2xl font-bold tracking-tight text-black mb-4">
+    <footer className="border-t border-gray-200 bg-white">
+      <div className="mx-auto max-w-7xl px-6 py-16">
+        {/* Top Section */}
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+          {/* Brand */}
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-black">
               UrbanDrive
             </h2>
-            <p className="text-xs text-gray-400 max-w-xs leading-relaxed mb-6">
-              The worlds most exclusive car rental platform. Defined by performance, delivered with precision.
+
+            <p className="mt-6 max-w-xs text-sm leading-7 text-gray-600">
+              The world&apos;s most exclusive car rental platform. Defined by
+              performance, delivered with precision.
             </p>
-            <div className="flex gap-3">
-              {socialLinks.map((social) => (
-                <Link
-                  key={social.label}
-                  href={social.href}
-                  className="social-link w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-black hover:bg-black hover:text-white transition-colors duration-300"
-                >
-                  <Icon name={social.icon} className="text-base" />
-                </Link>
-              ))}
+
+            <div className="mt-8 flex items-center gap-4">
+              <Link
+                href="#"
+                className="rounded-full border border-gray-300 p-2.5 transition hover:bg-black hover:invert"
+                aria-label="Facebook"
+              >
+                <Image
+                  src="/icons/facebook.svg"
+                  alt="Facebook"
+                  width={18}
+                  height={18}
+                />
+              </Link>
+
+              <Link
+                href="#"
+                className="rounded-full border border-gray-300 p-2.5 transition hover:bg-black hover:invert"
+                aria-label="Instagram"
+              >
+                <Image
+                  src="/icons/instagram.svg"
+                  alt="Instagram"
+                  width={18}
+                  height={18}
+                />
+              </Link>
+
+              <Link
+                href="#"
+                className="rounded-full border border-gray-300 p-2.5 transition hover:bg-black hover:invert"
+                aria-label="Twitter"
+              >
+                <Image
+                  src="/icons/twitter.svg"
+                  alt="Twitter"
+                  width={18}
+                  height={18}
+                />
+              </Link>
             </div>
           </div>
 
-          {/* Navigation Links - ✅ FIXED: Using index as key */}
-          {footerSections.map((section) => (
-            <div key={section.title} className="footer-item lg:justify-self-center">
-              <h5 className="text-[10px] font-bold text-black uppercase tracking-[0.15em] mb-6">
-                {section.title}
-              </h5>
-              <ul className="flex flex-col gap-3">
-                {section.links.map((link, index) => (
-                  <li key={index}>
-                    <Link
-                      href={link.href}
-                      className="text-xs text-gray-400 hover:text-black transition-colors duration-200"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* Fleet */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-black">
+              Fleet
+            </h3>
+
+            <ul className="mt-6 space-y-4">
+              {fleetLinks.map((item) => (
+                <li key={item}>
+                  <Link
+                    href="#"
+                    className="text-sm text-gray-600 transition hover:text-black"
+                  >
+                    {item}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-black">
+              Company
+            </h3>
+
+            <ul className="mt-6 space-y-4">
+              {companyLinks.map((item) => (
+                <li key={item}>
+                  <Link
+                    href="#"
+                    className="text-sm text-gray-600 transition hover:text-black"
+                  >
+                    {item}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           {/* Newsletter */}
-          <div className="footer-item lg:justify-self-end w-full max-w-xs">
-            <h5 className="text-[10px] font-bold text-black uppercase tracking-[0.15em] mb-6">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-black">
               Newsletter
-            </h5>
-            <p className="text-xs text-gray-400 mb-5 leading-relaxed">
+            </h3>
+
+            <p className="mt-6 text-sm leading-6 text-gray-600">
               Stay updated with our latest fleet arrivals.
             </p>
-            <div className="flex gap-2 w-full">
-              <Input
-                placeholder="Email Address"
-                className="bg-gray-50 border border-gray-100 rounded-full px-4 py-2.5 text-xs focus:outline-none focus:border-gray-300 flex-1"
-              />
-              <Button className="newsletter-btn bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-zinc-800 transition-colors">
-                Join
-              </Button>
-            </div>
+
+            <form onSubmit={(e) => e.preventDefault()} className="mt-6">
+              <div className="flex overflow-hidden rounded-full border border-gray-300">
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  className="flex-1 bg-transparent px-5 py-3 text-sm text-black outline-none placeholder:text-gray-400"
+                />
+
+                <button
+                  type="submit"
+                  className="m-1 flex items-center gap-2 rounded-full bg-black px-5 text-sm font-medium text-white transition hover:bg-gray-800"
+                >
+                  Join
+                  <Send size={15} />
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="bottom-bar flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-100 gap-4">
-          <p className="text-[10px] font-medium text-gray-400 tracking-wider">
-            © {currentYear} URBAN DRIVE EXECUTIVE. ALL RIGHTS RESERVED.
-          </p>
-          <div className="flex gap-6">
-            <Link href="/privacy" className="text-[10px] font-medium text-gray-400 hover:text-black tracking-wider transition-colors">
+        {/* Divider */}
+        <div className="my-12 border-t border-gray-200" />
+
+        {/* Bottom */}
+        <div className="flex flex-col items-center justify-between gap-4 text-sm text-gray-500 md:flex-row">
+          <p>© 2026 UrbanDrive Executive. All Rights Reserved.</p>
+
+          <div className="flex items-center gap-8">
+            <Link href="#" className="transition hover:text-black">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="text-[10px] font-medium text-gray-400 hover:text-black tracking-wider transition-colors">
+
+            <Link href="#" className="transition hover:text-black">
               Terms of Service
             </Link>
           </div>
         </div>
       </div>
     </footer>
-  )
+  );
 }
