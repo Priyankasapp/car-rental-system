@@ -30,7 +30,7 @@ function parseImageGallery(galleryInput: unknown, mainImage?: string): string[] 
   return Array.from(new Set(gallery))
 }
 
-// 🟢 GET: Get single car with multiple images by ID
+//  GET: Get single car with multiple images by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -74,7 +74,7 @@ export async function GET(
   }
 }
 
-// 🟡 PUT: Update car & multiple images (Admin only)
+//  PUT: Update car & multiple images (Admin only)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

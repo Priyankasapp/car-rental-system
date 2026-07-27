@@ -8,10 +8,10 @@ import bcrypt from 'bcryptjs'
 //  GET: Get single user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     //  Verify admin access
     const token = request.cookies.get('token')?.value
@@ -79,10 +79,10 @@ export async function GET(
 //  PUT: Update user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const { firstName, lastName, phone, role, isActive, password } = body
 
@@ -162,10 +162,10 @@ export async function PUT(
 //  DELETE: Delete user (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     //  Verify admin access
     const token = request.cookies.get('token')?.value

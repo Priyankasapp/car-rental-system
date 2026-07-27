@@ -6,10 +6,10 @@ import { verifyToken } from '@/lib/auth'
 //  GET: Get single reservation
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     //  Verify user
     const token = request.cookies.get('token')?.value
@@ -76,10 +76,10 @@ export async function GET(
 //  PUT: Update reservation (cancel, reschedule)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const { status, pickupDate, dropoffDate } = body
 
@@ -158,10 +158,10 @@ export async function PUT(
 //  DELETE: Cancel reservation
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     //  Verify user
     const token = request.cookies.get('token')?.value
