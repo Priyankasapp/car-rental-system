@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useCars } from '@/context/CarContext'
 
@@ -10,7 +10,7 @@ import FleetGrid from '@/components/fleet/FleetGrid'
 import { fleetData } from '@/data/fleet'
 import { FleetFilterOption } from '@/types/fleet'
 
-// Add this interface definition
+// Interface definitions
 interface FleetFiltersState {
   priceMin?: number
   priceMax?: number
@@ -28,19 +28,19 @@ interface FilterParams {
   maxPrice?: number
 }
 
-export default function FleetPage() {
+function FleetContent() {
   const searchParams = useSearchParams()
-  
-  const { 
-    filteredCars, 
+
+  const {
+    filteredCars,
     isLoading,
-    error, 
-    fetchCars, 
+    error,
+    fetchCars,
     applyFilters,
     typeOptions,
     priceRange
   } = useCars()
-  
+
   const { hero } = fleetData
   const [isFiltering, setIsFiltering] = useState(false)
 
@@ -52,41 +52,44 @@ export default function FleetPage() {
     const search = searchParams.get('search')
     const minPrice = searchParams.get('minPrice')
     const maxPrice = searchParams.get('maxPrice')
-    
+
     if (category) filters.category = category
     if (city) filters.city = city
     if (search) filters.search = search
     if (minPrice) filters.minPrice = parseInt(minPrice, 10)
     if (maxPrice) filters.maxPrice = parseInt(maxPrice, 10)
-    
+
     fetchCars(filters)
   }, [fetchCars, searchParams])
 
   // Handle filter changes from sidebar
-  const handleFilterChange = useCallback((newFilters: FleetFiltersState) => {
-    setIsFiltering(true)
-    
-    const carFilters: FilterParams = {}
-    
-    if (newFilters.priceMin !== undefined) {
-      carFilters.minPrice = newFilters.priceMin
-    }
-    if (newFilters.priceMax !== undefined) {
-      carFilters.maxPrice = newFilters.priceMax
-    }
-    if (newFilters.vehicleTypes && newFilters.vehicleTypes.length > 0) {
-      carFilters.category = newFilters.vehicleTypes[0]
-    }
-    if (newFilters.brand) {
-      carFilters.search = newFilters.brand
-    }
-    
-    applyFilters(carFilters)
-    setIsFiltering(false)
-  }, [applyFilters])
+  const handleFilterChange = useCallback(
+    (newFilters: FleetFiltersState) => {
+      setIsFiltering(true)
+
+      const carFilters: FilterParams = {}
+
+      if (newFilters.priceMin !== undefined) {
+        carFilters.minPrice = newFilters.priceMin
+      }
+      if (newFilters.priceMax !== undefined) {
+        carFilters.maxPrice = newFilters.priceMax
+      }
+      if (newFilters.vehicleTypes && newFilters.vehicleTypes.length > 0) {
+        carFilters.category = newFilters.vehicleTypes[0]
+      }
+      if (newFilters.brand) {
+        carFilters.search = newFilters.brand
+      }
+
+      applyFilters(carFilters)
+      setIsFiltering(false)
+    },
+    [applyFilters]
+  )
 
   // Convert typeOptions to FleetFilterOption[] format
-  const vehicleTypes: FleetFilterOption[] = typeOptions.map(opt => ({
+  const vehicleTypes: FleetFilterOption[] = typeOptions.map((opt) => ({
     id: opt.id,
     label: opt.label,
     value: opt.value,
@@ -94,7 +97,9 @@ export default function FleetPage() {
   }))
 
   // Get unique brands from cars
-  const brands: FleetFilterOption[] = [...new Set(filteredCars.map(car => car.brand))].map(brand => ({
+  const brands: FleetFilterOption[] = [
+    ...new Set(filteredCars.map((car) => car.brand))
+  ].map((brand) => ({
     id: brand.toLowerCase().replace(/\s+/g, '-'),
     label: brand,
     value: brand,
@@ -102,7 +107,9 @@ export default function FleetPage() {
   }))
 
   // Get unique transmissions
-  const transmissions: FleetFilterOption[] = [...new Set(filteredCars.map(car => car.specs.transmission))].map(trans => ({
+  const transmissions: FleetFilterOption[] = [
+    ...new Set(filteredCars.map((car) => car.specs.transmission))
+  ].map((trans) => ({
     id: trans.toLowerCase().replace(/\s+/g, '-'),
     label: trans,
     value: trans,
@@ -112,7 +119,7 @@ export default function FleetPage() {
   const totalVehicles = filteredCars.length
 
   return (
-    <main className="mt-20 px-10 md:px-20 py-10 md:py-32 max-w-7xl mx-auto">
+    <>
       <FleetHero
         label={hero.label}
         title={hero.title}
@@ -146,6 +153,22 @@ export default function FleetPage() {
           />
         </div>
       </div>
+    </>
+  )
+}
+
+export default function FleetPage() {
+  return (
+    <main className="mt-20 px-10 md:px-20 py-10 md:py-32 max-w-7xl mx-auto">
+      <Suspense
+        fallback={
+          <div className="py-20 text-center text-gray-500">
+            Loading fleet options...
+          </div>
+        }
+      >
+        <FleetContent />
+      </Suspense>
     </main>
   )
 }
