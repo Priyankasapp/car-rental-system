@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { PERMISSIONS } from '@/lib/permissions'
 
 // GET — fetch a staff member's current permissions
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
