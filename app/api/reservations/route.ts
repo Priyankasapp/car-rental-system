@@ -1,3 +1,4 @@
+ 
 // app/api/reservations/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -139,6 +140,49 @@ export async function POST(request: NextRequest) {
     const totalBeforeTax = subtotal + addOns
     const tax = Math.round(totalBeforeTax * 0.12)
     const total = totalBeforeTax + tax
+
+    const pickupDate = new Date(pickup.date)
+    const dropoffDate = new Date(dropoff.date)  
+
+    if(pickupDate >= dropoffDate){
+      return NextResponse.json(
+        {
+          success:false,
+          message: 'Drop-off date must be after pickup date.'
+        },
+        { status: 400}
+      )
+    }
+
+    const existingReservation = await prisma.reservation.findFirst({
+      where:{
+        carId,
+        isDeleted:false,
+
+        status:{
+          in:['PENDING', 'CONFIRMED'],
+        },
+
+        pickupDate:{
+          lt: dropoffDate,
+        },
+
+        dropoffDate:{
+          gt:pickupDate,
+        },
+      },
+      
+    })
+
+    if(existingReservation){
+      return NextResponse.json(
+        {
+          success:false,
+          message:'This car is already booked for the  selected dates.',
+        },
+        { status: 400}
+      )
+    }
 
     //  Create reservation with PENDING status
     const reservation = await prisma.reservation.create({

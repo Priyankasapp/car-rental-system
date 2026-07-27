@@ -191,7 +191,7 @@ export async function PUT(
   }
 }
 
-// 🔴 DELETE: Delete car (Admin only)
+//  DELETE: Delete car (Admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
