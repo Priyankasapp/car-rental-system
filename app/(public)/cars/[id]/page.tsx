@@ -35,13 +35,17 @@ export default function CarDetailPage() {
     )
   }
 
-  //  FIX: Dynamic images array with fallback to main image
-  const galleryImages: string[] = 
-    car.imageGallery?.length ? car.imageGallery :
-    car.image?.length ? car.images :
-    car.image ? [car.image] : []
+  // Dynamic images array with fallback to main image
+const galleryImages: string[] =
+  car.imageGallery?.length
+    ? car.imageGallery
+    : car.images?.length
+      ? car.images
+      : car.image
+        ? [car.image]
+        : []
 
-  const mainImage = car.image || galleryImages[0] || '/placeholder-car.png'
+const mainImage = car.image || galleryImages[0] || '/placeholder-car.png'
 
   const handleBook = () => {
     if (!user) {
