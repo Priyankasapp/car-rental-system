@@ -75,9 +75,22 @@ export async function GET(request: NextRequest) {
     const cars = await prisma.car.findMany({
       where,
       include: {
-        reservations: {  // ✅ CORRECT - using 'reservations' as per schema
+        reservations: {  
           where: {
-            status: { in: ['CONFIRMED', 'PENDING'] },
+            status: { 
+              in: ['CONFIRMED', 'PENDING'],
+            },
+
+            ...(startDate && endDate ?
+              {
+                pickupDate:{
+                  lt:new Date(endDate),
+                },
+                dropoffDate:{
+                  gt: new Date(startDate),
+                },
+              }
+            :{}),
           },
           select: {
             id: true,
@@ -97,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     // Transform the response to include availability status
     const carsWithAvailability = cars.map(car => {
-      const isReserved = car.reservations && car.reservations.length > 0
+      const isReserved = car.reservations.length > 0 && car.reservations.length > 0
       
       // Determine if car is available based on date range
       let availabilityStatus = car.status
