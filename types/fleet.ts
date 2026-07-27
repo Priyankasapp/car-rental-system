@@ -31,6 +31,7 @@ export interface FleetCar {
   specs: {
     power: string
     transmission: string
+    acceleration?: string
   }
   status: 'available' | 'reserved' | 'new-arrival'
   favorite?: boolean

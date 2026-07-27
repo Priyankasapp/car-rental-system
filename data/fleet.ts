@@ -37,7 +37,9 @@ export const fleetData: FleetData = {
     {
       id: '1',
       name: 'Porsche 911 Turbo S',
+      model: '911 Turbo S',
       brand: 'Porsche',
+      fuelType: 'Gasoline',
       category: 'Performance / Sports',
       price: 850,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBUJ3zWYizS5xHxwswb_-iVzoEfRT3QBSnrXpvetrhWgFronDsHa-NK6HRDSuI3LYnMuqq9rH7h83WrHJ6TQGZCoUgclSoziHvtWOwVQEVJl3pXtR6cpVHE5G11DEDRjFsSGTwDK3MZ0UF3uGD7k5ChChJT8_KVzm8X6VVzFJY-vgtReBiuX3-CvXU868cx8SXaxzV_jrsf-OXagfFjq53PS1Pd-XanK0_ygZ6-Iv4-T9A2GyRpDyGZvuy8inFVFuswg4uNrvKWoZNT',
@@ -51,7 +53,9 @@ export const fleetData: FleetData = {
     {
       id: '2',
       name: 'Range Rover SV',
+      model: 'Range Rover SV',
       brand: 'Range Rover',
+      fuelType: 'Gasoline',
       category: 'Luxury / SUV',
       price: 450,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCCx604xULLJcBegMh94TGCzdkA0diI8jLJQAPcgaBteM_140KH6dtl0hozzch5S83C-_we_B76Fuitk5Eh9mf4KRQNsg4iBt6RFUXdexV_3qJScxG7PuYw_Z9Qf7JfcPv2ufhKkP2kdBcc7mEeJgz_TpyYBU0pVzzFx1cQgY-mpNnqHjw7IkAj3-ouY4Hkx2HSeO6MY5dR40En-atz3YAYVnXUscGajaEL8WdL6sJYq5ChtDNqp72X_YmQ82vbdm2uaOsjlpYnnPvN',
@@ -66,6 +70,8 @@ export const fleetData: FleetData = {
       id: '3',
       name: 'Aston Martin DBS',
       brand: 'Aston Martin',
+      fuelType: 'Gasoline',
+      model: 'DBS Superleggera',
       category: 'Grand Tourer / Sports',
       price: 1200,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBU7n_QrVcMiEcgDORp8R19BPy1lB1dWuxsbBhh3gIYeYHrjqWwgvoXRj-NvO0PbXdtiw50164xlJI-tMM0y7U8dglgyi6HSDZ2q-lEg3JlGuwASg3YGNgWm9OhaoHkQbAlqVk5U6RwNYRmrzZlNsYk0rpMjGwGaT3MJXWRsVLD9eeUL68sWD9pIUkeNLHYrCu4vQiWyW416LfkgBc7zW_VOMs4yhLKma9HehB_-7rLCMiHwBEgrkpv5c_Y9iM6NufSCTDtl88E4QoE',
@@ -79,7 +85,9 @@ export const fleetData: FleetData = {
     {
       id: '4',
       name: "Jaguar E-Type '63",
+      model: 'E-Type Series 1',
       brand: 'Jaguar',
+      fuelType: 'Gasoline',
       category: 'Vintage / Heritage',
       price: 550,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDQvAehh0lQ58ZkhlEUne35uIElRxBlfxT49gP9qNtARMeoPLNveUcUzxEcQpJQ7hzkG5Tqicz3osEsB0qYl8ie-ddJMySg6kDTOMbESL83CuPd2LTnyMbRXWzNNOuPWdvue6YpGc97nao5YtdwwwlWpvqge4UPiGmmpJxYyF49jrAMkPeITKnJX0A_JrqLNlRy2CsK8jzxG0YQcZ_55qHO1VsHAbTNKKPdXnnc4BjdCSzHcxjtLv550iJmbULG3Rz9zWKQ1DHpE6vG',
@@ -93,7 +101,9 @@ export const fleetData: FleetData = {
     {
       id: '5',
       name: 'Tesla Model S Plaid',
+      model: 'Model S Plaid',
       brand: 'Tesla',
+      fuelType: 'Electric',
       category: 'Electric / Sedan',
       price: 350,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCnIX9vTSyfET3cN6Vzcvahudt2dyEsOM_1xT5PffAC7HrxKWBDMmtincYTIxtiqHYhbWLwQ2bTsp0dmWF52ACFvfuHRePmJNGc3hY8wskNlEwsKhlhywcKmksjHhi_QYJh173WBZ8JqVJ5yzrsL2LPjNb_VSjn-EiRKP9s2_4Tk7Q49WVCLXNq5skyLP8q9I40w8WZggxNNKsDkNihy9PTFa0t9Mi0xjFr6U1DnAnq1J2bt-EgCYPzZd-xFA_W5aDjq6zuRPrAc9re',
