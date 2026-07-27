@@ -7,11 +7,10 @@ import { PERMISSIONS } from '@/lib/permissions'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> }
 ) {
-  
   try {
-   const { id } = await params
+    const { id } = await props.params
     const requestingRole = request.headers.get('x-user-role')
 
     // Only SUPERADMIN can view/manage permissions
