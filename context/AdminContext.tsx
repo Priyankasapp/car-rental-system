@@ -120,6 +120,20 @@ export interface StaffMaster {
   }
 }
 
+export interface AdminStaff {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string | null
+  role: string
+  staffType: 'DRIVER' | 'CLEANER' | null
+  staffMasterId: string | null
+  permissions: string[]
+  isActive: boolean
+  createdAt: string
+}
+
 export interface AdminStats {
   totalUsers: number
   totalCars: number
@@ -155,6 +169,9 @@ interface AdminContextType {
 
   // State - Staff Master
   staffMasters: StaffMaster[]
+
+  // State - Staff
+  staff: AdminStaff[]
   
   // Actions - Bookings
   fetchBookings: (filters?: BookingFilters) => Promise<void>
@@ -183,6 +200,12 @@ interface AdminContextType {
   addStaffMaster: (data: any) => Promise<any>
   updateStaffMaster: (id: string, data: any) => Promise<any>
   deleteStaffMaster: (id: string) => Promise<void>
+
+  // Actions - Staff
+  fetchStaff: () => Promise<void>
+  addStaff: (data: any) => Promise<any>
+  updateStaff: (id: string, data: any) => Promise<any>
+  deleteStaff: (id: string) => Promise<void>
   
   // Actions - Filters
   setFilters: (filters: BookingFilters) => void
@@ -211,6 +234,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   // ============== STATE - STAFF MASTER ==============
   const [staffMasters, setStaffMasters] = useState<StaffMaster[]>([])
+
+  // ============== STATE - STAFF ==============
+  const [staff, setStaff] = useState<AdminStaff[]>([])
 
   // ============== STATE - UI ==============
   const [isLoading, setIsLoading] = useState(false)
@@ -774,6 +800,125 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAdmin])
 
+  // ============== FETCH STAFF ==============
+  const fetchStaff = useCallback(async () => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/staff')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch staff')
+      }
+
+      setStaff(data.data.staff)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== ADD STAFF ==============
+  const addStaff = useCallback(async (staffData: any) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(staffData),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add staff')
+      }
+
+      setStaff(prev => [data.data.staff, ...prev])
+      return data.data.staff
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== UPDATE STAFF ==============
+  const updateStaff = useCallback(async (id: string, staffData: any) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/staff/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(staffData),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update staff')
+      }
+
+      setStaff(prev => prev.map(s => s.id === id ? data.data.staff : s))
+      return data.data.staff
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
+  // ============== DELETE STAFF ==============
+  const deleteStaff = useCallback(async (id: string) => {
+    if (!isAdmin) {
+      setError('Admin access required')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/admin/staff/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to remove staff')
+      }
+
+      setStaff(prev => prev.filter(s => s.id !== id))
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAdmin])
+
   // ============== FILTERS ==============
   const setFilters = useCallback((newFilters: BookingFilters) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }))
@@ -793,8 +938,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       fetchCars()
       fetchUsers() 
       fetchStaffMasters()
+      fetchStaff()
     }
-  }, [isAdmin, fetchBookings, fetchStats, fetchCars, fetchUsers, fetchStaffMasters])
+  }, [isAdmin, fetchBookings, fetchStats, fetchCars, fetchUsers, fetchStaffMasters, fetchStaff])
 
   // ============== CONTEXT VALUE ==============
   const value = useMemo(() => ({
@@ -831,6 +977,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     addStaffMaster,
     updateStaffMaster,
     deleteStaffMaster,
+    // Staff
+    staff,
+    fetchStaff,
+    addStaff,
+    updateStaff,
+    deleteStaff,
   }), [
     bookings,
     currentBooking,
@@ -861,6 +1013,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     addStaffMaster,
     updateStaffMaster,
     deleteStaffMaster,
+    staff,
+    fetchStaff,
+    addStaff,
+    updateStaff,
+    deleteStaff,
   ])
 
   return (

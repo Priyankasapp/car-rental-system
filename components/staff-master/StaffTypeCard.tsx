@@ -75,7 +75,7 @@ export default function StaffTypeCard({ staffMaster, onEdit, onDelete }: StaffTy
         </div>
       </div>
 
-      <p className="text-text-secondary text-base mb-8 min-h-[3rem]">
+      <p className="text-text-secondary text-base mb-8 min-h-12">
         {staffMaster.description || 'No description added yet.'}
       </p>
 

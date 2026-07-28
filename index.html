@@ -3,471 +3,304 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>UrbanDrive Admin - Staff Master</title>
+<title>Add New Member | UrbanDrive</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error": "#ffffff",
+                    "surface-tint": "#5e5e5e",
+                    "on-primary-fixed": "#1b1b1b",
+                    "surface-container-high": "#e8e8e8",
+                    "surface-container": "#eeeeee",
+                    "primary": "#000000",
+                    "tertiary-fixed-dim": "#c6c6c6",
+                    "error": "#ba1a1a",
+                    "secondary-fixed-dim": "#c6c6c7",
+                    "inverse-surface": "#303030",
+                    "inverse-primary": "#c6c6c6",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#1b1b1b",
+                    "glass-fill": "rgba(255, 255, 255, 0.7)",
+                    "tertiary-container": "#1b1b1b",
+                    "primary-container": "#1b1b1b",
+                    "on-secondary-fixed-variant": "#454747",
+                    "background": "#f9f9f9",
+                    "on-secondary": "#ffffff",
+                    "accent-success": "#22C55E",
+                    "on-primary-container": "#848484",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed": "#e2e2e2",
+                    "secondary-fixed": "#e2e2e2",
+                    "on-surface-variant": "#4c4546",
+                    "on-surface": "#1b1b1b",
+                    "surface-bright": "#f9f9f9",
+                    "secondary": "#5d5f5f",
+                    "surface-container-highest": "#e2e2e2",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#F8F8F8",
+                    "on-primary-fixed-variant": "#474747",
+                    "on-background": "#1b1b1b",
+                    "text-primary": "#111111",
+                    "on-error-container": "#93000a",
+                    "surface-container-low": "#f3f3f3",
+                    "error-container": "#ffdad6",
+                    "primary-fixed": "#e2e2e2",
+                    "surface-dim": "#dadada",
+                    "on-secondary-container": "#616363",
+                    "inverse-on-surface": "#f1f1f1",
+                    "on-tertiary-fixed-variant": "#474747",
+                    "on-tertiary-container": "#848484",
+                    "text-secondary": "#666666",
+                    "border": "#E5E5E5",
+                    "primary-fixed-dim": "#c6c6c6",
+                    "outline-variant": "#cfc4c5",
+                    "outline": "#7e7576",
+                    "surface-variant": "#e2e2e2",
+                    "secondary-container": "#dfe0e0",
+                    "on-secondary-fixed": "#1a1c1c",
+                    "tertiary": "#000000"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "20px",
+                    "margin-desktop": "64px",
+                    "container-max": "1440px",
+                    "unit": "8px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "display-lg": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          }
         }
+      }
+    </script>
+<style>
         .executive-shadow {
             box-shadow: 0px 10px 40px rgba(0,0,0,0.04);
         }
-        .glass-blur {
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
         }
-        /* Custom scrollbar for a premium feel */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #E5E5E5; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #666666; }
+        body {
+            background-color: #f9f9f9;
+            font-family: 'Inter', sans-serif;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #000000 !important;
+            ring: 0 !important;
+        }
     </style>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "on-error-container": "#93000a",
-                        "primary": "#000000",
-                        "on-background": "#1b1b1b",
-                        "tertiary-container": "#1b1b1b",
-                        "on-tertiary-fixed-variant": "#474747",
-                        "glass-fill": "rgba(255, 255, 255, 0.7)",
-                        "on-tertiary-fixed": "#1b1b1b",
-                        "surface-container-lowest": "#ffffff",
-                        "surface-bright": "#f9f9f9",
-                        "on-primary-fixed": "#1b1b1b",
-                        "on-primary-fixed-variant": "#474747",
-                        "inverse-on-surface": "#f1f1f1",
-                        "surface-tint": "#5e5e5e",
-                        "secondary-fixed-dim": "#c6c6c7",
-                        "on-surface": "#1b1b1b",
-                        "primary-container": "#1b1b1b",
-                        "border": "#E5E5E5",
-                        "surface-container-highest": "#e2e2e2",
-                        "text-secondary": "#666666",
-                        "surface-container": "#eeeeee",
-                        "outline": "#7e7576",
-                        "error": "#ba1a1a",
-                        "accent-success": "#22C55E",
-                        "secondary-container": "#dfe0e0",
-                        "inverse-surface": "#303030",
-                        "on-tertiary-container": "#848484",
-                        "on-error": "#ffffff",
-                        "tertiary": "#000000",
-                        "on-secondary-container": "#616363",
-                        "primary-fixed": "#e2e2e2",
-                        "text-primary": "#111111",
-                        "primary-fixed-dim": "#c6c6c6",
-                        "surface-container-high": "#e8e8e8",
-                        "on-tertiary": "#ffffff",
-                        "on-secondary-fixed-variant": "#454747",
-                        "surface-dim": "#dadada",
-                        "secondary-fixed": "#e2e2e2",
-                        "secondary": "#5d5f5f",
-                        "surface": "#F8F8F8",
-                        "on-surface-variant": "#4c4546",
-                        "inverse-primary": "#c6c6c6",
-                        "tertiary-fixed": "#e2e2e2",
-                        "surface-container-low": "#f3f3f3",
-                        "on-primary": "#ffffff",
-                        "error-container": "#ffdad6",
-                        "background": "#f9f9f9",
-                        "outline-variant": "#cfc4c5",
-                        "surface-variant": "#e2e2e2",
-                        "on-primary-container": "#848484",
-                        "tertiary-fixed-dim": "#c6c6c6",
-                        "on-secondary": "#ffffff",
-                        "on-secondary-fixed": "#1a1c1c"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "unit": "8px",
-                        "margin-mobile": "20px",
-                        "margin-desktop": "64px",
-                        "container-max": "1440px",
-                        "gutter": "24px"
-                    },
-                    "fontFamily": {
-                        "headline-md": ["Inter"],
-                        "display-lg": ["Inter"],
-                        "headline-lg": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "body-md": ["Inter"],
-                        "body-lg": ["Inter"]
-                    },
-                    "fontSize": {
-                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                        "display-lg": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
-                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
-                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
-                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
-                    }
-                },
-            },
-        }
-    </script>
 </head>
-<body class="bg-background font-body-md text-on-background overflow-hidden">
-<!-- TopAppBar -->
-<header class="fixed top-0 right-0 w-[calc(100%-16rem)] bg-glass-fill backdrop-blur-xl border-b border-border flex justify-between items-center px-margin-desktop h-20 ml-64 z-30">
-<div class="flex items-center gap-8">
-<h1 class="font-headline-md text-headline-md font-bold text-primary">UrbanDrive Admin</h1>
-<nav class="hidden md:flex items-center space-x-8">
-<a class="text-text-secondary hover:text-primary transition-opacity duration-300 font-label-sm text-label-sm" href="#">Analytics</a>
-<a class="text-text-secondary hover:text-primary transition-opacity duration-300 font-label-sm text-label-sm" href="#">Inventory</a>
-<a class="text-text-secondary hover:text-primary transition-opacity duration-300 font-label-sm text-label-sm" href="#">Maintenance</a>
+<body class="text-on-background antialiased overflow-x-hidden">
+<!-- TopNavBar  -->
+<nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-glass-fill border-b border-border transition-all duration-300">
+<div class="max-w-container-max mx-auto px-margin-desktop flex items-center justify-between h-20">
+<div class="text-headline-md font-bold tracking-tighter text-primary">UrbanDrive</div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors duration-300" href="#">Fleet</a>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors duration-300" href="#">Collections</a>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors duration-300" href="#">Locations</a>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors duration-300" href="#">Support</a>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-body-md text-body-md ease-out duration-300 hover:opacity-80 active:scale-95">
+                Book Now
+            </button>
+</div>
 </nav>
-</div>
-<div class="flex items-center gap-6">
-<button class="material-symbols-outlined text-primary p-2 hover:bg-surface-container rounded-full transition-colors">notifications</button>
-<button class="material-symbols-outlined text-primary p-2 hover:bg-surface-container rounded-full transition-colors">apps</button>
-<img class="w-10 h-10 rounded-full object-cover border border-border" data-alt="Close up shot of a professional administrator profile picture, soft minimalist lighting, black and white palette, blurred corporate office background, high contrast executive style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVBAE9VhEq3knxv04NZaQKLu_-Ff8LX8Nk6d7Idgl4Bv0jk75ver3Fxu8MRfowQWrhfpmpNlBN79_PPLVnxpPbIPgoXCHTCRssOGK1C6a8xXMSE6dj0kw1CSqMXCqWIfLbAd5b5ugQVD0twC62kHMZQAufnH102SyEn7GXnV8N9MLxVJ-Gop9Iu4mubvLi56bz5nHIJSDmQ53Ik-OijIEUP5nvCHnYA6GVhhxqTSSpOGGWcSh796wLdxbA3wUUzspz78Wff9cFS868"/>
-</div>
+<!-- Main Content Area -->
+<main class="pt-32 pb-24 px-margin-mobile md:px-margin-desktop">
+<div class="max-w-3xl mx-auto">
+<!-- Header Section -->
+<header class="mb-12 text-center">
+<h1 class="font-headline-lg text-headline-lg text-primary mb-2">Add New Member</h1>
+<p class="font-body-lg text-body-lg text-text-secondary">Onboard a new elite driver to the UrbanDrive collective.</p>
 </header>
-<!-- SideNavBar -->
-<aside class="fixed h-full w-64 left-0 top-0 bg-surface border-r border-border flex flex-col py-unit-margin-desktop z-40">
-<div class="px-8 mb-10">
-<div class="font-headline-md text-headline-md font-bold tracking-tight text-primary">UrbanDrive</div>
-<div class="font-label-sm text-label-sm text-text-secondary uppercase tracking-widest mt-1">Enterprise Fleet</div>
+<!-- Form Container -->
+<div class="bg-surface-container-lowest executive-shadow border border-border rounded-xl p-8 md:p-12 space-y-16">
+<!-- Profile Section -->
+<section class="space-y-8">
+<div class="flex items-center gap-6">
+<div class="relative group">
+<div class="w-24 h-24 rounded-full bg-surface-container border border-border flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-300 group-hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-4xl text-text-secondary">person</span>
 </div>
-<nav class="flex-1 flex flex-col px-4 space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="font-body-md">Dashboard</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
-<span class="material-symbols-outlined">directions_car</span>
-<span class="font-body-md">Fleet</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
-<span class="material-symbols-outlined">calendar_today</span>
-<span class="font-body-md">Reservations</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
-<span class="material-symbols-outlined">group</span>
-<span class="font-body-md">Customers</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-container-low transition-all duration-300" href="#">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">badge</span>
-<span class="font-body-md">Staff Master</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
-<span class="material-symbols-outlined">analytics</span>
-<span class="font-body-md">Reports</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="font-body-md">Settings</span>
-</a>
-</nav>
-<div class="mt-auto px-4 space-y-1 border-t border-border pt-6">
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors" href="#">
-<span class="material-symbols-outlined">help_outline</span>
-<span class="font-body-md">Support</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors" href="#">
-<span class="material-symbols-outlined">logout</span>
-<span class="font-body-md">Log Out</span>
-</a>
+<div class="absolute -bottom-1 -right-1 bg-primary text-on-primary w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-sm">add</span>
 </div>
-</aside>
-<!-- Main Content (Staff Master List - Background State) -->
-<main class="ml-64 pt-20 h-screen overflow-y-auto px-margin-desktop bg-white">
-<div class="max-w-container-max mx-auto py-12">
-<div class="flex justify-between items-end mb-12">
+</div>
 <div>
-<h2 class="font-headline-lg text-headline-lg text-primary">Staff Management</h2>
-<p class="text-text-secondary mt-2">Manage your organization's administrative roles and system access.</p>
+<h3 class="font-headline-md text-headline-md text-primary">Member Profile</h3>
+<p class="font-body-md text-body-md text-text-secondary">Basic identity and contact details.</p>
 </div>
-<button class="bg-primary text-on-primary px-8 py-3 rounded-none font-label-sm text-label-sm uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-[0.98]">
-                    Add Staff Type
-                </button>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-<!-- Example Staff Type Card -->
-<div class="bg-surface border border-border p-8 executive-shadow group">
-<div class="flex justify-between items-start mb-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="md:col-span-2">
+<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Full Name</label>
+<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="e.g. Julian Sterling" type="text"/>
+</div>
 <div>
-<h3 class="font-headline-md text-headline-md">Super Admin</h3>
-<span class="inline-block mt-1 px-3 py-1 bg-accent-success/10 text-accent-success font-label-sm text-[10px] rounded-full uppercase tracking-tighter">Active</span>
+<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Email Address</label>
+<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="julian@sterling.com" type="email"/>
 </div>
-<span class="material-symbols-outlined text-text-secondary">more_vert</span>
-</div>
-<p class="text-text-secondary text-body-md mb-8">Full administrative access to all modules, system configurations, and user management.</p>
-<div class="flex items-center gap-2 text-text-secondary">
-<span class="material-symbols-outlined text-sm">shield</span>
-<span class="font-label-sm text-label-sm">48 Permissions Granted</span>
-</div>
-</div>
-<div class="bg-surface border border-border p-8 executive-shadow group">
-<div class="flex justify-between items-start mb-6">
 <div>
-<h3 class="font-headline-md text-headline-md">Operations</h3>
-<span class="inline-block mt-1 px-3 py-1 bg-accent-success/10 text-accent-success font-label-sm text-[10px] rounded-full uppercase tracking-tighter">Active</span>
-</div>
-<span class="material-symbols-outlined text-text-secondary">more_vert</span>
-</div>
-<p class="text-text-secondary text-body-md mb-8">Responsible for fleet management, booking approvals, and customer interaction logs.</p>
-<div class="flex items-center gap-2 text-text-secondary">
-<span class="material-symbols-outlined text-sm">shield</span>
-<span class="font-label-sm text-label-sm">32 Permissions Granted</span>
+<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Phone Number</label>
+<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="+1 (555) 000-0000" type="tel"/>
 </div>
 </div>
-<div class="bg-surface border border-border p-8 executive-shadow group">
-<div class="flex justify-between items-start mb-6">
+</section>
+<!-- Account Configuration -->
+<section class="space-y-8">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">settings</span>
+<h3 class="font-headline-md text-headline-md text-primary">Account Configuration</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
 <div>
-<h3 class="font-headline-md text-headline-md">Support Agent</h3>
-<span class="inline-block mt-1 px-3 py-1 bg-accent-success/10 text-accent-success font-label-sm text-[10px] rounded-full uppercase tracking-tighter">Active</span>
+<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Role Selection</label>
+<select class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md appearance-none">
+<option>Member</option>
+<option>Concierge</option>
+<option>Fleet Manager</option>
+<option>Admin</option>
+</select>
 </div>
-<span class="material-symbols-outlined text-text-secondary">more_vert</span>
+<div>
+<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Membership Tier</label>
+<select class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md appearance-none">
+<option>Silver</option>
+<option>Gold</option>
+<option>Platinum</option>
+<option>Black</option>
+</select>
 </div>
-<p class="text-text-secondary text-body-md mb-8">View-only access to bookings and customers with basic editing for support tickets.</p>
-<div class="flex items-center gap-2 text-text-secondary">
-<span class="material-symbols-outlined text-sm">shield</span>
-<span class="font-label-sm text-label-sm">12 Permissions Granted</span>
+<div class="md:col-span-2 flex items-center justify-between py-4 border-b border-border">
+<div>
+<p class="font-body-md text-body-md text-primary">Account Status</p>
+<p class="font-label-sm text-label-sm text-text-secondary">Set initial status for login access.</p>
 </div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:inset-s-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+<span class="ms-3 font-label-sm text-label-sm text-text-secondary uppercase">Active</span>
+</label>
+</div>
+</div>
+</section>
+<!-- Verification Details -->
+<section class="space-y-8">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+<h3 class="font-headline-md text-headline-md text-primary">Verification Details</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div>
+<label class="block font-label-sm text-label-sm text-text-secondary mb-2">License Number</label>
+<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="AB1234567" type="text"/>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Issuing Country</label>
+<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="United States" type="text"/>
+</div>
+<div class="md:col-span-2">
+<label class="block font-label-sm text-label-sm text-text-secondary mb-4">Driver's License Copy</label>
+<div class="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer group">
+<div class="flex flex-col items-center gap-2">
+<span class="material-symbols-outlined text-4xl text-text-secondary group-hover:text-primary transition-colors">cloud_upload</span>
+<p class="font-body-md text-body-md text-text-secondary">Drag and drop file here, or <span class="text-primary font-semibold underline">browse</span></p>
+<p class="font-label-sm text-label-sm text-text-secondary opacity-60">High-resolution JPG or PDF (Max 10MB)</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Actions -->
+<div class="pt-8 flex flex-col md:flex-row items-center gap-6 border-t border-border">
+<button class="w-full md:w-auto px-12 py-4 bg-primary text-on-primary rounded-lg font-semibold text-body-md hover:scale-[1.02] active:scale-95 transition-all duration-300">
+                        Create User Account
+                    </button>
+<button class="w-full md:w-auto px-8 py-4 text-text-secondary hover:text-primary font-body-md text-body-md transition-colors">
+                        Cancel
+                    </button>
 </div>
 </div>
 </div>
 </main>
-<!-- Overlay / Drawer Backdrop -->
-<div class="fixed inset-0 bg-black/40 glass-blur z-50 flex justify-end" id="drawer-overlay">
-<!-- Drawer Container -->
-<div class="w-full max-w-2xl bg-white h-screen flex flex-col shadow-2xl transform transition-transform duration-500 ease-out translate-x-0" id="drawer">
-<!-- Header -->
-<div class="px-10 pt-10 pb-8 border-b border-border">
-<div class="flex justify-between items-start">
-<div>
-<h2 class="font-headline-lg text-headline-lg text-primary">Add Staff Type</h2>
-<p class="text-text-secondary mt-1 font-body-md">Create a staff role and define its system permissions.</p>
-</div>
-<button class="p-2 hover:bg-surface-container rounded-full transition-colors" onclick="document.getElementById('drawer-overlay').classList.add('hidden')">
-<span class="material-symbols-outlined">close</span>
-</button>
-</div>
-</div>
-<!-- Scrollable Content -->
-<div class="flex-1 overflow-y-auto px-10 py-10 space-y-12">
-<!-- General Info Section -->
-<div class="space-y-8">
-<div class="grid grid-cols-1 gap-6">
-<div class="space-y-2">
-<label class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Staff Type Name</label>
-<input class="w-full border-b border-border focus:border-primary focus:ring-0 px-0 py-3 text-body-lg bg-transparent transition-colors placeholder:text-surface-container-highest" placeholder="e.g. Regional Manager" type="text"/>
-</div>
-<div class="space-y-2">
-<label class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Description</label>
-<textarea class="w-full border-b border-border focus:border-primary focus:ring-0 px-0 py-3 text-body-md bg-transparent transition-colors placeholder:text-surface-container-highest resize-none" placeholder="Briefly describe the responsibilities of this role..." rows="3"></textarea>
-</div>
-<div class="flex items-center justify-between py-2">
-<div>
-<h4 class="font-body-md font-bold text-primary">Status</h4>
-<p class="text-text-secondary text-[13px]">Enable or disable this role within the system.</p>
-</div>
-<label class="relative inline-flex items-center cursor-pointer">
-<input checked="" class="sr-only peer" type="checkbox"/>
-<div class="w-11 h-6 bg-surface-container rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-<span class="ml-3 font-label-sm text-label-sm text-primary uppercase tracking-tight">Active</span>
-</label>
-</div>
-</div>
-</div>
-<!-- Permissions Section -->
+<!-- Footer -->
+<footer class="bg-surface py-16 px-margin-desktop border-t border-border">
+<div class="max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-4 gap-gutter">
 <div class="space-y-6">
-<div class="flex justify-between items-end border-b border-border pb-4">
-<div>
-<h3 class="font-headline-md text-headline-md text-primary">Module Permissions</h3>
-<p class="text-text-secondary mt-1 font-body-md">Choose what this staff role can access.</p>
+<div class="text-headline-md font-bold text-primary">UrbanDrive</div>
+<p class="font-body-md text-body-md text-text-secondary max-w-60">
+                    Curating elite driving experiences for the modern executive.
+                </p>
 </div>
-<div class="flex items-center gap-3 pb-1">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" id="select-all" type="checkbox"/>
-<label class="font-label-sm text-label-sm text-primary uppercase tracking-widest cursor-pointer" for="select-all">Select All</label>
+<div class="flex flex-col space-y-4">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Fleet</span>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Exotics</a>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Electric</a>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Executive</a>
 </div>
+<div class="flex flex-col space-y-4">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Company</span>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">About Us</a>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Careers</a>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Newsroom</a>
 </div>
-<!-- Permission Groups -->
-<div class="space-y-4">
-<!-- Bookings -->
-<div class="border border-border p-6 rounded-none executive-shadow">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined text-primary">calendar_month</span>
-<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Bookings</h4>
-</div>
-<div class="flex flex-wrap gap-x-8 gap-y-4">
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Create</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Delete</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Approve</span>
-</label>
+<div class="flex flex-col space-y-4">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Legal</span>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
+<p class="font-body-md text-body-md text-text-secondary mt-8">© 2024 UrbanDrive. All rights reserved.</p>
 </div>
 </div>
-<!-- Cars -->
-<div class="border border-border p-6 rounded-none executive-shadow">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined text-primary">directions_car</span>
-<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Cars</h4>
-</div>
-<div class="flex flex-wrap gap-x-8 gap-y-4">
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Create</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Delete</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Manage Status</span>
-</label>
-</div>
-</div>
-<!-- Customers -->
-<div class="border border-border p-6 rounded-none executive-shadow">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined text-primary">person_search</span>
-<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Customers</h4>
-</div>
-<div class="flex flex-wrap gap-x-8 gap-y-4">
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Create</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Delete</span>
-</label>
-</div>
-</div>
-<!-- Staff Users -->
-<div class="border border-border p-6 rounded-none executive-shadow">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined text-primary">badge</span>
-<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Staff Users</h4>
-</div>
-<div class="flex flex-wrap gap-x-8 gap-y-4">
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Create</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Delete</span>
-</label>
-</div>
-</div>
-<!-- Reports -->
-<div class="border border-border p-6 rounded-none executive-shadow">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined text-primary">bar_chart</span>
-<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Reports</h4>
-</div>
-<div class="flex flex-wrap gap-x-8 gap-y-4">
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Export</span>
-</label>
-</div>
-</div>
-<!-- Settings -->
-<div class="border border-border p-6 rounded-none executive-shadow">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined text-primary">tune</span>
-<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Settings</h4>
-</div>
-<div class="flex flex-wrap gap-x-8 gap-y-4">
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
-</label>
-<label class="flex items-center gap-3 cursor-pointer group">
-<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
-<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
-</label>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Footer Action Buttons -->
-<div class="px-10 py-8 border-t border-border bg-white flex justify-end items-center gap-6">
-<button class="font-label-sm text-label-sm text-text-secondary uppercase tracking-widest hover:text-primary transition-colors" onclick="document.getElementById('drawer-overlay').classList.add('hidden')">
-                    Cancel
-                </button>
-<button class="bg-primary text-on-primary px-10 py-4 font-label-sm text-label-sm uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-[0.98]">
-                    Create Staff Type
-                </button>
-</div>
-</div>
-</div>
+</footer>
 <script>
-        // Micro-interaction for Select All
-        const selectAll = document.getElementById('select-all');
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#select-all):not(.sr-only)');
-
-        selectAll.addEventListener('change', (e) => {
-            checkboxes.forEach(cb => {
-                cb.checked = e.target.checked;
-            });
+        // Simple scroll effect for navbar
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 20) {
+                nav.classList.add('shadow-sm');
+                nav.classList.add('bg-white/90');
+            } else {
+                nav.classList.remove('shadow-sm');
+                nav.classList.remove('bg-white/90');
+            }
         });
 
-        // Simple animation to open drawer on load (demo purpose)
-        window.addEventListener('DOMContentLoaded', () => {
-            const drawer = document.getElementById('drawer');
-            drawer.classList.remove('translate-x-full');
+        // Toggle interaction
+        const statusLabel = document.querySelector('label span.ms-3');
+        const statusCheckbox = document.querySelector('input[type="checkbox"]');
+        statusCheckbox.addEventListener('change', (e) => {
+            statusLabel.textContent = e.target.checked ? 'Active' : 'Pending';
         });
     </script>
 </body></html>
