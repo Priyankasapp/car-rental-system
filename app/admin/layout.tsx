@@ -14,6 +14,7 @@ import {
   LogOut,
   ShieldCheck,
   Briefcase,
+  UserCog,
   ChevronDown,
   ChevronRight
 } from 'lucide-react'
@@ -30,6 +31,11 @@ const sidebarLinks = [
 
 // Management section links
 const managementLinks = [
+  {
+    href: '/admin/staff',
+    label: 'Staff',
+    icon: UserCog,
+  },
   { 
     href: '/admin/staff-master', 
     label: 'Staff Master', 
@@ -64,7 +70,7 @@ export default function AdminLayout({
     if (href === '/admin') {
       return pathname === '/admin'
     }
-    return pathname.startsWith(href)
+    return pathname === href || pathname.startsWith(`${href}/`)
   }
 
   return (
