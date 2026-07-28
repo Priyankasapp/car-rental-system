@@ -1,28 +1,12 @@
-// app/api/admin/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { requireDashboardUser, isAuthError } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    //  Verify admin access
-    const token = request.cookies.get('token')?.value
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const auth = await requireDashboardUser(request, 'view_dashboard')
+    if (isAuthError(auth)) return auth
 
-    const payload = verifyToken(token)
-    if (!payload || (payload.role !== 'SUPERADMIN' && payload.role !== 'ADMIN')) {
-      return NextResponse.json(
-        { success: false, message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
-
-    //  Get all stats in parallel
     const [
       totalUsers,
       totalCars,

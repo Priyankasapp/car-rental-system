@@ -1,11 +1,11 @@
- 
-// app/api/reservations/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { generateReservationRef } from '@/lib/auth'
+import { getAuthenticatedUser } from '@/lib/api-auth'
+import { calculateBookingPricing } from '@/lib/pricing'
+import { findDateOverlap } from '@/lib/booking-utils'
 import { sendEmail } from '@/lib/email/emailService'
 
-// Helper to format JavaScript dates nicely for the email template
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -14,34 +14,15 @@ function formatDate(date: Date): string {
   }).format(date)
 }
 
-// GET: Get user's bookings
 export async function GET(request: NextRequest) {
   try {
-    // Verify user
-    const token = request.cookies.get('token')?.value
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
+    const user = await getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    const userId = payload.userId
-
-    // Get user's reservations with car details
     const reservations = await prisma.reservation.findMany({
-      where: {
-        userId,
-        isDeleted: false,
-      },
+      where: { userId: user.id, isDeleted: false },
       include: {
         car: {
           select: {
@@ -54,15 +35,10 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: { reservations },
-    })
+    return NextResponse.json({ success: true, data: { reservations } })
   } catch (error) {
     console.error('Error fetching reservations:', error)
     return NextResponse.json(
@@ -72,52 +48,31 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Create new booking
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const { carId, customer, pickup, dropoff, chauffeur, enhancements } = body
 
-    const {
-      carId,
-      customer,
-      pickup,
-      dropoff,
-      chauffeur,
-      enhancements,
-      pricing,
-    } = body
-
-    // Validate required fields
-    if (!carId || !customer || !pickup || !dropoff || !pricing) {
+    if (!carId || !customer?.name || !customer?.email || !pickup?.date || !dropoff?.date) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    // Verify user (optional - guest booking allowed)
     let userId: string | undefined
     let isGuestBooking = true
 
-    const token = request.cookies.get('token')?.value
-    if (token) {
-      const payload = verifyToken(token)
-      if (payload) {
-        userId = payload.userId
-        isGuestBooking = false
-      }
+    const user = await getAuthenticatedUser(request)
+    if (user) {
+      userId = user.id
+      isGuestBooking = false
     }
 
-    // Check if car exists and is available
-    const car = await prisma.car.findUnique({
-      where: { id: carId },
-    })
+    const car = await prisma.car.findUnique({ where: { id: carId } })
 
-    if (!car) {
-      return NextResponse.json(
-        { success: false, message: 'Car not found' },
-        { status: 404 }
-      )
+    if (!car || car.isDeleted) {
+      return NextResponse.json({ success: false, message: 'Car not found' }, { status: 404 })
     }
 
     if (car.status !== 'AVAILABLE') {
@@ -127,64 +82,42 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate reservation reference
-    const reservationRef = `URB-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
-
-    // Calculate pricing
-    const dailyRate = pricing.dailyRate || car.pricePerDay
-    const rentalDays = pricing.rentalDays || 1
-    const subtotal = dailyRate * rentalDays
-    const addOns = (chauffeur ? 100 * rentalDays : 0) + 
-                   (enhancements?.conciergeDelivery ? 150 : 0) +
-                   (enhancements?.satelliteConnectivity ? 45 * rentalDays : 0)
-    const totalBeforeTax = subtotal + addOns
-    const tax = Math.round(totalBeforeTax * 0.12)
-    const total = totalBeforeTax + tax
-
     const pickupDate = new Date(pickup.date)
-    const dropoffDate = new Date(dropoff.date)  
+    const dropoffDate = new Date(dropoff.date)
 
-    if(pickupDate >= dropoffDate){
+    if (pickupDate >= dropoffDate) {
       return NextResponse.json(
-        {
-          success:false,
-          message: 'Drop-off date must be after pickup date.'
-        },
-        { status: 400}
+        { success: false, message: 'Drop-off date must be after pickup date.' },
+        { status: 400 }
       )
     }
 
-    const existingReservation = await prisma.reservation.findFirst({
-      where:{
-        carId,
-        isDeleted:false,
+    const existingReservation = await findDateOverlap(carId, pickupDate, dropoffDate)
+    if (existingReservation) {
+      return NextResponse.json(
+        { success: false, message: 'This car is already booked for the selected dates.' },
+        { status: 400 }
+      )
+    }
 
-        status:{
-          in:['PENDING', 'CONFIRMED'],
-        },
+    const chauffeurSelected = Boolean(chauffeur)
+    const conciergeDelivery = Boolean(enhancements?.conciergeDelivery)
+    const satelliteConnectivity = Boolean(enhancements?.satelliteConnectivity)
+    const platinumInsurance = enhancements?.platinumInsurance !== false
 
-        pickupDate:{
-          lt: dropoffDate,
-        },
-
-        dropoffDate:{
-          gt:pickupDate,
-        },
-      },
-      
+    const pricing = calculateBookingPricing({
+      pricePerDay: car.pricePerDay,
+      pickupDate,
+      dropoffDate,
+      chauffeur: chauffeurSelected,
+      conciergeDelivery,
+      platinumInsurance,
+      satelliteConnectivity,
     })
 
-    if(existingReservation){
-      return NextResponse.json(
-        {
-          success:false,
-          message:'This car is already booked for the  selected dates.',
-        },
-        { status: 400}
-      )
-    }
+    const reservationRef = generateReservationRef()
+    const totalBeforeTax = pricing.subtotal + pricing.addOnsTotal
 
-    //  Create reservation with PENDING status
     const reservation = await prisma.reservation.create({
       data: {
         reservationRef,
@@ -195,21 +128,21 @@ export async function POST(request: NextRequest) {
         customerPhone: customer.phone || '',
         isGuestBooking,
         pickupLocation: pickup.location,
-        pickupDate: new Date(pickup.date),
+        pickupDate,
         pickupTime: pickup.time || '10:00',
         dropoffLocation: dropoff.location || pickup.location,
-        dropoffDate: new Date(dropoff.date),
+        dropoffDate,
         dropoffTime: dropoff.time || '10:00',
-        chauffeur: chauffeur || false,
-        conciergeDelivery: enhancements?.conciergeDelivery || false,
-        platinumInsurance: enhancements?.platinumInsurance !== false,
-        satelliteConnectivity: enhancements?.satelliteConnectivity || false,
-        dailyRate,
-        rentalDays,
+        chauffeur: chauffeurSelected,
+        conciergeDelivery,
+        platinumInsurance,
+        satelliteConnectivity,
+        dailyRate: pricing.dailyRate,
+        rentalDays: pricing.rentalDays,
         subtotal: totalBeforeTax,
-        tax,
-        total,
-        status: 'PENDING', //  Always PENDING
+        tax: pricing.tax,
+        total: pricing.total,
+        status: 'PENDING',
       },
       include: {
         car: {
@@ -224,9 +157,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Send "Booking Request Received" email to user
     try {
-      const fullCarName = `${reservation.car.year} ${reservation.car.manufacturer} ${reservation.car.model}`.trim()
+      const fullCarName =
+        `${reservation.car.year} ${reservation.car.manufacturer} ${reservation.car.model}`.trim()
       const formattedPickupDate = `${formatDate(reservation.pickupDate)} at ${reservation.pickupTime}`
       const formattedDropoffDate = `${formatDate(reservation.dropoffDate)} at ${reservation.dropoffTime}`
 
@@ -246,16 +179,17 @@ export async function POST(request: NextRequest) {
         },
       })
     } catch (emailError) {
-      console.error(' Reservation created, but email notification failed:', emailError)
+      console.error('Reservation created, but email notification failed:', emailError)
     }
 
     return NextResponse.json({
       success: true,
       message: 'Booking request submitted successfully! Waiting for admin confirmation.',
-      data: { 
+      data: {
         reservation,
         status: 'PENDING',
-        message: 'Your booking is pending admin approval. You will receive a confirmation email once approved.'
+        message:
+          'Your booking is pending admin approval. You will receive a confirmation email once approved.',
       },
     })
   } catch (error) {

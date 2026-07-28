@@ -1,30 +1,16 @@
-// app/api/auth/me/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { getAuthenticatedUser } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get token from cookies
-    const token = request.cookies.get('token')?.value
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
+    const user = await getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
       select: {
         id: true,
         email: true,
@@ -36,20 +22,15 @@ export async function GET(request: NextRequest) {
         isActive: true,
         profilePicture: true,
         preferences: true,
+        permissions: true,
       },
     })
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'User not found' },
-        { status: 404 }
-      )
+    if (!dbUser) {
+      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      success: true,
-      data: { user },
-    })
+    return NextResponse.json({ success: true, data: { user: dbUser } })
   } catch (error) {
     console.error('Get user error:', error)
     return NextResponse.json(

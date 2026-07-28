@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
 
     // 8. Role-based Redirect
     let redirectUrl = '/'
-    if (user.role === 'SUPERADMIN' || user.role === 'ADMIN') {
+    if (user.role === 'SUPERADMIN' || user.role === 'ADMIN' || user.role === 'STAFF') {
       redirectUrl = '/admin'
     }
 

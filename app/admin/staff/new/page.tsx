@@ -369,7 +369,7 @@ export default function AddStaffPage() {
                       </p>
                     )}
                     <p className="text-xs text-text-secondary opacity-60">
-                      High-resolution JPG, PNG or PDF (Max 10MB)
+                      High-resolution JPG, PNG or PDF 
                     </p>
                   </div>
                 </div>
