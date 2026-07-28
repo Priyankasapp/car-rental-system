@@ -3,407 +3,471 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Staff Users | UrbanDrive Admin</title>
+<title>UrbanDrive Admin - Staff Master</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-                    "primary-container": "#1b1b1b",
-                    "outline": "#7e7576",
-                    "inverse-primary": "#c6c6c6",
-                    "primary-fixed": "#e2e2e2",
-                    "inverse-surface": "#303030",
-                    "tertiary-container": "#1b1b1b",
-                    "surface": "#F8F8F8",
-                    "surface-tint": "#5e5e5e",
-                    "on-primary-fixed-variant": "#474747",
-                    "surface-container-highest": "#e2e2e2",
-                    "on-surface": "#1b1b1b",
-                    "on-primary": "#ffffff",
-                    "on-error": "#ffffff",
-                    "text-secondary": "#666666",
-                    "primary-fixed-dim": "#c6c6c6",
-                    "background": "#f9f9f9",
-                    "error-container": "#ffdad6",
-                    "on-tertiary-container": "#848484",
-                    "surface-container": "#eeeeee",
-                    "on-secondary": "#ffffff",
-                    "surface-dim": "#dadada",
-                    "on-secondary-fixed-variant": "#454747",
-                    "on-surface-variant": "#4c4546",
-                    "on-background": "#1b1b1b",
-                    "surface-bright": "#f9f9f9",
-                    "outline-variant": "#cfc4c5",
-                    "error": "#ba1a1a",
-                    "tertiary": "#000000",
-                    "on-secondary-fixed": "#1a1c1c",
-                    "on-primary-fixed": "#1b1b1b",
-                    "primary": "#000000",
-                    "surface-container-high": "#e8e8e8",
-                    "tertiary-fixed-dim": "#c6c6c6",
-                    "surface-container-lowest": "#ffffff",
-                    "inverse-on-surface": "#f1f1f1",
-                    "border": "#E5E5E5",
-                    "tertiary-fixed": "#e2e2e2",
-                    "surface-container-low": "#f3f3f3",
-                    "on-primary-container": "#848484",
-                    "on-tertiary-fixed-variant": "#474747",
-                    "glass-fill": "rgba(255, 255, 255, 0.7)",
-                    "secondary-fixed": "#e2e2e2",
-                    "on-error-container": "#93000a",
-                    "secondary": "#5d5f5f",
-                    "on-tertiary": "#ffffff",
-                    "accent-success": "#22C55E",
-                    "secondary-container": "#dfe0e0",
-                    "secondary-fixed-dim": "#c6c6c7",
-                    "text-primary": "#111111",
-                    "on-tertiary-fixed": "#1b1b1b",
-                    "surface-variant": "#e2e2e2",
-                    "on-secondary-container": "#616363"
-            },
-            "borderRadius": {
-                    "DEFAULT": "0.25rem",
-                    "lg": "0.5rem",
-                    "xl": "0.75rem",
-                    "full": "9999px"
-            },
-            "spacing": {
-                    "margin-mobile": "20px",
-                    "margin-desktop": "64px",
-                    "unit": "8px",
-                    "container-max": "1440px",
-                    "gutter": "24px"
-            },
-            "fontFamily": {
-                    "headline-md": ["Inter"],
-                    "headline-lg": ["Inter"],
-                    "label-sm": ["Inter"],
-                    "body-lg": ["Inter"],
-                    "headline-lg-mobile": ["Inter"],
-                    "display-lg": ["Inter"],
-                    "body-md": ["Inter"]
-            },
-            "fontSize": {
-                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
-                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
-                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
-                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
-                    "display-lg": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
-                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
-            }
-          },
-        },
-      }
-    </script>
 <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f9f9f9;
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
         }
         .executive-shadow {
             box-shadow: 0px 10px 40px rgba(0,0,0,0.04);
         }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-        }
-        .glass-header {
+        .glass-blur {
             backdrop-filter: blur(20px);
-            background-color: rgba(255, 255, 255, 0.7);
+            -webkit-backdrop-filter: blur(20px);
         }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #e2e2e2;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #d1d1d1;
-        }
+        /* Custom scrollbar for a premium feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #E5E5E5; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666666; }
     </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "primary": "#000000",
+                        "on-background": "#1b1b1b",
+                        "tertiary-container": "#1b1b1b",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "glass-fill": "rgba(255, 255, 255, 0.7)",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-bright": "#f9f9f9",
+                        "on-primary-fixed": "#1b1b1b",
+                        "on-primary-fixed-variant": "#474747",
+                        "inverse-on-surface": "#f1f1f1",
+                        "surface-tint": "#5e5e5e",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-surface": "#1b1b1b",
+                        "primary-container": "#1b1b1b",
+                        "border": "#E5E5E5",
+                        "surface-container-highest": "#e2e2e2",
+                        "text-secondary": "#666666",
+                        "surface-container": "#eeeeee",
+                        "outline": "#7e7576",
+                        "error": "#ba1a1a",
+                        "accent-success": "#22C55E",
+                        "secondary-container": "#dfe0e0",
+                        "inverse-surface": "#303030",
+                        "on-tertiary-container": "#848484",
+                        "on-error": "#ffffff",
+                        "tertiary": "#000000",
+                        "on-secondary-container": "#616363",
+                        "primary-fixed": "#e2e2e2",
+                        "text-primary": "#111111",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "surface-container-high": "#e8e8e8",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#454747",
+                        "surface-dim": "#dadada",
+                        "secondary-fixed": "#e2e2e2",
+                        "secondary": "#5d5f5f",
+                        "surface": "#F8F8F8",
+                        "on-surface-variant": "#4c4546",
+                        "inverse-primary": "#c6c6c6",
+                        "tertiary-fixed": "#e2e2e2",
+                        "surface-container-low": "#f3f3f3",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "background": "#f9f9f9",
+                        "outline-variant": "#cfc4c5",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary-container": "#848484",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed": "#1a1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "64px",
+                        "container-max": "1440px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
 </head>
-<body class="text-on-background">
-<!-- SideNavBar Anchor -->
-<aside class="fixed left-0 top-0 h-full w-64 bg-surface flex flex-col h-screen p-unit overflow-y-auto z-50">
-<div class="px-6 py-8">
-<h1 class="text-headline-md font-headline-md font-bold text-primary">UrbanDrive</h1>
-<p class="text-label-sm text-text-secondary tracking-widest mt-1">EXECUTIVE PORTAL</p>
-</div>
-<nav class="flex-1 px-4 space-y-1">
-<a class="flex items-center px-4 py-3 text-text-secondary hover:bg-surface-container transition-colors duration-300 rounded-lg group" href="#">
-<span class="material-symbols-outlined mr-3 group-hover:text-primary" data-icon="dashboard">dashboard</span>
-<span class="font-body-md text-body-md">Dashboard</span>
-</a>
-<a class="flex items-center px-4 py-3 text-text-secondary hover:bg-surface-container transition-colors duration-300 rounded-lg group" href="#">
-<span class="material-symbols-outlined mr-3 group-hover:text-primary" data-icon="calendar_today">calendar_today</span>
-<span class="font-body-md text-body-md">Bookings</span>
-</a>
-<a class="flex items-center px-4 py-3 text-text-secondary hover:bg-surface-container transition-colors duration-300 rounded-lg group" href="#">
-<span class="material-symbols-outlined mr-3 group-hover:text-primary" data-icon="directions_car">directions_car</span>
-<span class="font-body-md text-body-md">Cars</span>
-</a>
-<a class="flex items-center px-4 py-3 text-text-secondary hover:bg-surface-container transition-colors duration-300 rounded-lg group" href="#">
-<span class="material-symbols-outlined mr-3 group-hover:text-primary" data-icon="group">group</span>
-<span class="font-body-md text-body-md">Customers</span>
-</a>
-<a class="flex items-center px-4 py-3 text-text-secondary hover:bg-surface-container transition-colors duration-300 rounded-lg group" href="#">
-<span class="material-symbols-outlined mr-3 group-hover:text-primary" data-icon="badge">badge</span>
-<span class="font-body-md text-body-md">Staff Master</span>
-</a>
-<!-- Active State Navigation -->
-<a class="flex items-center px-4 py-3 text-primary font-bold border-r-2 border-primary bg-surface-container-high transition-colors duration-300 rounded-l-lg group" href="#">
-<span class="material-symbols-outlined mr-3" data-icon="person_add">person_add</span>
-<span class="font-body-md text-body-md">Staff Users</span>
-</a>
-<a class="flex items-center px-4 py-3 text-text-secondary hover:bg-surface-container transition-colors duration-300 rounded-lg group" href="#">
-<span class="material-symbols-outlined mr-3 group-hover:text-primary" data-icon="assessment">assessment</span>
-<span class="font-body-md text-body-md">Reports</span>
-</a>
-<a class="flex items-center px-4 py-3 text-text-secondary hover:bg-surface-container transition-colors duration-300 rounded-lg group" href="#">
-<span class="material-symbols-outlined mr-3 group-hover:text-primary" data-icon="settings">settings</span>
-<span class="font-body-md text-body-md">Settings</span>
-</a>
+<body class="bg-background font-body-md text-on-background overflow-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] bg-glass-fill backdrop-blur-xl border-b border-border flex justify-between items-center px-margin-desktop h-20 ml-64 z-30">
+<div class="flex items-center gap-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">UrbanDrive Admin</h1>
+<nav class="hidden md:flex items-center space-x-8">
+<a class="text-text-secondary hover:text-primary transition-opacity duration-300 font-label-sm text-label-sm" href="#">Analytics</a>
+<a class="text-text-secondary hover:text-primary transition-opacity duration-300 font-label-sm text-label-sm" href="#">Inventory</a>
+<a class="text-text-secondary hover:text-primary transition-opacity duration-300 font-label-sm text-label-sm" href="#">Maintenance</a>
 </nav>
-<div class="p-6 mt-auto">
-<div class="bg-surface-container p-4 rounded-xl flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary">
-<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
-</div>
-<div>
-<p class="text-label-sm font-bold text-on-surface">Alex Rivera</p>
-<p class="text-[10px] text-text-secondary">Super Admin</p>
-</div>
-</div>
-</div>
-</aside>
-<!-- Main Content Wrapper -->
-<main class="pl-64 min-h-screen">
-<!-- TopAppBar Anchor -->
-<header class="sticky top-0 z-40 w-full glass-header flex justify-between items-center px-margin-desktop py-4 border-b border-border">
-<div class="flex items-center gap-6 flex-1">
-<div class="relative w-full max-w-md">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
-<input class="w-full bg-surface-container-low border-none rounded-lg py-2 pl-10 pr-4 text-body-md focus:ring-1 focus:ring-primary transition-all" placeholder="Search staff, roles, or status..." type="text"/>
-</div>
 </div>
 <div class="flex items-center gap-6">
-<button class="relative text-text-secondary hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
-</button>
-<button class="text-text-secondary hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
-</button>
-<div class="h-8 w-[1px] bg-border mx-2"></div>
-<div class="flex items-center gap-3 cursor-pointer group">
-<div class="text-right hidden sm:block">
-<p class="text-label-sm font-bold text-on-surface group-hover:text-primary transition-colors">Admin Profile</p>
-</div>
-<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-highest border border-border">
-<img class="w-full h-full object-cover" data-alt="A professional headshot of a senior executive in a high-end corporate setting, captured with shallow depth of field. The person has a confident expression, wearing a tailored charcoal grey blazer. The lighting is soft and directional, typical of a luxury studio shoot, emphasizing professional authority and modern elegance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOPHcIMOJAsvbjNa4NfxonlMnHPImR3PfvHpZRSGjLGb0db6ORrC-_KMpzQ1JYhGGOGZi7lDOzqGTzf5vTIiVFZf35gHBdTv8QDYzvnh2WFKiB4zxQ23lsHQX3zgm4ja8vHapnkIk-PmeOInsZMlKmw3e8U7VtThAfpRfEAdjNr3rsI2EhB_PmfRFYjE5vk5HKEzMnqeBVPacbZO06ClsCPDCVxu-Px6NQ2wZL26yEXwYh7jw3hoeCtp1Tq1w-bThC3io39E_uSuhw"/>
-</div>
-</div>
+<button class="material-symbols-outlined text-primary p-2 hover:bg-surface-container rounded-full transition-colors">notifications</button>
+<button class="material-symbols-outlined text-primary p-2 hover:bg-surface-container rounded-full transition-colors">apps</button>
+<img class="w-10 h-10 rounded-full object-cover border border-border" data-alt="Close up shot of a professional administrator profile picture, soft minimalist lighting, black and white palette, blurred corporate office background, high contrast executive style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVBAE9VhEq3knxv04NZaQKLu_-Ff8LX8Nk6d7Idgl4Bv0jk75ver3Fxu8MRfowQWrhfpmpNlBN79_PPLVnxpPbIPgoXCHTCRssOGK1C6a8xXMSE6dj0kw1CSqMXCqWIfLbAd5b5ugQVD0twC62kHMZQAufnH102SyEn7GXnV8N9MLxVJ-Gop9Iu4mubvLi56bz5nHIJSDmQ53Ik-OijIEUP5nvCHnYA6GVhhxqTSSpOGGWcSh796wLdxbA3wUUzspz78Wff9cFS868"/>
 </div>
 </header>
-<!-- Canvas -->
-<div class="p-margin-desktop max-w-container-max mx-auto">
-<!-- Breadcrumb & Header -->
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-<div>
-<nav class="flex items-center gap-2 text-label-sm text-text-secondary mb-4 uppercase tracking-widest">
-<span>Admin Panel</span>
-<span class="material-symbols-outlined text-[14px]" data-icon="chevron_right">chevron_right</span>
-<span class="text-primary font-bold">Staff Users</span>
+<!-- SideNavBar -->
+<aside class="fixed h-full w-64 left-0 top-0 bg-surface border-r border-border flex flex-col py-unit-margin-desktop z-40">
+<div class="px-8 mb-10">
+<div class="font-headline-md text-headline-md font-bold tracking-tight text-primary">UrbanDrive</div>
+<div class="font-label-sm text-label-sm text-text-secondary uppercase tracking-widest mt-1">Enterprise Fleet</div>
+</div>
+<nav class="flex-1 flex flex-col px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">directions_car</span>
+<span class="font-body-md">Fleet</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-body-md">Reservations</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md">Customers</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-container-low transition-all duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">badge</span>
+<span class="font-body-md">Staff Master</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
 </nav>
-<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">Staff Users</h2>
-<p class="text-body-lg text-text-secondary">Manage your team, assign roles, and monitor account activity.</p>
+<div class="mt-auto px-4 space-y-1 border-t border-border pt-6">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-body-md">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md">Log Out</span>
+</a>
 </div>
-<button class="bg-primary text-on-primary px-8 py-3 rounded-lg flex items-center gap-2 hover:bg-neutral-800 transition-all transform hover:scale-[1.02] active:scale-[0.98] executive-shadow">
-<span class="material-symbols-outlined" data-icon="add">add</span>
-<span class="font-bold">Add New User</span>
-</button>
+</aside>
+<!-- Main Content (Staff Master List - Background State) -->
+<main class="ml-64 pt-20 h-screen overflow-y-auto px-margin-desktop bg-white">
+<div class="max-w-container-max mx-auto py-12">
+<div class="flex justify-between items-end mb-12">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary">Staff Management</h2>
+<p class="text-text-secondary mt-2">Manage your organization's administrative roles and system access.</p>
 </div>
-<!-- Summary Stats -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter mb-16">
-<!-- Card 1 -->
-<div class="bg-white p-8 rounded-xl border border-border executive-shadow">
-<div class="flex items-center justify-between mb-4">
-<span class="material-symbols-outlined text-text-secondary" data-icon="groups">groups</span>
-<span class="text-accent-success text-label-sm font-bold flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]" data-icon="trending_up">trending_up</span>
-                            +2
-                        </span>
+<button class="bg-primary text-on-primary px-8 py-3 rounded-none font-label-sm text-label-sm uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-[0.98]">
+                    Add Staff Type
+                </button>
 </div>
-<p class="text-label-sm text-text-secondary uppercase tracking-wider mb-1">Total Staff</p>
-<h3 class="text-display-lg font-display-lg text-primary leading-none">28</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Example Staff Type Card -->
+<div class="bg-surface border border-border p-8 executive-shadow group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="font-headline-md text-headline-md">Super Admin</h3>
+<span class="inline-block mt-1 px-3 py-1 bg-accent-success/10 text-accent-success font-label-sm text-[10px] rounded-full uppercase tracking-tighter">Active</span>
 </div>
-<!-- Card 2 -->
-<div class="bg-white p-8 rounded-xl border border-border executive-shadow">
-<div class="flex items-center justify-between mb-4">
-<span class="material-symbols-outlined text-accent-success" data-icon="circle" style="font-variation-settings: 'FILL' 1;">circle</span>
-<span class="text-text-secondary text-label-sm">Real-time</span>
+<span class="material-symbols-outlined text-text-secondary">more_vert</span>
 </div>
-<p class="text-label-sm text-text-secondary uppercase tracking-wider mb-1">Online Now</p>
-<h3 class="text-display-lg font-display-lg text-primary leading-none">12</h3>
-</div>
-<!-- Card 3 -->
-<div class="bg-white p-8 rounded-xl border border-border executive-shadow">
-<div class="flex items-center justify-between mb-4">
-<span class="material-symbols-outlined text-text-secondary" data-icon="mail">mail</span>
-<span class="text-error text-label-sm font-bold">Action Needed</span>
-</div>
-<p class="text-label-sm text-text-secondary uppercase tracking-wider mb-1">Pending Invites</p>
-<h3 class="text-display-lg font-display-lg text-primary leading-none">04</h3>
-</div>
-<!-- Card 4 -->
-<div class="bg-white p-8 rounded-xl border border-border executive-shadow">
-<div class="flex items-center justify-between mb-4">
-<span class="material-symbols-outlined text-text-secondary" data-icon="bolt">bolt</span>
-<span class="text-text-secondary text-label-sm">Last 24h</span>
-</div>
-<p class="text-label-sm text-text-secondary uppercase tracking-wider mb-1">Active Sessions</p>
-<h3 class="text-display-lg font-display-lg text-primary leading-none">18</h3>
+<p class="text-text-secondary text-body-md mb-8">Full administrative access to all modules, system configurations, and user management.</p>
+<div class="flex items-center gap-2 text-text-secondary">
+<span class="material-symbols-outlined text-sm">shield</span>
+<span class="font-label-sm text-label-sm">48 Permissions Granted</span>
 </div>
 </div>
-<!-- Table Filters -->
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-<div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
-<button class="px-5 py-2 rounded-full bg-primary text-on-primary text-label-sm font-bold transition-colors">All</button>
-<button class="px-5 py-2 rounded-full bg-surface-container text-text-secondary text-label-sm font-bold hover:bg-surface-container-high transition-colors">Active</button>
-<button class="px-5 py-2 rounded-full bg-surface-container text-text-secondary text-label-sm font-bold hover:bg-surface-container-high transition-colors">Offline</button>
-<button class="px-5 py-2 rounded-full bg-surface-container text-text-secondary text-label-sm font-bold hover:bg-surface-container-high transition-colors">Pending</button>
+<div class="bg-surface border border-border p-8 executive-shadow group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="font-headline-md text-headline-md">Operations</h3>
+<span class="inline-block mt-1 px-3 py-1 bg-accent-success/10 text-accent-success font-label-sm text-[10px] rounded-full uppercase tracking-tighter">Active</span>
 </div>
-<div class="flex items-center gap-3">
-<button class="p-2 border border-border rounded-lg text-text-secondary hover:text-primary hover:bg-white transition-all">
-<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
-</button>
-<button class="p-2 border border-border rounded-lg text-text-secondary hover:text-primary hover:bg-white transition-all">
-<span class="material-symbols-outlined" data-icon="download">download</span>
-</button>
+<span class="material-symbols-outlined text-text-secondary">more_vert</span>
+</div>
+<p class="text-text-secondary text-body-md mb-8">Responsible for fleet management, booking approvals, and customer interaction logs.</p>
+<div class="flex items-center gap-2 text-text-secondary">
+<span class="material-symbols-outlined text-sm">shield</span>
+<span class="font-label-sm text-label-sm">32 Permissions Granted</span>
 </div>
 </div>
-<!-- Staff Table -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-<!-- Card 1: Marcus Thorne -->
-<div class="bg-white p-6 rounded-xl border border-border executive-shadow relative group hover:scale-[1.02] transition-all duration-300">
-<button class="absolute top-4 right-4 text-text-secondary hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
-</button>
-<div class="flex flex-col items-center text-center">
-<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container-highest mb-4">
-<img alt="Marcus Thorne" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAILKCVYzPxQQHp_yiktPhBmZRUavP59Y_ykOd8hyTHM6ksfPrjmrU37I0iKf0qZP9h4Krxi5su4O44VAeR4nxW6H-n3mL3yqL-jp40VoZQv9XUkMI9Tjd6WXAEwtX29sUWupnNIzNkppKYxdseh9PIoAyuKAdysJzvBZ6Kj_kl0QDjJ8L8m1Cf0VljphYvLGdVGUfvZqSTwIi-1g1lKqqUMRn3u-2XuUVj2co7ayrUW9L8iLJP9wH-0MPOiTRl3bJG32D3AOcC6Byn"/>
+<div class="bg-surface border border-border p-8 executive-shadow group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="font-headline-md text-headline-md">Support Agent</h3>
+<span class="inline-block mt-1 px-3 py-1 bg-accent-success/10 text-accent-success font-label-sm text-[10px] rounded-full uppercase tracking-tighter">Active</span>
 </div>
-<h4 class="font-bold text-on-surface text-body-lg mb-1">Marcus Thorne</h4>
-<p class="text-text-secondary text-[12px] mb-4">m.thorne@urbandrive.com</p>
-<span class="px-3 py-1 bg-primary text-on-primary text-[10px] font-bold rounded uppercase tracking-widest mb-4">Super Admin</span>
-<div class="w-full pt-4 border-t border-border flex items-center justify-between">
-<div class="flex items-center gap-2 text-accent-success text-[12px] font-medium">
-<span class="w-2 h-2 rounded-full bg-accent-success"></span>
-          Active
-        </div>
-<p class="text-text-secondary text-[12px]">Just now</p>
+<span class="material-symbols-outlined text-text-secondary">more_vert</span>
 </div>
-</div>
-</div>
-<!-- Card 2: Elena Rodriguez -->
-<div class="bg-white p-6 rounded-xl border border-border executive-shadow relative group hover:scale-[1.02] transition-all duration-300">
-<button class="absolute top-4 right-4 text-text-secondary hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
-</button>
-<div class="flex flex-col items-center text-center">
-<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container-highest mb-4">
-<img alt="Elena Rodriguez" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAYXJTfOobKNcwiCYUlG7tvmNXeSSXUXf9I9fkU31vGozzG9T8z0utKIwb4EUFGf26IXeNgyNQXUnMq6DvFcK7vEyWiWYK8wa1yKRUW1dmWNn3J4867vWUXtkHb5JLNi7h7ca4WgKB6FFdvDsNyKcft9SMhoXYOq4hJGpp9zoymyPVFJjtbGbi8lHn7uTblDtQYlJ3gIP6ijN930SWqeq1t5tq57jdo2qzJd9obSDF-xQ-xYe3bOaRGKTJwZ4jklXsA3QTAtUu2RzV"/>
-</div>
-<h4 class="font-bold text-on-surface text-body-lg mb-1">Elena Rodriguez</h4>
-<p class="text-text-secondary text-[12px] mb-4">e.rodriguez@urbandrive.com</p>
-<span class="px-3 py-1 bg-surface-container-highest text-primary text-[10px] font-bold rounded uppercase tracking-widest mb-4">Fleet Manager</span>
-<div class="w-full pt-4 border-t border-border flex items-center justify-between">
-<div class="flex items-center gap-2 text-accent-success text-[12px] font-medium">
-<span class="w-2 h-2 rounded-full bg-accent-success"></span>
-          Active
-        </div>
-<p class="text-text-secondary text-[12px]">14 mins ago</p>
-</div>
-</div>
-</div>
-<!-- Card 3: Simon Chen -->
-<div class="bg-white p-6 rounded-xl border border-border executive-shadow relative group hover:scale-[1.02] transition-all duration-300">
-<button class="absolute top-4 right-4 text-text-secondary hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
-</button>
-<div class="flex flex-col items-center text-center">
-<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container-highest mb-4">
-<img alt="Simon Chen" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzVMbvIjgkFcxka6fBHHtoJ_mtfzLp6n6QqHQprPsIgwws3aa8A0o3oJVVjiThHD_-TfLYDD2x83WrXkUWU2JjHUA99TIl4wfKvGctfsLrQdjcSGy2CVFdmNUK8xDlrwSth1GZnAcDBXE1Y-qewPBhY797azBHBKPE3JCkaRdLYdGC8W1qyz-5yWDyCpQ6ul17egQaVfTfLKcVvj8ksWhcrf4amQBnvH8uoYQt8vXhgMe--_S58iTEnysEoXiSQ8Ez_h5aEr0UKbF3"/>
-</div>
-<h4 class="font-bold text-on-surface text-body-lg mb-1">Simon Chen</h4>
-<p class="text-text-secondary text-[12px] mb-4">s.chen@urbandrive.com</p>
-<span class="px-3 py-1 bg-surface-container-highest text-primary text-[10px] font-bold rounded uppercase tracking-widest mb-4">Booking Manager</span>
-<div class="w-full pt-4 border-t border-border flex items-center justify-between">
-<div class="flex items-center gap-2 text-text-secondary text-[12px] font-medium">
-<span class="w-2 h-2 rounded-full bg-outline"></span>
-          Offline
-        </div>
-<p class="text-text-secondary text-[12px]">2 hours ago</p>
-</div>
-</div>
-</div>
-<!-- Card 4: Julian Voss -->
-<div class="bg-white p-6 rounded-xl border border-border executive-shadow relative group hover:scale-[1.02] transition-all duration-300">
-<button class="absolute top-4 right-4 text-text-secondary hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
-</button>
-<div class="flex flex-col items-center text-center">
-<div class="w-20 h-20 rounded-full bg-surface-container border-2 border-surface-container-highest flex items-center justify-center mb-4">
-<span class="material-symbols-outlined text-outline text-[32px]" data-icon="person">person</span>
-</div>
-<h4 class="font-bold text-on-surface text-body-lg mb-1">Julian Voss</h4>
-<p class="text-text-secondary text-[12px] mb-4">j.voss@urbandrive.com</p>
-<span class="px-3 py-1 bg-surface-container-highest text-primary text-[10px] font-bold rounded uppercase tracking-widest mb-4">Staff User</span>
-<div class="w-full pt-4 border-t border-border flex items-center justify-between">
-<div class="flex items-center gap-2 text-primary font-bold text-[12px]">
-<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
-          Invited
-        </div>
-<p class="text-text-secondary text-[12px]">Pending</p>
-</div>
+<p class="text-text-secondary text-body-md mb-8">View-only access to bookings and customers with basic editing for support tickets.</p>
+<div class="flex items-center gap-2 text-text-secondary">
+<span class="material-symbols-outlined text-sm">shield</span>
+<span class="font-label-sm text-label-sm">12 Permissions Granted</span>
 </div>
 </div>
 </div>
 </div>
 </main>
+<!-- Overlay / Drawer Backdrop -->
+<div class="fixed inset-0 bg-black/40 glass-blur z-50 flex justify-end" id="drawer-overlay">
+<!-- Drawer Container -->
+<div class="w-full max-w-2xl bg-white h-screen flex flex-col shadow-2xl transform transition-transform duration-500 ease-out translate-x-0" id="drawer">
+<!-- Header -->
+<div class="px-10 pt-10 pb-8 border-b border-border">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary">Add Staff Type</h2>
+<p class="text-text-secondary mt-1 font-body-md">Create a staff role and define its system permissions.</p>
+</div>
+<button class="p-2 hover:bg-surface-container rounded-full transition-colors" onclick="document.getElementById('drawer-overlay').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto px-10 py-10 space-y-12">
+<!-- General Info Section -->
+<div class="space-y-8">
+<div class="grid grid-cols-1 gap-6">
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Staff Type Name</label>
+<input class="w-full border-b border-border focus:border-primary focus:ring-0 px-0 py-3 text-body-lg bg-transparent transition-colors placeholder:text-surface-container-highest" placeholder="e.g. Regional Manager" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Description</label>
+<textarea class="w-full border-b border-border focus:border-primary focus:ring-0 px-0 py-3 text-body-md bg-transparent transition-colors placeholder:text-surface-container-highest resize-none" placeholder="Briefly describe the responsibilities of this role..." rows="3"></textarea>
+</div>
+<div class="flex items-center justify-between py-2">
+<div>
+<h4 class="font-body-md font-bold text-primary">Status</h4>
+<p class="text-text-secondary text-[13px]">Enable or disable this role within the system.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+<span class="ml-3 font-label-sm text-label-sm text-primary uppercase tracking-tight">Active</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Permissions Section -->
+<div class="space-y-6">
+<div class="flex justify-between items-end border-b border-border pb-4">
+<div>
+<h3 class="font-headline-md text-headline-md text-primary">Module Permissions</h3>
+<p class="text-text-secondary mt-1 font-body-md">Choose what this staff role can access.</p>
+</div>
+<div class="flex items-center gap-3 pb-1">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" id="select-all" type="checkbox"/>
+<label class="font-label-sm text-label-sm text-primary uppercase tracking-widest cursor-pointer" for="select-all">Select All</label>
+</div>
+</div>
+<!-- Permission Groups -->
+<div class="space-y-4">
+<!-- Bookings -->
+<div class="border border-border p-6 rounded-none executive-shadow">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary">calendar_month</span>
+<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Bookings</h4>
+</div>
+<div class="flex flex-wrap gap-x-8 gap-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Create</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Delete</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Approve</span>
+</label>
+</div>
+</div>
+<!-- Cars -->
+<div class="border border-border p-6 rounded-none executive-shadow">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary">directions_car</span>
+<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Cars</h4>
+</div>
+<div class="flex flex-wrap gap-x-8 gap-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Create</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Delete</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Manage Status</span>
+</label>
+</div>
+</div>
+<!-- Customers -->
+<div class="border border-border p-6 rounded-none executive-shadow">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary">person_search</span>
+<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Customers</h4>
+</div>
+<div class="flex flex-wrap gap-x-8 gap-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Create</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Delete</span>
+</label>
+</div>
+</div>
+<!-- Staff Users -->
+<div class="border border-border p-6 rounded-none executive-shadow">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary">badge</span>
+<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Staff Users</h4>
+</div>
+<div class="flex flex-wrap gap-x-8 gap-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Create</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Delete</span>
+</label>
+</div>
+</div>
+<!-- Reports -->
+<div class="border border-border p-6 rounded-none executive-shadow">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary">bar_chart</span>
+<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Reports</h4>
+</div>
+<div class="flex flex-wrap gap-x-8 gap-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Export</span>
+</label>
+</div>
+</div>
+<!-- Settings -->
+<div class="border border-border p-6 rounded-none executive-shadow">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary">tune</span>
+<h4 class="font-body-md font-bold text-primary uppercase tracking-widest">Settings</h4>
+</div>
+<div class="flex flex-wrap gap-x-8 gap-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">View</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary border-border rounded focus:ring-0" type="checkbox"/>
+<span class="text-body-md text-text-secondary group-hover:text-primary transition-colors">Edit</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Action Buttons -->
+<div class="px-10 py-8 border-t border-border bg-white flex justify-end items-center gap-6">
+<button class="font-label-sm text-label-sm text-text-secondary uppercase tracking-widest hover:text-primary transition-colors" onclick="document.getElementById('drawer-overlay').classList.add('hidden')">
+                    Cancel
+                </button>
+<button class="bg-primary text-on-primary px-10 py-4 font-label-sm text-label-sm uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-[0.98]">
+                    Create Staff Type
+                </button>
+</div>
+</div>
+</div>
 <script>
-        // Micro-interactions and hover effects
-        document.querySelectorAll('tr').forEach(row => {
-            row.addEventListener('mouseenter', () => {
-                row.style.transform = 'translateX(4px)';
-                row.style.transition = 'all 0.3s ease-out';
-            });
-            row.addEventListener('mouseleave', () => {
-                row.style.transform = 'translateX(0)';
+        // Micro-interaction for Select All
+        const selectAll = document.getElementById('select-all');
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#select-all):not(.sr-only)');
+
+        selectAll.addEventListener('change', (e) => {
+            checkboxes.forEach(cb => {
+                cb.checked = e.target.checked;
             });
         });
 
-        // Toggle filters (visual only)
-        const filterButtons = document.querySelectorAll('.flex.items-center.gap-2 button');
-        filterButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                filterButtons.forEach(b => {
-                    b.classList.remove('bg-primary', 'text-on-primary');
-                    b.classList.add('bg-surface-container', 'text-text-secondary');
-                });
-                btn.classList.add('bg-primary', 'text-on-primary');
-                btn.classList.remove('bg-surface-container', 'text-text-secondary');
-            });
+        // Simple animation to open drawer on load (demo purpose)
+        window.addEventListener('DOMContentLoaded', () => {
+            const drawer = document.getElementById('drawer');
+            drawer.classList.remove('translate-x-full');
         });
     </script>
 </body></html>

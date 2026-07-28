@@ -1,3 +1,4 @@
+// proxy.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
@@ -73,6 +74,11 @@ export async function proxy(request: NextRequest) {
     if (path.startsWith('/admin/permissions') && !isSuperAdmin) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
+
+    // Staff Master is role configuration — strict admin only, like permissions
+    if (path.startsWith('/admin/staff-master') && !isStrictAdmin) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
   }
 
   // Redirect standard logged-in users away from guest pages
@@ -133,9 +139,21 @@ export async function proxy(request: NextRequest) {
       )
     }
 
+    // Staff Master is role configuration — strict admin only
+    const isStaffMasterEndpoint = path.startsWith('/api/admin/staff-master')
+
+    if (isStaffMasterEndpoint && !isStrictAdmin) {
+      return NextResponse.json(
+        { success: false, message: 'Admin access required for staff master' },
+        { status: 403 }
+      )
+    }
+
     // Allow STAFF users to reach staff management endpoints if needed
-    const isStaffEndpoint = path.startsWith('/api/admin/staff')
-    
+    // (exact match or a real sub-path — not staff-master, which is handled above)
+    const isStaffEndpoint =
+      path === '/api/admin/staff' || path.startsWith('/api/admin/staff/')
+
     if (!isStrictAdmin && !isStaffEndpoint) {
       return NextResponse.json(
         { success: false, message: 'Admin access required' },
