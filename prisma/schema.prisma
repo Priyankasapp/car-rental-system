@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,8 +7,75 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============== MASTER SETTINGS MODELS ==============
+
+model FuelTypeMaster {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // e.g. "PETROL", "DIESEL", "ELECTRIC", "HYBRID"
+  description String?
+  color       String?  // e.g. "bg-emerald-400"
+  circleBg    String?  // e.g. "bg-emerald-100"
+  textColor   String?  // e.g. "text-emerald-700"
+  borderColor String?  // e.g. "border-emerald-200"
+  status      String   @default("Active") // "Active" | "Inactive"
+  isActive    Boolean  @default(true)
+  isDeleted   Boolean  @default(false)
+
+  // Relations
+  cars        Car[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, isDeleted])
+  @@map("fuel_type_masters")
+}
+
+model TransmissionMaster {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // e.g. "AUTOMATIC", "MANUAL", "CVT", "DUAL-CLUTCH (DCT)"
+  description String?
+  color       String?  // e.g. "bg-indigo-400"
+  circleBg    String?  // e.g. "bg-indigo-100"
+  textColor   String?  // e.g. "text-indigo-700"
+  borderColor String?  // e.g. "border-indigo-200"
+  status      String   @default("Active") // "Active" | "Inactive"
+  isActive    Boolean  @default(true)
+  isDeleted   Boolean  @default(false)
+
+  // Relations
+  cars        Car[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, isDeleted])
+  @@map("transmission_masters")
+}
+
+model CategoryMaster {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // e.g. "SEDAN", "SUV", "LUXURY", "CONVERTIBLE"
+  description String?
+  color       String?  
+  circleBg    String?  
+  textColor   String?  
+  borderColor String?  
+  status      String   @default("Active")
+  isActive    Boolean  @default(true)
+  isDeleted   Boolean  @default(false)
+
+  // Relations
+  cars        Car[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, isDeleted])
+  @@map("category_masters")
+}
+
 // ============== STAFF MASTER MODEL ==============
-// Master blueprint/template for staff roles and permissions
 model StaffMaster {
   id                 String     @id @default(auto()) @map("_id") @db.ObjectId
   title              String     @unique // e.g. "Senior Chauffeur", "Fleet Cleaner", "Manager"
@@ -33,36 +98,36 @@ model StaffMaster {
 
 // ============== USER MODEL ==============
 model User {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
-  email           String        @unique
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  email           String    @unique
   phone           String?
   firstName       String
   lastName        String
   password        String?  
-  role            Role          @default(CUSTOMER)
-  staffType       StaffType?    // Optional: DRIVER or CLEANER if role == STAFF
+  role            Role      @default(CUSTOMER)
+  staffType       StaffType? // Optional: DRIVER or CLEANER if role == STAFF
   
   // Link to Staff Master (if user is staff)
-  staffMasterId   String?       @db.ObjectId
-  staffMaster     StaffMaster?  @relation("StaffMasterToUser", fields: [staffMasterId], references: [id])
+  staffMasterId   String?   @db.ObjectId
+  staffMaster     StaffMaster? @relation("StaffMasterToUser", fields: [staffMasterId], references: [id])
 
-  isEmailVerified Boolean       @default(false)
-  isActive        Boolean       @default(true)
-  isDeleted       Boolean       @default(false)
+  isEmailVerified Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  isDeleted       Boolean   @default(false)
   profilePicture  String?
-  preferences     Json?         // { language, currency, notifications }
-  permissions     String[]      @default([])  
+  preferences     Json?     // { language, currency, notifications }
+  permissions     String[]  @default([])  
   
   // Relations
-  sessions         Session[]
-  reservations     Reservation[]
-  emailLogs        EmailLog[]
-  payments         Payment[]
-  auditLogs        AuditLog[]      
+  sessions        Session[]
+  reservations    Reservation[]
+  emailLogs       EmailLog[]
+  payments        Payment[]
+  auditLogs       AuditLog[]      
   bookingAuditLogs BookingAuditLog[] 
   
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([role])
   @@index([staffMasterId])
@@ -139,18 +204,25 @@ enum OTPScope {
 
 // ============== CAR MODEL ==============
 model Car {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
   manufacturer    String
   model           String
   year            Int
-  category        CarCategory
-  licensePlate    String        @unique
+  licensePlate    String              @unique
   color           String?
-  transmission    Transmission
-  fuelType        FuelType
   seats           Int
   luggageCapacity Int
   features        String[]
+  
+  // Dynamic Settings Relations
+  categoryId      String?             @db.ObjectId
+  category        CategoryMaster?     @relation(fields: [categoryId], references: [id])
+
+  transmissionId  String?             @db.ObjectId
+  transmission    TransmissionMaster? @relation(fields: [transmissionId], references: [id])
+
+  fuelTypeId      String?             @db.ObjectId
+  fuelType        FuelTypeMaster?     @relation(fields: [fuelTypeId], references: [id])
   
   // Pricing (in cents / paise)
   pricePerDay     Int
@@ -175,41 +247,22 @@ model Car {
   imageGallery    String[]
   
   // Status
-  status          CarStatus     @default(AVAILABLE)
-  isDeleted       Boolean       @default(false)
+  status          CarStatus           @default(AVAILABLE)
+  isDeleted       Boolean             @default(false)
   
   // Relations
   reservations    Reservation[]
   
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   @@index([status, isDeleted])
-  @@index([category, status])
+  @@index([categoryId, status])
+  @@index([fuelTypeId])
+  @@index([transmissionId])
   @@index([locationCity])
   @@index([pricePerDay])
   @@map("cars")
-}
-
-enum CarCategory {
-  SEDAN
-  SUV
-  LUXURY
-  CONVERTIBLE
-  HATCHBACK
-  VAN
-}
-
-enum Transmission {
-  AUTOMATIC
-  MANUAL
-}
-
-enum FuelType {
-  PETROL
-  DIESEL
-  ELECTRIC
-  HYBRID
 }
 
 enum CarStatus {
