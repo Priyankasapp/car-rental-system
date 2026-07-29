@@ -3,7 +3,7 @@
 
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAdmin, AdminStaff } from '@/context/AdminContext'
@@ -122,17 +122,27 @@ function StaffCard({
   )
 }
 
-export default function AdminStaffPage() {
-  const router = useRouter()
+// Sub-component reading useSearchParams()
+function CreatedBanner() {
   const searchParams = useSearchParams()
   const showCreatedBanner = searchParams.get('created') === '1'
+
+  if (!showCreatedBanner) return null
+
+  return (
+    <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+      Staff member created successfully. Their temporary password and email verification OTP have been sent to their inbox.
+    </div>
+  )
+}
+
+function StaffContent() {
+  const router = useRouter()
   const { staff, fetchStaff, deleteStaff, isLoading } = useAdmin()
   const [filter, setFilter] = useState<StaffFilter>('All')
   const [search, setSearch] = useState('')
   const hasFetched = useRef(false)
 
-  // fetchStaff already runs on admin login via context init, but guard
-  // against navigating here before that first load completes
   useEffect(() => {
     if (!hasFetched.current && staff.length === 0 && !isLoading) {
       hasFetched.current = true
@@ -186,11 +196,10 @@ export default function AdminStaffPage() {
 
   return (
     <div className="p-8">
-      {showCreatedBanner && (
-        <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-          Staff member created successfully. Their temporary password and email verification OTP have been sent to their inbox.
-        </div>
-      )}
+      {/* Wrapped search parameter component */}
+      <Suspense fallback={null}>
+        <CreatedBanner />
+      </Suspense>
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -267,5 +276,13 @@ export default function AdminStaffPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function AdminStaffPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-gray-500">Loading staff page...</div>}>
+      <StaffContent />
+    </Suspense>
   )
 }
