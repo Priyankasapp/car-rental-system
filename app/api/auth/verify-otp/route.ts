@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
     const messages = {
       REGISTER: 'Account verified successfully! Please login.',
       PASSWORD_RESET: 'Password reset successfully! Please login with your new password.',
-      EMAIL_VERIFICATION: 'Email verified successfully!',
+      EMAIL_VERIFICATION: 'Email verified successfully! You can now sign in with your password.',
     }
 
     const response = NextResponse.json({

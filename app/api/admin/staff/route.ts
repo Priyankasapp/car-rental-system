@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { hashPassword } from '@/lib/auth'
+import {
+  generateOTP,
+  generatePassword,
+  hashPassword,
+  validatePasswordStrength,
+  verifyPassword,
+} from '@/lib/auth'
 import { requireDashboardUser, isAuthError } from '@/lib/api-auth'
+import { sendWelcomeAndOtpEmails } from '@/lib/email/emailService'
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +31,7 @@ export async function GET(request: NextRequest) {
         staffMasterId: true,
         permissions: true,
         isActive: true,
+        isEmailVerified: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -46,18 +54,18 @@ export async function POST(request: NextRequest) {
 
     const { user: requestingUser } = auth
     const body = await request.json()
-    const { firstName, lastName, email, phone, password, role, staffMasterId, isActive } = body
+    const { firstName, lastName, email, phone, role, staffMasterId, isActive } = body
 
-    const requiredFields = ['firstName', 'lastName', 'email', 'password']
-    const missingFields = requiredFields.filter((f) => !body[f])
-    if (missingFields.length > 0) {
+    if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
       return NextResponse.json(
-        { success: false, message: `Missing required fields: ${missingFields.join(', ')}` },
+        { success: false, message: 'First name, last name, and email are required' },
         { status: 400 }
       )
     }
 
+    const normalizedEmail = email.trim().toLowerCase()
     const targetRole = role === 'ADMIN' ? 'ADMIN' : 'STAFF'
+
     if (targetRole === 'ADMIN' && requestingUser.role !== 'SUPERADMIN') {
       return NextResponse.json(
         { success: false, message: 'Only a superadmin can create another admin' },
@@ -65,7 +73,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } })
+    if (role === 'SUPERADMIN') {
+      return NextResponse.json(
+        { success: false, message: 'Superadmin accounts cannot be created from this form' },
+        { status: 400 }
+      )
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } })
     if (existing) {
       return NextResponse.json(
         { success: false, message: 'A user with this email already exists' },
@@ -90,39 +105,77 @@ export async function POST(request: NextRequest) {
       permissions = staffMaster.defaultPermissions
     }
 
-    const hashedPassword = await hashPassword(password)
+    const plainPassword = generatePassword(12)
+    const hashedPassword = await hashPassword(plainPassword)
+    const otp = generateOTP()
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-    const staff = await prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        phone: phone || null,
-        password: hashedPassword,
-        role: targetRole,
-        staffMasterId: staffMasterId || null,
-        staffType,
-        permissions,
-        isEmailVerified: true,
-        isActive: isActive !== undefined ? isActive : true,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phone: true,
-        role: true,
-        staffType: true,
-        staffMasterId: true,
-        permissions: true,
-        isActive: true,
-        createdAt: true,
-      },
+    const staff = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: normalizedEmail,
+          phone: phone?.trim() || null,
+          password: hashedPassword,
+          role: targetRole,
+          staffMasterId: staffMasterId || null,
+          staffType,
+          permissions,
+          isEmailVerified: false,
+          isActive: isActive !== undefined ? isActive : true,
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          role: true,
+          staffType: true,
+          staffMasterId: true,
+          permissions: true,
+          isActive: true,
+          isEmailVerified: true,
+          createdAt: true,
+        },
+      })
+
+      await tx.oTP.create({
+        data: {
+          email: normalizedEmail,
+          otp,
+          purpose: 'EMAIL_VERIFICATION',
+          expiresAt,
+          maxAttempts: 3,
+        },
+      })
+
+      return created
     })
 
+    let emailSent = true
+    try {
+      await sendWelcomeAndOtpEmails(
+        normalizedEmail,
+        firstName.trim(),
+        plainPassword,
+        otp,
+        'EMAIL_VERIFICATION'
+      )
+    } catch (emailError) {
+      console.error('Staff created but onboarding emails failed:', emailError)
+      emailSent = false
+    }
+
     return NextResponse.json(
-      { success: true, message: 'Staff account created', data: { staff } },
+      {
+        success: true,
+        message: emailSent
+          ? 'Staff account created. Login credentials and verification OTP sent to their email.'
+          : 'Staff account created, but the invitation email could not be sent. Please resend credentials manually.',
+        data: { staff, emailSent },
+      },
       { status: 201 }
     )
   } catch (error) {

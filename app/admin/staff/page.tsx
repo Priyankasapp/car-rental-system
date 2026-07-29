@@ -124,6 +124,8 @@ function StaffCard({
 
 export default function AdminStaffPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const showCreatedBanner = searchParams.get('created') === '1'
   const { staff, fetchStaff, deleteStaff, isLoading } = useAdmin()
   const [filter, setFilter] = useState<StaffFilter>('All')
   const [search, setSearch] = useState('')
@@ -184,6 +186,12 @@ export default function AdminStaffPage() {
 
   return (
     <div className="p-8">
+      {showCreatedBanner && (
+        <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+          Staff member created successfully. Their temporary password and email verification OTP have been sent to their inbox.
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

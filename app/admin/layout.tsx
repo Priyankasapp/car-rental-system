@@ -57,7 +57,11 @@ export default function AdminLayout({
   const [managementOpen, setManagementOpen] = useState(true)
   const pathname = usePathname()
   const router = useRouter()
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
+
+  const userInitials = user
+    ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase()
+    : 'A'
 
   // Handle logout
   const handleLogout = async () => {
@@ -200,7 +204,7 @@ export default function AdminLayout({
             {/* Avatar with dropdown */}
             <div className="relative group">
               <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold text-sm cursor-pointer">
-                A
+                {userInitials}
               </div>
               {/* Dropdown menu */}
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">

@@ -99,14 +99,11 @@ export default function AddStaffPage() {
         lastName: formData.lastName.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
-        role: formData.role,
+        role: formData.role === 'SUPERADMIN' ? 'STAFF' : formData.role,
         isActive: formData.isActive,
-        licenseNumber: formData.licenseNumber.trim(),
-        issuingCountry: formData.issuingCountry.trim(),
-        licenseFile: formData.licenseFile,
       })
 
-      router.push('/admin/staff')
+      router.push('/admin/staff?created=1')
     } catch (err: any) {
       setError(err?.message || 'Failed to onboard new staff member. Please try again.')
     } finally {
@@ -249,7 +246,6 @@ export default function AddStaffPage() {
                 >
                   <option value="STAFF">Staff</option>
                   <option value="ADMIN">Admin</option>
-                  <option value="SUPERADMIN">Super Admin</option>
                 </select>
               </div>
 

@@ -10,11 +10,12 @@ export interface User {
   email: string
   firstName: string
   lastName: string
-  role: 'CUSTOMER' | 'ADMIN' | 'SUPERADMIN'
+  role: 'CUSTOMER' | 'ADMIN' | 'SUPERADMIN' | 'STAFF'
   phone?: string
   isEmailVerified: boolean
   isActive: boolean
   profilePicture?: string
+  permissions?: string[]
 }
 
 // Updated OTPPurpose to match database

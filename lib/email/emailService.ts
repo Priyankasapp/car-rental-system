@@ -202,32 +202,25 @@ export async function sendWelcomeAndOtpEmails(
   email: string,
   firstName: string,
   temporaryPassword: string,
-  otp: string
+  otp: string,
+  otpPurpose: 'REGISTER' | 'EMAIL_VERIFICATION' = 'REGISTER'
 ): Promise<void> {
   console.log(` Sending welcome and OTP emails to ${email}`)
-  
+
   try {
-    // Send both emails in parallel
     await Promise.all([
       sendEmail({
         to: email,
         type: 'WELCOME',
-        data: {
-          firstName,
-          password: temporaryPassword,
-        },
+        data: { firstName, password: temporaryPassword },
       }),
       sendEmail({
         to: email,
         type: 'OTP',
-        data: {
-          firstName,
-          otp,
-          purpose: 'REGISTER',
-        },
+        data: { firstName, otp, purpose: otpPurpose },
       }),
     ])
-    
+
     console.log(` Welcome and OTP emails sent to ${email}`)
   } catch (error) {
     console.error(` Failed to send emails to ${email}:`, error)
