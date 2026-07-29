@@ -11,8 +11,8 @@ import {
   Settings, 
   Menu, 
   X,
-  LogOut,
   ShieldCheck,
+  LogOut,
   Briefcase,
   UserCog,
   ChevronDown,
@@ -22,11 +22,36 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 
 const sidebarLinks = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/cars', label: 'Cars', icon: Car },
-  { href: '/admin/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { 
+    href: '/admin', 
+    label: 'Dashboard', 
+    icon: LayoutDashboard,
+    permission: 'view_dashboard'
+  },
+  { 
+    href: '/admin/cars', 
+    label: 'Cars', 
+    icon: Car,
+    permission: 'manage_cars'
+  },
+  { 
+    href: '/admin/bookings', 
+    label: 'Bookings', 
+    icon: Calendar,
+    permission: 'manage_reservations'
+  },
+  { 
+    href: '/admin/users', 
+    label: 'Users', 
+    icon: Users,
+    permission: 'manage_users'
+  },
+  { 
+    href: '/admin/settings', 
+    label: 'Settings', 
+    icon: Settings,
+    permission: null   // always visible to all staff
+  },
 ]
 
 // Management section links
@@ -35,16 +60,19 @@ const managementLinks = [
     href: '/admin/staff',
     label: 'Staff',
     icon: UserCog,
+    permission: 'manage_staff'
   },
   { 
     href: '/admin/staff-master', 
     label: 'Staff Master', 
     icon: Briefcase,
+    permission: 'manage_staff'
   },
   { 
     href: '/admin/permissions', 
     label: 'Permissions', 
     icon: ShieldCheck,
+    permission: 'superadmin_only'  // only SUPERADMIN can see this
   },
 ]
 
@@ -62,6 +90,15 @@ export default function AdminLayout({
   const userInitials = user
     ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase()
     : 'A'
+
+  // ── Permission filter helper ──────────────────────────────────────────────
+  // Returns true if the logged-in user should see a link
+  const canSee = (permission: string | null) => {
+    if (!permission) return true                        // null = no restriction
+    if (user?.role === 'SUPERADMIN') return true        // superadmin sees all
+    if (permission === 'superadmin_only') return false  // blocked for everyone else
+    return user?.permissions?.includes(permission) ?? false
+  }
 
   // Handle logout
   const handleLogout = async () => {
@@ -100,8 +137,8 @@ export default function AdminLayout({
 
         {/* Navigation */}
         <nav className="p-4 space-y-1">
-          {/* Main Navigation Links */}
-          {sidebarLinks.map((link) => {
+          {/* Main Navigation Links — filtered by permission */}
+          {sidebarLinks.filter(link => canSee(link.permission)).map((link) => {
             const Icon = link.icon
             const active = isActive(link.href)
             return (
@@ -140,10 +177,10 @@ export default function AdminLayout({
               </button>
             </div>
 
-            {/* Management Links */}
+            {/* Management Links — filtered by permission */}
             {managementOpen && (
               <div className="space-y-1 mt-1">
-                {managementLinks.map((link) => {
+                {managementLinks.filter(link => canSee(link.permission)).map((link) => {
                   const Icon = link.icon
                   const active = isActive(link.href)
                   return (
@@ -168,7 +205,7 @@ export default function AdminLayout({
             )}
           </div>
 
-          {/* Divider */}
+          {/* Divider + Logout */}
           <div className="pt-4 mt-4 border-t border-gray-200">
             <button 
               onClick={handleLogout}

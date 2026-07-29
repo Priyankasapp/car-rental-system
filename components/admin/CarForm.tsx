@@ -264,7 +264,7 @@ export function CarForm({
         <div className="lg:col-span-4 space-y-8">
           {/* Pricing */}
           <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <SectionHeader icon={<DollarSign className="w-5 h-5 text-gray-900" />} title="₹ Commercials" />
+            <SectionHeader icon={<DollarSign className="w-5 h-5 text-gray-900" />} title="Commercials" />
             <div className="space-y-4">
               <FormInput 
                 label="Daily Rate (₹) *" 
