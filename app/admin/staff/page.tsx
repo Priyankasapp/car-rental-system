@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/admin/staff/page.tsx
-/* eslint-disable @next/next/no-img-element */
+
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAdmin, AdminStaff } from '@/context/AdminContext'
 import StatsCard from '@/components/ui/StatsCard'
