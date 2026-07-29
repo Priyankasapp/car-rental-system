@@ -22,7 +22,7 @@ export function generateOtpHTML({
     REGISTER: 'to verify your email address and complete your registration',
     LOGIN: 'to securely log in to your account',
     PASSWORD_RESET: 'to reset your password',  
-    EMAIL_VERIFICATION: 'for two-factor authentication',  
+    EMAIL_VERIFICATION: 'to verify your email address',  
   };
 
   const purposeMessage = purposeMessages[purpose] || purposeMessages.REGISTER;

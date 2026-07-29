@@ -1,187 +1,220 @@
-// import { NextRequest, NextResponse } from 'next/server'
-// import { prisma } from '@/lib/prisma'
-// import {
-//   generateOTP,
-//   generatePassword,
-//   hashPassword,
- 
-// } from '@/lib/auth'
-// import { requireDashboardUser, isAuthError } from '@/lib/api-auth'
-// import { sendWelcomeAndOtpEmails } from '@/lib/email/emailService'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { NextResponse, NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { generateOTP, generatePassword, hashPassword } from "@/lib/auth";
+import { sendWelcomeAndOtpEmails } from "@/lib/email/emailService";
 
-// export async function GET(request: NextRequest) {
-//   try {
-//     const auth = await requireDashboardUser(request, 'manage_staff')
-//     if (isAuthError(auth)) return auth
+export async function GET() {
+  try {
+    const staff = await prisma.user.findMany({
+      where: {
+        role: "STAFF",
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        role: true,
+        staffType: true,
+        staffMasterId: true,
+        permissions: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
-//     const staff = await prisma.user.findMany({
-//       where: {
-//         role: { in: ['ADMIN', 'STAFF'] },
-//         isDeleted: false,
-//       },
-//       select: {
-//         id: true,
-//         firstName: true,
-//         lastName: true,
-//         email: true,
-//         phone: true,
-//         role: true,
-//         staffType: true,
-//         staffMasterId: true,
-//         permissions: true,
-//         isActive: true,
-//         isEmailVerified: true,
-//         createdAt: true,
-//       },
-//       orderBy: { createdAt: 'desc' },
-//     })
+    return NextResponse.json({
+      success: true,
+      data: {
+        staff,
+      },
+    });
+  } catch (error) {
+    console.error("Get staff error:", error);
 
-//     return NextResponse.json({ success: true, data: { staff } })
-//   } catch (error) {
-//     console.error('Get staff error:', error)
-//     return NextResponse.json(
-//       { success: false, message: 'Failed to fetch staff' },
-//       { status: 500 }
-//     )
-//   }
-// }
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to fetch staff details",
+      },
+      { status: 500 }
+    );
+  }
+}
 
-// export async function POST(request: NextRequest) {
-//   try {
-//     const auth = await requireDashboardUser(request, 'manage_staff')
-//     if (isAuthError(auth)) return auth
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
 
-//     const { user: requestingUser } = auth
-//     const body = await request.json()
-//     const { firstName, lastName, email, phone, role, staffMasterId, isActive } = body
+    // Handle both camelCase (firstName) and lowercase (firstname)
+    const firstName = body.firstName || body.firstname;
+    const lastName = body.lastName || body.lastname;
+    const { email, phone, staffMasterId, isActive } = body;
 
-//     if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
-//       return NextResponse.json(
-//         { success: false, message: 'First name, last name, and email are required' },
-//         { status: 400 }
-//       )
-//     }
+    // Validate required fields
+    if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "First name, last name, and email are required",
+        },
+        { status: 400 }
+      );
+    }
 
-//     const normalizedEmail = email.trim().toLowerCase()
-//     const targetRole = role === 'ADMIN' ? 'ADMIN' : 'STAFF'
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase();
 
-//     if (targetRole === 'ADMIN' && requestingUser.role !== 'SUPERADMIN') {
-//       return NextResponse.json(
-//         { success: false, message: 'Only a superadmin can create another admin' },
-//         { status: 403 }
-//       )
-//     }
+    // Check if user with this email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        email: normalizedEmail,
+      },
+    });
 
-//     if (role === 'SUPERADMIN') {
-//       return NextResponse.json(
-//         { success: false, message: 'Superadmin accounts cannot be created from this form' },
-//         { status: 400 }
-//       )
-//     }
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "A user with this email already exists",
+        },
+        { status: 409 }
+      );
+    }
 
-//     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } })
-//     if (existing) {
-//       return NextResponse.json(
-//         { success: false, message: 'A user with this email already exists' },
-//         { status: 409 }
-//       )
-//     }
+    // Get staff type and default permissions dynamically from database
+    let staffType: any = null;
+    let permissions: string[] = [];
 
-//     let staffType: 'DRIVER' | 'CLEANER' | null = null
-//     let permissions: string[] = []
+    if (staffMasterId) {
+      const staffMaster = await prisma.staffMaster.findFirst({
+        where: {
+          id: staffMasterId,
+          isDeleted: false,
+        },
+      });
 
-//     if (staffMasterId) {
-//       const staffMaster = await prisma.staffMaster.findUnique({
-//         where: { id: staffMasterId, isDeleted: false },
-//       })
-//       if (!staffMaster) {
-//         return NextResponse.json(
-//           { success: false, message: 'Selected staff type was not found' },
-//           { status: 400 }
-//         )
-//       }
-//       staffType = staffMaster.staffType
-//       permissions = staffMaster.defaultPermissions
-//     }
+      if (!staffMaster) {
+        return NextResponse.json(
+          { success: false, message: "Selected staff type was not found" },
+          { status: 400 }
+        );
+      }
 
-//     const plainPassword = generatePassword(12)
-//     const hashedPassword = await hashPassword(plainPassword)
-//     const otp = generateOTP()
-//     const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+      staffType = staffMaster.staffType;
+      permissions = staffMaster.defaultPermissions;
+    }
 
-//     const staff = await prisma.$transaction(async (tx) => {
-//       const created = await tx.user.create({
-//         data: {
-//           firstName: firstName.trim(),
-//           lastName: lastName.trim(),
-//           email: normalizedEmail,
-//           phone: phone?.trim() || null,
-//           password: hashedPassword,
-//           role: targetRole,
-//           staffMasterId: staffMasterId || null,
-//           staffType,
-//           permissions,
-//           isEmailVerified: false,
-//           isActive: isActive !== undefined ? isActive : true,
-//         },
-//         select: {
-//           id: true,
-//           firstName: true,
-//           lastName: true,
-//           email: true,
-//           phone: true,
-//           role: true,
-//           staffType: true,
-//           staffMasterId: true,
-//           permissions: true,
-//           isActive: true,
-//           isEmailVerified: true,
-//           createdAt: true,
-//         },
-//       })
+    // Generate temporary password
+    const temporaryPassword = generatePassword(12);
 
-//       await tx.oTP.create({
-//         data: {
-//           email: normalizedEmail,
-//           otp,
-//           purpose: 'EMAIL_VERIFICATION',
-//           expiresAt,
-//           maxAttempts: 3,
-//         },
-//       })
+    // Hash password before storing it
+    const hashedPassword = await hashPassword(temporaryPassword);
 
-//       return created
-//     })
+    // Generate OTP
+    const otp = generateOTP();
 
-//     let emailSent = true
-//     try {
-//       await sendWelcomeAndOtpEmails(
-//         normalizedEmail,
-//         firstName.trim(),
-//         plainPassword,
-//         otp,
-//         'EMAIL_VERIFICATION'
-//       )
-//     } catch (emailError) {
-//       console.error('Staff created but onboarding emails failed:', emailError)
-//       emailSent = false
-//     }
+    // OTP expires in 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-//     return NextResponse.json(
-//       {
-//         success: true,
-//         message: emailSent
-//           ? 'Staff account created. Login credentials and verification OTP sent to their email.'
-//           : 'Staff account created, but the invitation email could not be sent. Please resend credentials manually.',
-//         data: { staff, emailSent },
-//       },
-//       { status: 201 }
-//     )
-//   } catch (error) {
-//     console.error('Create staff error:', error)
-//     return NextResponse.json(
-//       { success: false, message: 'Failed to create staff account' },
-//       { status: 500 }
-//     )
-//   }
-// }
+    // Create staff + handle OTP in one transaction
+    const staff = await prisma.$transaction(async (tx) => {
+      // Create user record
+      const createdStaff = await tx.user.create({
+        data: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: normalizedEmail,
+          phone: phone?.trim() || null,
+          password: hashedPassword,
+          role: "STAFF",
+          staffMasterId: staffMasterId || null,
+          staffType,
+          permissions,
+          isEmailVerified: false,
+          isActive: isActive !== undefined ? isActive : true,
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          role: true,
+          staffType: true,
+          staffMasterId: true,
+          permissions: true,
+          isActive: true,
+          createdAt: true,
+        },
+      });
+
+      // Clear any previous OTP records for this email to avoid unique constraint issues
+      await tx.oTP.deleteMany({
+        where: {
+          email: normalizedEmail,
+          purpose: "EMAIL_VERIFICATION",
+        },
+      });
+
+      // Create new OTP record
+      await tx.oTP.create({
+        data: {
+          email: normalizedEmail,
+          otp,
+          purpose: "EMAIL_VERIFICATION",
+          expiresAt,
+          maxAttempts: 3,
+        },
+      });
+
+      return createdStaff;
+    });
+
+    // Send welcome and OTP emails
+    let emailSent = false;
+    try {
+      await sendWelcomeAndOtpEmails(
+        normalizedEmail,
+        firstName.trim(),
+        temporaryPassword,
+        otp,
+        "EMAIL_VERIFICATION"
+      );
+      emailSent = true;
+    } catch (emailError: any) {
+      console.error("Failed to send staff welcome email:", emailError?.message || emailError);
+      // Logged as a non-blocking error so user creation still succeeds
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: emailSent
+          ? "Staff account created and email sent successfully"
+          : "Staff account created successfully, but failed to send notification email",
+        data: {
+          staff,
+          ...(process.env.NODE_ENV === "development" && { temporaryPassword, otp }),
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Create staff error : ", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to create staff account",
+      },
+      { status: 500 }
+    );
+  }
+}

@@ -14,7 +14,7 @@ export interface BookingEmailProps {
   endDate: string;
   pickupLocation: string;
   totalPrice: string | number;
-  cancellationReason?: string; // ✅ Added for cancellation emails
+  cancellationReason?: string; 
 }
 
 // Contact email props
