@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { PlusIcon, LucideIcon } from 'lucide-react'
 import { EntityCard, EntityItem } from './EntityCard'
 import { EntityModal } from './EntityModal'
@@ -14,6 +15,8 @@ interface EntityGridPageProps {
   initialItems: EntityItem[]
   emptyStateTitle?: string
   emptyStateDescription?: string
+  onSave?: (item: Partial<EntityItem>) => Promise<void>
+  onDelete?: (id: string) => Promise<void>
 }
 
 export const EntityGridPage: React.FC<EntityGridPageProps> = ({
@@ -24,11 +27,18 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
   addButtonText,
   initialItems,
   emptyStateTitle = 'No items found',
-  emptyStateDescription = 'Create your first entry to get started.'
+  emptyStateDescription = 'Create your first entry to get started.',
+  onSave,
+  onDelete,
 }) => {
   const [items, setItems] = useState<EntityItem[]>(initialItems)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<EntityItem | null>(null)
+
+  // Keep state in sync with fetched items from API
+  useEffect(() => {
+    setItems(initialItems)
+  }, [initialItems])
 
   // Open Modal for Creating New Entry
   const handleOpenAdd = () => {
@@ -42,28 +52,36 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
     setIsModalOpen(true)
   }
 
-  // Handle Deletion
-  const handleDelete = (id: number) => {
+  // Handle Deletion (Async API call support)
+  const handleDelete = async (id: string) => {
     if (confirm(`Are you sure you want to delete this ${entitySingularName.toLowerCase()}?`)) {
-      setItems(items.filter(item => item.id !== id))
+      if (onDelete) {
+        await onDelete(id)
+      } else {
+        setItems(prev => prev.filter(item => String(item.id) !== id))
+      }
     }
   }
 
-  // Handle Save (Add or Update)
-  const handleSave = (savedData: Omit<EntityItem, 'id'> & { id?: number }) => {
-    if (savedData.id) {
-      // Edit mode: update existing record
-      setItems(prevItems =>
-        prevItems.map(item => (item.id === savedData.id ? (savedData as EntityItem) : item))
-      )
+  // Handle Save (Add or Update via API)
+  const handleSave = async (savedData: Omit<EntityItem, 'id'> & { id?: string }) => {
+    if (onSave) {
+      await onSave(savedData)
     } else {
-      // Add mode: append new record with unique ID
-      const newItem: EntityItem = {
-        ...(savedData as EntityItem),
-        id: Date.now()
+      // Fallback local update if no onSave prop provided
+      if (savedData.id) {
+        setItems(prevItems =>
+          prevItems.map(item => (item.id === savedData.id ? (savedData as EntityItem) : item))
+        )
+      } else {
+        const newItem: EntityItem = {
+          ...(savedData as EntityItem),
+          id: String(Date.now()),
+        }
+        setItems(prevItems => [newItem, ...prevItems])
       }
-      setItems(prevItems => [newItem, ...prevItems])
     }
+    setIsModalOpen(false)
   }
 
   const activeCount = items.filter(item => item.status === 'Active').length
@@ -117,7 +135,7 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
                 key={item.id}
                 item={item}
                 onEdit={handleOpenEdit}
-                onDelete={handleDelete}
+                onDelete={(id) => handleDelete(String(id))}
               />
             ))}
           </div>

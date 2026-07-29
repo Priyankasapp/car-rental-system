@@ -14,6 +14,7 @@ const alwaysPublicRoutes = [
 
 const publicApiGetRoutes = [
   '/api/cars',
+  '/api/settings', // Allow public GET for public settings (e.g. categories for filter dropdowns)
 ]
 
 const publicApiWriteRoutes = [
@@ -77,6 +78,11 @@ export async function proxy(request: NextRequest) {
 
     // Staff Master is role configuration — strict admin only, like permissions
     if (path.startsWith('/admin/staff-master') && !isStrictAdmin) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+
+    // Settings UI pages — restrict to strict admin (or adjust if STAFF can view)
+    if (path.startsWith('/admin/settings') && !isStrictAdmin) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
   }
@@ -145,6 +151,16 @@ export async function proxy(request: NextRequest) {
     if (isStaffMasterEndpoint && !isStrictAdmin) {
       return NextResponse.json(
         { success: false, message: 'Admin access required for staff master' },
+        { status: 403 }
+      )
+    }
+
+    // Settings API Endpoints (Categories, Fuel Types, Transmissions, etc.)
+    const isSettingsEndpoint = path.startsWith('/api/admin/settings')
+
+    if (isSettingsEndpoint && !isStrictAdmin) {
+      return NextResponse.json(
+        { success: false, message: 'Admin access required for settings management' },
         { status: 403 }
       )
     }

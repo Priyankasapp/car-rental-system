@@ -4,20 +4,20 @@ import React from 'react'
 import { PencilIcon, TrashIcon } from 'lucide-react'
 
 export interface EntityItem {
-  id: number
+  id: string // Updated to string for MongoDB ObjectIds
   name: string
-  description: string
-  status: 'Active' | 'Inactive' | string
-  color: string        // e.g. 'bg-sky-400'
-  circleBg: string     // e.g. 'bg-sky-100'
-  textColor: string    // e.g. 'text-sky-700'
-  borderColor: string  // e.g. 'border-sky-200'
+  description?: string
+  status: 'Active' | 'Inactive'
+  color?: string       
+  circleBg?: string    
+  textColor?: string    
+  borderColor?: string  
 }
 
 interface EntityCardProps {
   item: EntityItem
   onEdit: (item: EntityItem) => void
-  onDelete: (id: number) => void
+  onDelete: (id: string) => void // Updated to string
 }
 
 export const EntityCard: React.FC<EntityCardProps> = ({ item, onEdit, onDelete }) => {
@@ -27,13 +27,13 @@ export const EntityCard: React.FC<EntityCardProps> = ({ item, onEdit, onDelete }
     <div className="group relative rounded-xl border border-gray-200 bg-white p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between overflow-hidden">
       {/* 1/4 Decorative Circle in Top-Right Corner */}
       <div 
-        className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${item.color} opacity-20 blur-xs pointer-events-none transition-transform duration-500 group-hover:scale-125`} 
+        className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${item.color || 'bg-sky-400'} opacity-20 blur-xs pointer-events-none transition-transform duration-500 group-hover:scale-125`} 
       />
 
       <div className="relative z-10">
         {/* Top Bar: Left Avatar + Right Status Badge */}
         <div className="flex items-center justify-between">
-          <div className={`w-12 h-12 rounded-full ${item.circleBg} ${item.textColor} border ${item.borderColor} flex items-center justify-center text-base font-extrabold shadow-xs tracking-wider transition-transform duration-300 group-hover:scale-105`}>
+          <div className={`w-12 h-12 rounded-full ${item.circleBg || 'bg-sky-100'} ${item.textColor || 'text-sky-700'} border ${item.borderColor || 'border-sky-200'} flex items-center justify-center text-base font-extrabold shadow-xs tracking-wider transition-transform duration-300 group-hover:scale-105`}>
             {avatarText}
           </div>
 
@@ -53,7 +53,7 @@ export const EntityCard: React.FC<EntityCardProps> = ({ item, onEdit, onDelete }
         <div className="mt-5">
           <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2.5">
             {item.name}
-            <span className={`h-2 w-2 rounded-full ${item.color}`} />
+            <span className={`h-2 w-2 rounded-full ${item.color || 'bg-sky-400'}`} />
           </h3>
         </div>
 

@@ -55,7 +55,7 @@ model TransmissionMaster {
 
 model CategoryMaster {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique // e.g. "SEDAN", "SUV", "LUXURY", "CONVERTIBLE"
+  name        String   
   description String?
   color       String?  
   circleBg    String?  
