@@ -1,4 +1,3 @@
-// proxy.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
@@ -9,12 +8,12 @@ const alwaysPublicRoutes = [
   '/api/auth/resend-otp',
   '/api/auth/forgot-password',
   '/api/health',
-  '/api/contact',       
+  '/api/contact',
 ]
 
 const publicApiGetRoutes = [
   '/api/cars',
-  '/api/settings', // Allow public GET for public settings (e.g. categories for filter dropdowns)
+  '/api/settings', // Public GET for categories, fuel types, transmissions
 ]
 
 const publicApiWriteRoutes = [
@@ -43,26 +42,26 @@ export async function proxy(request: NextRequest) {
 
   const payload = token ? await verifyTokenEdge(token) : null
 
-  // Define role levels
+  // Role Checks
   const isDashboardUser = payload
     ? ['ADMIN', 'SUPERADMIN', 'STAFF'].includes(payload.role)
     : false
-    
+
   const isStrictAdmin = payload
     ? ['ADMIN', 'SUPERADMIN'].includes(payload.role)
     : false
 
   const isSuperAdmin = payload?.role === 'SUPERADMIN'
 
-  // Redirect dashboard users away from guest pages
+  // 1. Redirect dashboard users away from public landing & guest pages
   if (
     isDashboardUser &&
-    (path === '/' || guestOnlyPages.some((p) => path.startsWith(p)))
+    (path === '/' || guestOnlyPages.some((p) => path === p || path.startsWith(`${p}/`)))
   ) {
     return NextResponse.redirect(new URL('/admin', request.url))
   }
 
-  // Protect /admin UI pages
+  // 2. Protect /admin UI pages
   if (path.startsWith('/admin')) {
     if (!payload) {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -70,57 +69,55 @@ export async function proxy(request: NextRequest) {
     if (!isDashboardUser) {
       return NextResponse.redirect(new URL('/', request.url))
     }
-    
-    // IF ONLY SUPERADMIN SHOULD ACCESS PERMISSIONS UI
+
+    // SUPERADMIN only UI routes
     if (path.startsWith('/admin/permissions') && !isSuperAdmin) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
 
-    // Staff Master is role configuration — strict admin only, like permissions
-    if (path.startsWith('/admin/staff-master') && !isStrictAdmin) {
-      return NextResponse.redirect(new URL('/admin', request.url))
-    }
-
-    // Settings UI pages — restrict to strict admin (or adjust if STAFF can view)
-    if (path.startsWith('/admin/settings') && !isStrictAdmin) {
+    // Strict Admin UI routes (ADMIN & SUPERADMIN)
+    if (
+      (path.startsWith('/admin/staff-master') || path.startsWith('/admin/settings')) &&
+      !isStrictAdmin
+    ) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
   }
 
-  // Redirect standard logged-in users away from guest pages
+  // 3. Redirect logged-in standard customers away from guest pages
   if (
     payload &&
     !isDashboardUser &&
-    guestOnlyPages.some((p) => path.startsWith(p))
+    guestOnlyPages.some((p) => path === p || path.startsWith(`${p}/`))
   ) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // If it's not an API call, let it through to page rendering
+  // 4. Pass non-API page requests through
   if (!path.startsWith('/api')) {
     return NextResponse.next()
   }
 
-  // Allow public API routes
-  if (alwaysPublicRoutes.some((route) => path.startsWith(route))) {
+  // 5. Public API route handling
+  if (alwaysPublicRoutes.some((route) => path === route || path.startsWith(`${route}/`))) {
     return NextResponse.next()
   }
 
   if (
     method === 'GET' &&
-    publicApiGetRoutes.some((route) => path.startsWith(route))
+    publicApiGetRoutes.some((route) => path === route || path.startsWith(`${route}/`))
   ) {
     return NextResponse.next()
   }
 
   if (
     method === 'POST' &&
-    publicApiWriteRoutes.some((route) => path.startsWith(route))
+    publicApiWriteRoutes.some((route) => path === route || path.startsWith(`${route}/`))
   ) {
     return NextResponse.next()
   }
 
-  // Unauthenticated API requests
+  // 6. Unauthenticated API requests check
   if (!token) {
     return NextResponse.json(
       { success: false, message: 'Authentication required' },
@@ -135,42 +132,44 @@ export async function proxy(request: NextRequest) {
     )
   }
 
-  // Protect Admin API endpoints
+  // 7. Protected Admin API endpoints checks
   if (path.startsWith('/api/admin')) {
-    // Check if accessing permissions endpoints: strictly SUPERADMIN
+    // SUPERADMIN-only permission endpoints
     if (path.includes('/permissions') && !isSuperAdmin) {
       return NextResponse.json(
-        { success: false, message: 'Superadmin access required for permissions' },
+        { success: false, message: 'Superadmin access required for permissions management' },
         { status: 403 }
       )
     }
 
-    // Staff Master is role configuration — strict admin only
-    const isStaffMasterEndpoint = path.startsWith('/api/admin/staff-master')
+    // Master settings & configuration endpoints (Requires ADMIN or SUPERADMIN)
+    const masterSettingsRoutes = [
+      '/api/admin/settings',
+      '/api/admin/staff-master',
+      '/api/admin/transmission-types',
+      '/api/admin/fuel-types',
+      '/api/admin/categories',
+    ]
 
-    if (isStaffMasterEndpoint && !isStrictAdmin) {
-      return NextResponse.json(
-        { success: false, message: 'Admin access required for staff master' },
-        { status: 403 }
-      )
-    }
+    const isMasterSettingsEndpoint = masterSettingsRoutes.some(
+      (route) => path === route || path.startsWith(`${route}/`)
+    )
 
-    // Settings API Endpoints (Categories, Fuel Types, Transmissions, etc.)
-    const isSettingsEndpoint = path.startsWith('/api/admin/settings')
-
-    if (isSettingsEndpoint && !isStrictAdmin) {
+    if (isMasterSettingsEndpoint && !isStrictAdmin) {
       return NextResponse.json(
         { success: false, message: 'Admin access required for settings management' },
         { status: 403 }
       )
     }
 
-    // Allow STAFF users to reach staff management endpoints if needed
-    // (exact match or a real sub-path — not staff-master, which is handled above)
-    const isStaffEndpoint =
-      path === '/api/admin/staff' || path.startsWith('/api/admin/staff/')
+    // General operational endpoints for dashboard users (STAFF, ADMIN, SUPERADMIN)
+    const isStaffAccessibleEndpoint =
+      path === '/api/admin/staff' ||
+      path.startsWith('/api/admin/staff/') ||
+      path.startsWith('/api/admin/cars') ||
+      path.startsWith('/api/admin/reservations')
 
-    if (!isStrictAdmin && !isStaffEndpoint) {
+    if (!isStrictAdmin && !isStaffAccessibleEndpoint) {
       return NextResponse.json(
         { success: false, message: 'Admin access required' },
         { status: 403 }
@@ -178,10 +177,11 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Inject user headers for API handlers to read
+  // 8. Inject authenticated user context headers for API handlers
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-user-id', payload.userId || '')
   requestHeaders.set('x-user-role', payload.role || '')
+  requestHeaders.set('x-user-email', payload.email || '')
 
   return NextResponse.next({
     request: {
@@ -189,6 +189,9 @@ export async function proxy(request: NextRequest) {
     },
   })
 }
+
+// Next.js Middleware export entry
+export default proxy
 
 export const config = {
   matcher: [

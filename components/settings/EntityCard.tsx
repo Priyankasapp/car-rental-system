@@ -4,7 +4,7 @@ import React from 'react'
 import { PencilIcon, TrashIcon } from 'lucide-react'
 
 export interface EntityItem {
-  id: string // Updated to string for MongoDB ObjectIds
+  id: string 
   name: string
   description?: string
   status: 'Active' | 'Inactive'
@@ -17,7 +17,7 @@ export interface EntityItem {
 interface EntityCardProps {
   item: EntityItem
   onEdit: (item: EntityItem) => void
-  onDelete: (id: string) => void // Updated to string
+  onDelete: (id: string) => void
 }
 
 export const EntityCard: React.FC<EntityCardProps> = ({ item, onEdit, onDelete }) => {

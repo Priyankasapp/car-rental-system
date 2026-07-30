@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import React, { useState } from 'react'
-import { XIcon } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { XIcon, Loader2 } from 'lucide-react'
 import { EntityItem } from './EntityCard'
 
 // Theme presets
@@ -20,7 +21,7 @@ export interface EntityModalProps {
   entityName: string
   initialData?: EntityItem | null
   onClose: () => void
-  onSave: (data: Omit<EntityItem, 'id'> & { id?: string }) => void // Updated to string
+  onSave: (data: Omit<EntityItem, 'id'> & { id?: string }) => Promise<void> | void
 }
 
 export const EntityModal: React.FC<EntityModalProps> = ({
@@ -30,9 +31,25 @@ export const EntityModal: React.FC<EntityModalProps> = ({
   onClose,
   onSave
 }) => {
+  // Prevent body scrolling when modal is active & enable Escape key listener
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = 'unset'
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
-  // Wrap the inner form in a key-driven component to avoid set-state-in-effect warnings
   const key = initialData ? initialData.id : 'new'
 
   return (
@@ -52,7 +69,7 @@ interface EntityModalFormProps {
   entityName: string
   initialData?: EntityItem | null
   onClose: () => void
-  onSave: (data: Omit<EntityItem, 'id'> & { id?: string }) => void
+  onSave: (data: Omit<EntityItem, 'id'> & { id?: string }) => Promise<void> | void
 }
 
 const EntityModalForm: React.FC<EntityModalFormProps> = ({
@@ -74,23 +91,35 @@ const EntityModalForm: React.FC<EntityModalFormProps> = ({
     themeIndex: initialThemeIndex >= 0 ? initialThemeIndex : 0
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim()) return
+    if (!formData.name.trim() || isSubmitting) return
+
+    setIsSubmitting(true)
+    setErrorMessage(null)
 
     const { color, circleBg, textColor, borderColor } = COLOR_THEMES[formData.themeIndex]
 
-    onSave({
-      ...(initialData?.id ? { id: initialData.id } : {}),
-      name: formData.name.toUpperCase(),
-      description: formData.description,
-      status: formData.status,
-      color,
-      circleBg,
-      textColor,
-      borderColor
-    })
-    onClose()
+    try {
+      await onSave({
+        ...(initialData?.id ? { id: initialData.id } : {}),
+        name: formData.name.trim().toUpperCase(),
+        description: formData.description.trim(),
+        status: formData.status,
+        color,
+        circleBg,
+        textColor,
+        borderColor
+      })
+      onClose()
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to save entry. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -108,11 +137,19 @@ const EntityModalForm: React.FC<EntityModalFormProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          disabled={isSubmitting}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50"
         >
           <XIcon className="h-5 w-5" />
         </button>
       </div>
+
+      {/* Error Alert Banner */}
+      {errorMessage && (
+        <div className="mt-4 rounded-md bg-rose-50 p-3 border border-rose-200">
+          <p className="text-xs font-medium text-rose-800">{errorMessage}</p>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -124,10 +161,11 @@ const EntityModalForm: React.FC<EntityModalFormProps> = ({
           <input
             type="text"
             required
+            disabled={isSubmitting}
             placeholder={`e.g. ${entityName === 'Category' ? 'SUV' : entityName === 'Fuel Type' ? 'HYBRID' : 'AUTOMATIC'}`}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full rounded-md border border-gray-300 px-3.5 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-colors"
+            className="w-full rounded-md border border-gray-300 px-3.5 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
           />
         </div>
 
@@ -138,10 +176,11 @@ const EntityModalForm: React.FC<EntityModalFormProps> = ({
           </label>
           <textarea
             rows={3}
+            disabled={isSubmitting}
             placeholder="Provide a brief summary for this option..."
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full rounded-md border border-gray-300 px-3.5 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-colors"
+            className="w-full rounded-md border border-gray-300 px-3.5 py-2.5 text-sm font-medium text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
           />
         </div>
 
@@ -153,24 +192,26 @@ const EntityModalForm: React.FC<EntityModalFormProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => setFormData({ ...formData, status: 'Active' })}
               className={`flex items-center justify-center gap-2 py-2.5 rounded-md border text-xs font-semibold transition-all cursor-pointer ${
                 formData.status === 'Active'
                   ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
                   : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+              } disabled:opacity-50`}
             >
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               Active
             </button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => setFormData({ ...formData, status: 'Inactive' })}
               className={`flex items-center justify-center gap-2 py-2.5 rounded-md border text-xs font-semibold transition-all cursor-pointer ${
                 formData.status === 'Inactive'
                   ? 'border-gray-400 bg-gray-100 text-gray-800'
                   : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+              } disabled:opacity-50`}
             >
               <span className="h-2 w-2 rounded-full bg-gray-400" />
               Inactive
@@ -188,12 +229,13 @@ const EntityModalForm: React.FC<EntityModalFormProps> = ({
               <button
                 key={theme.label}
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => setFormData({ ...formData, themeIndex: index })}
                 className={`h-7 w-7 rounded-full ${theme.color} transition-all cursor-pointer flex items-center justify-center ${
                   formData.themeIndex === index 
                     ? 'ring-2 ring-gray-900 ring-offset-2 scale-110' 
                     : 'hover:scale-105 opacity-80'
-                }`}
+                } disabled:opacity-50`}
                 title={theme.label}
               />
             ))}
@@ -205,15 +247,26 @@ const EntityModalForm: React.FC<EntityModalFormProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="min-w-22 px-4 py-2.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+            disabled={isSubmitting}
+            className="min-w-22 px-4 py-2.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="min-w-25 px-5 py-2.5 text-xs font-semibold text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors shadow-xs cursor-pointer"
+            disabled={isSubmitting}
+            className="min-w-28 px-5 py-2.5 text-xs font-semibold text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
           >
-            {isEditMode ? 'Save Changes' : `Create ${entityName}`}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : isEditMode ? (
+              'Save Changes'
+            ) : (
+              `Create ${entityName}`
+            )}
           </button>
         </div>
       </form>

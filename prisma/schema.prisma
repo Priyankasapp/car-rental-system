@@ -19,7 +19,6 @@ model FuelTypeMaster {
   borderColor String?  // e.g. "border-emerald-200"
   status      String   @default("Active") // "Active" | "Inactive"
   isActive    Boolean  @default(true)
-  isDeleted   Boolean  @default(false)
 
   // Relations
   cars        Car[]
@@ -27,7 +26,7 @@ model FuelTypeMaster {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([isActive, isDeleted])
+  @@index([isActive])
   @@map("fuel_type_masters")
 }
 
@@ -41,7 +40,6 @@ model TransmissionMaster {
   borderColor String?  // e.g. "border-indigo-200"
   status      String   @default("Active") // "Active" | "Inactive"
   isActive    Boolean  @default(true)
-  isDeleted   Boolean  @default(false)
 
   // Relations
   cars        Car[]
@@ -49,7 +47,7 @@ model TransmissionMaster {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([isActive, isDeleted])
+  @@index([isActive])
   @@map("transmission_masters")
 }
 
@@ -63,7 +61,6 @@ model CategoryMaster {
   borderColor String?  
   status      String   @default("Active")
   isActive    Boolean  @default(true)
-  isDeleted   Boolean  @default(false)
 
   // Relations
   cars        Car[]
@@ -71,7 +68,7 @@ model CategoryMaster {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([isActive, isDeleted])
+  @@index([isActive])
   @@map("category_masters")
 }
 
@@ -84,7 +81,6 @@ model StaffMaster {
   defaultPermissions String[]   @default([]) // Pre-configured permissions for this job role
   description        String?
   isActive           Boolean    @default(true)
-  isDeleted          Boolean    @default(false)
 
   // Relations
   staffMembers       User[]     @relation("StaffMasterToUser")
@@ -92,7 +88,7 @@ model StaffMaster {
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
-  @@index([isActive, isDeleted])
+  @@index([isActive])
   @@map("staff_masters")
 }
 
@@ -108,30 +104,29 @@ model User {
   staffType       StaffType? // Optional: DRIVER or CLEANER if role == STAFF
   
   // Link to Staff Master (if user is staff)
-  staffMasterId   String?   @db.ObjectId
+  staffMasterId   String?    @db.ObjectId
   staffMaster     StaffMaster? @relation("StaffMasterToUser", fields: [staffMasterId], references: [id])
 
   isEmailVerified Boolean   @default(false)
   isActive        Boolean   @default(true)
-  isDeleted       Boolean   @default(false)
   profilePicture  String?
   preferences     Json?     // { language, currency, notifications }
   permissions     String[]  @default([])  
   
   // Relations
-  sessions        Session[]
-  reservations    Reservation[]
-  emailLogs       EmailLog[]
-  payments        Payment[]
-  auditLogs       AuditLog[]      
+  sessions         Session[]
+  reservations     Reservation[]
+  emailLogs        EmailLog[]
+  payments         Payment[]
+  auditLogs        AuditLog[]      
   bookingAuditLogs BookingAuditLog[] 
   
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([role])
   @@index([staffMasterId])
-  @@index([isActive, isDeleted])
+  @@index([isActive])
   @@map("users")
 }
 
@@ -159,7 +154,6 @@ model Session {
   ipAddress      String?
   userAgent      String?
   isRevoked      Boolean  @default(false)
-  isDeleted      Boolean  @default(false)
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -218,11 +212,11 @@ model Car {
   categoryId      String?             @db.ObjectId
   category        CategoryMaster?     @relation(fields: [categoryId], references: [id])
 
-  transmissionId  String?             @db.ObjectId
-  transmission    TransmissionMaster? @relation(fields: [transmissionId], references: [id])
+  transmissionId String?             @db.ObjectId
+  transmission   TransmissionMaster? @relation(fields: [transmissionId], references: [id])
 
-  fuelTypeId      String?             @db.ObjectId
-  fuelType        FuelTypeMaster?     @relation(fields: [fuelTypeId], references: [id])
+  fuelTypeId     String?             @db.ObjectId
+  fuelType       FuelTypeMaster?     @relation(fields: [fuelTypeId], references: [id])
   
   // Pricing (in cents / paise)
   pricePerDay     Int
@@ -248,7 +242,6 @@ model Car {
   
   // Status
   status          CarStatus           @default(AVAILABLE)
-  isDeleted       Boolean             @default(false)
   
   // Relations
   reservations    Reservation[]
@@ -256,7 +249,7 @@ model Car {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
-  @@index([status, isDeleted])
+  @@index([status])
   @@index([categoryId, status])
   @@index([fuelTypeId])
   @@index([transmissionId])
@@ -316,9 +309,6 @@ model Reservation {
   cancellationFee       Int?
   adminNotes            String?
   
-  // Soft delete
-  isDeleted             Boolean           @default(false)
-  
   // Relations
   emailLogs             EmailLog[]
   payments              Payment[]
@@ -370,9 +360,6 @@ model Payment {
   
   // Metadata
   metadata          Json?
-  
-  // Soft delete
-  isDeleted         Boolean       @default(false)
   
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -456,9 +443,6 @@ model Contact {
   ipAddress   String?
   userAgent   String?
   source      String?       // 'website', 'landing', 'referral'
-  
-  // Soft delete
-  isDeleted   Boolean       @default(false)
   
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

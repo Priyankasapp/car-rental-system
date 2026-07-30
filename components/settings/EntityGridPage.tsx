@@ -1,7 +1,6 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { PlusIcon, LucideIcon } from 'lucide-react'
 import { EntityCard, EntityItem } from './EntityCard'
 import { EntityModal } from './EntityModal'
@@ -31,14 +30,8 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
   onSave,
   onDelete,
 }) => {
-  const [items, setItems] = useState<EntityItem[]>(initialItems)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<EntityItem | null>(null)
-
-  // Keep state in sync with fetched items from API
-  useEffect(() => {
-    setItems(initialItems)
-  }, [initialItems])
 
   // Open Modal for Creating New Entry
   const handleOpenAdd = () => {
@@ -57,8 +50,6 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
     if (confirm(`Are you sure you want to delete this ${entitySingularName.toLowerCase()}?`)) {
       if (onDelete) {
         await onDelete(id)
-      } else {
-        setItems(prev => prev.filter(item => String(item.id) !== id))
       }
     }
   }
@@ -67,24 +58,11 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
   const handleSave = async (savedData: Omit<EntityItem, 'id'> & { id?: string }) => {
     if (onSave) {
       await onSave(savedData)
-    } else {
-      // Fallback local update if no onSave prop provided
-      if (savedData.id) {
-        setItems(prevItems =>
-          prevItems.map(item => (item.id === savedData.id ? (savedData as EntityItem) : item))
-        )
-      } else {
-        const newItem: EntityItem = {
-          ...(savedData as EntityItem),
-          id: String(Date.now()),
-        }
-        setItems(prevItems => [newItem, ...prevItems])
-      }
     }
     setIsModalOpen(false)
   }
 
-  const activeCount = items.filter(item => item.status === 'Active').length
+  const activeCount = initialItems.filter(item => item.status === 'Active').length
 
   return (
     <div className="space-y-6">
@@ -101,7 +79,7 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
           <p className="text-sm font-medium text-gray-500">Total {title}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{items.length}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{initialItems.length}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
           <p className="text-sm font-medium text-gray-500">Active Options</p>
@@ -128,9 +106,9 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
         </div>
 
         {/* Entity Card Grid */}
-        {items.length > 0 ? (
+        {initialItems.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {items.map(item => (
+            {initialItems.map(item => (
               <EntityCard
                 key={item.id}
                 item={item}
