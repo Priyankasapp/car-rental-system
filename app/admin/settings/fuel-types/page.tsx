@@ -1,82 +1,113 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
-import React from 'react'
-import { FuelIcon } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import {  Loader2 } from 'lucide-react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
 
 export default function FuelTypesPage() {
-  const initialFuelTypes: EntityItem[] = [
-    {
-      id: 1,
-      name: 'PETROL',
-      description: 'Standard gasoline engines offering high performance and flexibility.',
-      status: 'Active',
-      color: 'bg-emerald-400',
-      circleBg: 'bg-emerald-100',
-      textColor: 'text-emerald-700',
-      borderColor: 'border-emerald-200'
-    },
-    {
-      id: 2,
-      name: 'DIESEL',
-      description: 'High torque and efficient engines ideal for long-distance driving.',
-      status: 'Active',
-      color: 'bg-amber-400',
-      circleBg: 'bg-amber-100',
-      textColor: 'text-amber-700',
-      borderColor: 'border-amber-200'
-    },
-    {
-      id: 3,
-      name: 'ELECTRIC',
-      description: 'Zero-emission battery electric vehicles (BEVs) with instant torque.',
-      status: 'Active',
-      color: 'bg-sky-400',
-      circleBg: 'bg-sky-100',
-      textColor: 'text-sky-700',
-      borderColor: 'border-sky-200'
-    },
-    {
-      id: 4,
-      name: 'HYBRID',
-      description: 'Combines a gas engine with an electric motor for maximum efficiency.',
-      status: 'Active',
-      color: 'bg-teal-400',
-      circleBg: 'bg-teal-100',
-      textColor: 'text-teal-700',
-      borderColor: 'border-teal-200'
-    },
-    {
-      id: 5,
-      name: 'PLUG-IN HYBRID',
-      description: 'PHEV models with larger batteries rechargeable via external outlets.',
-      status: 'Active',
-      color: 'bg-indigo-400',
-      circleBg: 'bg-indigo-100',
-      textColor: 'text-indigo-700',
-      borderColor: 'border-indigo-200'
-    },
-    {
-      id: 6,
-      name: 'LPG / CNG',
-      description: 'Compressed or Liquefied gas alternatives for lower emissions.',
-      status: 'Inactive',
-      color: 'bg-gray-300',
-      circleBg: 'bg-gray-100',
-      textColor: 'text-gray-600',
-      borderColor: 'border-gray-200'
+  const [items, setItems] = useState<EntityItem[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // 1. Fetch Fuel Types from backend API
+  const fetchFuelTypes = useCallback(async () => {
+    try {
+      
+      setError(null) 
+      const res = await fetch('/api/admin/fuel-types')
+      const json = await res.json()
+
+      if (!res.ok) {
+        throw new Error(json.message || 'Failed to fetch fuel types')
+      }
+
+      setItems(json.data)
+
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong')
+    } finally {
+      setLoading(false)
     }
-  ]
+  }, [])
+
+  useEffect(() => {
+    fetchFuelTypes()
+  }, [fetchFuelTypes])
+
+  //  Handle Add / Edit submit
+  const handleSaveItem = async (itemData: Partial<EntityItem>) => {
+    const isEdit = Boolean(itemData.id)
+    const url = isEdit
+      ? `/api/admin/fuel-types/${itemData.id}`
+      : '/api/admin/fuel-types'
+    const method = isEdit ? 'PUT' : 'POST'
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(itemData),
+    })
+
+    const json = await res.json()
+
+    if (!res.ok ) {
+      throw new Error(json.message || `Failed to ${isEdit ? 'update' : 'create'} fuel type`)
+    }
+
+    await fetchFuelTypes()
+  }
+
+  // 3. Handle Delete
+  const handleDeleteItem = async (id: string | number) => {
+    const res = await fetch(`/api/admin/fuel-types/${id}`, {
+      method: 'DELETE',
+    })
+
+    const json = await res.json()
+
+    if (!res.ok || !json.success) {
+      throw new Error(json.message || 'Failed to delete fuel type')
+    }
+
+    await fetchFuelTypes()
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-slate-500">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+        <p className="text-sm font-medium">Loading fuel types...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 rounded-xl bg-red-50 text-red-600 border border-red-200 text-center my-8">
+        <p className="font-semibold">Failed to load Fuel Types</p>
+        <p className="text-sm mt-1">{error}</p>
+        <button
+          onClick={fetchFuelTypes}
+          className="mt-4 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    )
+  }
 
   return (
     <EntityGridPage
       title="Fuel Types"
       entitySingularName="Fuel Type"
       description="Manage engine fuel configurations supported in UrbanDrive."
-      icon={FuelIcon}
       addButtonText="Add Fuel Type"
-      initialItems={initialFuelTypes}
+      initialItems={items}
+      onSave={handleSaveItem}
+      onDelete={handleDeleteItem}
       emptyStateTitle="No fuel types found"
       emptyStateDescription="Create your first fuel option to get started."
     />
