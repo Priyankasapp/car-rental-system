@@ -1,466 +1,335 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @next/next/no-img-element */
-// app/(admin)/cars/page.tsx
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useAdmin } from '@/context/AdminContext'
-import { useAuth } from '@/context/AuthContext'
-import { 
-  Plus, 
-  Car as CarIcon, 
-  AlertCircle, 
-  Edit3, 
-  Trash2, 
-  ExternalLink, 
-  MapPin, 
-  Gauge, 
-  Users, 
-  Fuel, 
-  Search,
-  SlidersHorizontal,
-  CheckCircle2,
-  Wrench,
-  X
-} from 'lucide-react'
-import { CarStatusBadge } from '@/components/admin/CarStatusBadge'
+import { Edit, Trash2, Eye } from 'lucide-react'
+import { DataExplorer, Column } from '@/components/admin/DataExplorer'
 
-type CarToDelete = {
+interface MasterItem {
   id: string
   name: string
 }
 
-export default function AdminCarsPage() {
-  const router = useRouter()
-  const { user, isLoading: authLoading } = useAuth()
-  const { cars, isLoading, error, fetchCars, deleteCar } = useAdmin()
-  const hasInitialized = useRef(false)
+interface CarItem {
+  id: string
+  manufacturer: string
+  model: string
+  year: number
+  licensePlate: string
+  pricePerDay: number
+  securityDeposit: number
+  imageMain?: string
+  status: 'AVAILABLE' | 'RESERVED' | 'UNAVAILABLE' | 'MAINTENANCE'
+  category?: string | MasterItem
+}
 
-  // Deletion State
-  const [carToDelete, setCarToDelete] = useState<CarToDelete | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+export default function CarsPage() {
+  const router = useRouter()
+  const [cars, setCars] = useState<CarItem[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
 
   // Search & Filter State
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
-  const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
+  const [search, setSearch] = useState<string>('')
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
+  const [categories, setCategories] = useState<MasterItem[]>([])
 
-  // Check admin access and fetch cars
+  // Debounce search input
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-      return
-    }
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 300)
 
-    if (!authLoading && user && user.role !== 'SUPERADMIN' && user.role !== 'ADMIN') {
-      router.push('/fleet')
-      return
-    }
+    return () => clearTimeout(handler)
+  }, [search])
 
-    if (user && (user.role === 'SUPERADMIN' || user.role === 'ADMIN') && !hasInitialized.current) {
-      hasInitialized.current = true
-      fetchCars()
+  // Fetch Categories for Filter Dropdown
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/admin/categories')
+        const data = await res.json()
+        if (data?.success && Array.isArray(data.data)) {
+          setCategories(data.data)
+        }
+      } catch (err) {
+        console.error('Failed to load categories:', err)
+      }
     }
-  }, [user, authLoading, router, fetchCars])
+    loadCategories()
+  }, [])
 
-  // Filtered Cars Memo
-  const filteredCars = useMemo(() => {
-    return cars.filter((car) => {
-      const matchesSearch = 
-        `${car.manufacturer} ${car.model} ${car.licensePlate}`
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
+  // Fetch Cars from standard /api/cars endpoint
+  const fetchCars = useCallback(async () => {
+    try {
+      setLoading(true)
+      const queryParams = new URLSearchParams()
       
-      const matchesCategory = selectedCategory === 'ALL' || car.category === selectedCategory
-      const matchesStatus = selectedStatus === 'ALL' || car.status === selectedStatus
+      if (debouncedSearch.trim()) {
+        queryParams.set('search', debouncedSearch.trim())
+      }
+      if (statusFilter !== 'ALL') {
+        queryParams.set('status', statusFilter)
+      }
+      if (categoryFilter !== 'ALL') {
+        queryParams.set('category', categoryFilter)
+      }
 
-      return matchesSearch && matchesCategory && matchesStatus
-    })
-  }, [cars, searchTerm, selectedCategory, selectedStatus])
+      const res = await fetch(`/api/cars?${queryParams.toString()}`)
+      const result = await res.json()
 
-  // Stats Counters
-  const stats = useMemo(() => {
-    return {
-      total: cars.length,
-      available: cars.filter(c => c.status === 'AVAILABLE').length,
-      reserved: cars.filter(c => c.status === 'RESERVED').length,
-      maintenance: cars.filter(c => c.status === 'MAINTENANCE').length,
+      if (res.ok && result.success && result.data?.cars) {
+        setCars(result.data.cars)
+      } else {
+        setCars([])
+      }
+    } catch (error) {
+      console.error('Error fetching cars:', error)
+      setCars([])
+    } finally {
+      setLoading(false)
     }
-  }, [cars])
+  }, [debouncedSearch, statusFilter, categoryFilter])
 
-  // Open confirmation modal
-  const openDeleteModal = (id: string, name: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setDeleteError(null)
-    setCarToDelete({ id, name })
-  }
+  useEffect(() => {
+    fetchCars()
+  }, [fetchCars])
 
-  // Execute deletion request
-  const confirmDelete = async () => {
-    if (!carToDelete) return
-
-    setDeletingId(carToDelete.id)
-    setDeleteError(null)
+  // Delete Handler with API Integration
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this vehicle?')) return
 
     try {
-      await deleteCar(carToDelete.id)
-      setCarToDelete(null)
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete car. Please try again.'
-      setDeleteError(errorMessage)
-    } finally {
-      setDeletingId(null)
+      // Optimistic state update
+      setCars((prev) => prev.filter((c) => c.id !== id))
+
+      const res = await fetch(`/api/cars/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to delete')
+      }
+    } catch (error) {
+      alert('Could not delete vehicle. Rolling back.')
+      fetchCars()
     }
   }
 
-  // Handle card click - navigate to car detail
-  const handleCardClick = (carId: string) => {
-    router.push(`/admin/cars/${carId}`)
+  const renderStatusBadge = (status: CarItem['status']) => {
+    switch (status) {
+      case 'AVAILABLE':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Available
+          </span>
+        )
+      case 'RESERVED':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+            Reserved
+          </span>
+        )
+      case 'MAINTENANCE':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+            Maintenance
+          </span>
+        )
+      default:
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+            Unavailable
+          </span>
+        )
+    }
   }
 
-  // Loading state
-  if (authLoading || isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-100">
-        <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin" />
-        <p className="mt-4 text-sm text-gray-500 font-medium">Loading fleet data...</p>
-      </div>
-    )
+  const getCategoryName = (category?: string | MasterItem) => {
+    if (!category) return 'Standard'
+    if (typeof category === 'string') return category
+    return category.name || 'Standard'
   }
 
-  // Auth Guard
-  if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN')) {
-    return null
-  }
+  // Table Columns Definition
+  const columns: Column<CarItem>[] = [
+    {
+      header: 'Vehicle',
+      accessor: (car) => (
+        <div className="flex items-center gap-3">
+          <img
+            src={car.imageMain || '/placeholder.png'}
+            alt=""
+            className="w-10 h-10 rounded-md object-cover border bg-gray-50"
+          />
+          <div>
+            <div className="font-medium text-gray-900">
+              {car.manufacturer} {car.model}
+            </div>
+            <div className="text-xs text-gray-400">{car.year}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Plate',
+      accessor: (car) => (
+        <span className="font-mono text-xs text-gray-700">
+          {car.licensePlate || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      header: 'Category',
+      accessor: (car) => getCategoryName(car.category),
+    },
+    {
+      header: 'Status',
+      accessor: (car) => renderStatusBadge(car.status),
+    },
+    {
+      header: 'Rate / Day',
+      accessor: (car) => (
+        <span className="font-medium text-gray-900">
+          ₹{car.pricePerDay?.toLocaleString() ?? 0}
+        </span>
+      ),
+    },
+    {
+      header: 'Actions',
+      className: 'text-right',
+      accessor: (car) => (
+        <div className="inline-flex items-center gap-2 text-gray-400 justify-end w-full">
+          <button
+            onClick={() => router.push(`/admin/cars/${car.id}`)}
+            className="hover:text-black p-1"
+            title="View Details"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          <Link
+            href={`/admin/cars/${car.id}/edit`}
+            className="hover:text-black p-1"
+            title="Edit"
+          >
+            <Edit className="w-4 h-4" />
+          </Link>
+          <button
+            onClick={() => handleDelete(car.id)}
+            className="hover:text-red-600 p-1"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
+  ]
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
-      {/* ===== PAGE HEADER ===== */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Fleet Management</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Overview of all vehicles, current status, and availability
-          </p>
-        </div>
-        <Link
-          href="/admin/cars/new"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all shadow-sm active:scale-[0.98]"
-        >
-          <Plus className="w-4 h-4" />
-          Add Vehicle
-        </Link>
-      </div>
-
-      {/* ===== METRICS OVERVIEW BAR ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-xs flex items-center gap-3">
-          <div className="p-2.5 bg-gray-100 rounded-lg text-gray-700">
-            <CarIcon className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500">Total Fleet</p>
-            <p className="text-xl font-bold text-gray-900">{stats.total}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-xs flex items-center gap-3">
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500">Available</p>
-            <p className="text-xl font-bold text-gray-900">{stats.available}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-xs flex items-center gap-3">
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
-            <CarIcon className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500">Reserved</p>
-            <p className="text-xl font-bold text-gray-900">{stats.reserved}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-xs flex items-center gap-3">
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg">
-            <Wrench className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500">Maintenance</p>
-            <p className="text-xl font-bold text-gray-900">{stats.maintenance}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ===== ERROR MESSAGE ===== */}
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3 text-sm">
-          <AlertCircle className="h-5 w-5 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* ===== FILTERS & SEARCH TOOLBAR ===== */}
-      <div className="bg-white p-3.5 rounded-xl border border-gray-200/80 shadow-xs flex flex-col md:flex-row gap-3 justify-between items-center">
-        {/* Search Input */}
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search make, model, license..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all"
-          />
-        </div>
-
-        {/* Dropdown Filters */}
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          <div className="flex items-center gap-1.5 text-xs text-gray-500 mr-1 font-medium">
-            <SlidersHorizontal className="w-3.5 h-3.5" /> Filter:
+    <DataExplorer<CarItem>
+      title="Vehicles"
+      subtitle="Overview of all active fleet vehicles."
+      data={cars}
+      loading={loading}
+      keyExtractor={(car) => car.id}
+      searchQuery={search}
+      onSearchChange={setSearch}
+      searchPlaceholder="Filter by make, model, plate..."
+      addLabel="Add Vehicle"
+      onAdd={() => router.push('/admin/cars/new')}
+      onRefresh={fetchCars}
+      filters={[
+        {
+          key: 'status',
+          label: 'All Statuses',
+          value: statusFilter,
+          onChange: setStatusFilter,
+          options: [
+            { label: 'Available', value: 'AVAILABLE' },
+            { label: 'Reserved', value: 'RESERVED' },
+            { label: 'Maintenance', value: 'MAINTENANCE' },
+            { label: 'Unavailable', value: 'UNAVAILABLE' },
+          ],
+        },
+        {
+          key: 'category',
+          label: 'All Categories',
+          value: categoryFilter,
+          onChange: setCategoryFilter,
+          options: categories.map((c) => ({ label: c.name, value: c.name })),
+        },
+      ]}
+      columns={columns}
+      renderGridCard={(car) => (
+        <div className="border rounded-xl bg-white overflow-hidden shadow-sm hover:shadow transition flex flex-col justify-between">
+          {/* Card Image Header */}
+          <div className="relative h-36 w-full bg-gray-100">
+            <img
+              src={car.imageMain || '/placeholder.png'}
+              alt={`${car.manufacturer} ${car.model}`}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2.5 left-2.5">
+              {renderStatusBadge(car.status)}
+            </div>
           </div>
 
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 focus:outline-none focus:border-black cursor-pointer"
-          >
-            <option value="ALL">All Categories</option>
-            <option value="SEDAN">Sedan</option>
-            <option value="SUV">SUV</option>
-            <option value="LUXURY">Luxury</option>
-            <option value="CONVERTIBLE">Convertible</option>
-            <option value="HATCHBACK">Hatchback</option>
-            <option value="VAN">Van</option>
-          </select>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 focus:outline-none focus:border-black cursor-pointer"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="AVAILABLE">Available</option>
-            <option value="RESERVED">Reserved</option>
-            <option value="UNAVAILABLE">Unavailable</option>
-            <option value="MAINTENANCE">Maintenance</option>
-          </select>
-        </div>
-      </div>
-
-      {/* ===== CARS GRID ===== */}
-      {filteredCars.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-gray-200/80 rounded-2xl">
-          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <CarIcon className="h-6 w-6 text-gray-400" />
-          </div>
-          <h3 className="text-base font-semibold text-gray-900">No vehicles match your criteria</h3>
-          <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-            Try adjusting your search terms or filters to find what you&apos;re looking for.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredCars.map((car) => {
-            const carTitle = `${car.manufacturer} ${car.model}`
-            const isDeleting = deletingId === car.id
-
-            return (
-              <div
-                key={car.id}
-                onClick={() => handleCardClick(car.id)} 
-                className="group bg-white border border-gray-200/80 rounded-2xl overflow-hidden hover:border-gray-300 hover:shadow-md transition-all duration-200 flex flex-col cursor-pointer relative"
-              >
-                {/* Visual Header / Image Container */}
-                <div className="relative aspect-16/10 bg-gray-100 overflow-hidden">
-                  {car.imageMain ? (
-                    <img
-                      src={car.imageMain}
-                      alt={carTitle}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                      <CarIcon className="w-12 h-12 text-gray-300" />
-                    </div>
-                  )}
-
-                  {/* Gradient Overlay for Actions */}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end p-3 justify-between">
-                    <span className="text-xs font-medium text-white/90">
-                      ID: {car.id.slice(-6)}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <Link
-                        href={`/admin/cars/${car.id}/edit`}
-                        onClick={(e) => e.stopPropagation()} 
-                        className="p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white text-gray-800 transition-colors"
-                        title="Edit Vehicle"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={(e) => openDeleteModal(car.id, carTitle, e)} 
-                        disabled={isDeleting}
-                        className="p-2 bg-red-600/90 backdrop-blur-sm rounded-lg hover:bg-red-600 text-white transition-colors disabled:opacity-50"
-                        title="Delete Vehicle"
-                      >
-                        {isDeleting ? (
-                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <div className="absolute top-3 right-3">
-                    <CarStatusBadge status={car.status} size="sm" />
-                  </div>
-
-                  {/* Category Pill */}
-                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-semibold tracking-wider text-white uppercase">
-                    {car.category}
-                  </div>
-                </div>
-
-                {/* Content Body */}
-                <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-                  {/* Title & License */}
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-gray-900 text-base line-clamp-1">
-                        {carTitle}
-                      </h3>
-                      <span className="shrink-0 px-2 py-0.5 bg-gray-100 text-gray-600 font-mono text-[11px] font-semibold rounded border border-gray-200">
-                        {car.licensePlate}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">Year {car.year}</p>
-                  </div>
-
-                  {/* Feature Specs */}
-                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 bg-gray-50/80 p-2.5 rounded-xl border border-gray-100">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Gauge className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="truncate">{car.transmission}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Fuel className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="truncate">{car.fuelType}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span>{car.seats} Seats</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="truncate">{car.locationCity || 'Main Depot'}</span>
-                    </div>
-                  </div>
-
-                  {/* Price & View Details */}
-                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 block">Rate</span>
-                      <p className="text-base font-extrabold text-gray-900">
-                        ₹{car.pricePerDay.toLocaleString()} <span className="text-xs font-normal text-gray-500">/ day</span>
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/cars/${car.id}`}
-                        target="_blank"
-                        onClick={(e) => e.stopPropagation()} 
-                        className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-                        title="View on website"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </Link>
-                      <span className="text-xs font-medium text-gray-400">
-                        Click to view →
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          {/* Body */}
+          <div className="p-3 flex-1 flex flex-col justify-between space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-medium text-gray-900 text-sm leading-snug">
+                  {car.manufacturer} {car.model}
+                </h3>
+                <p className="text-xs text-gray-400 font-mono mt-0.5">
+                  {car.licensePlate || 'N/A'} • {car.year}
+                </p>
               </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* ===== DELETE CONFIRMATION MODAL ===== */}
-      {carToDelete && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
-          onClick={() => setCarToDelete(null)}
-        >
-          <div 
-            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
-                <AlertCircle className="w-5 h-5" />
+              <div className="text-right whitespace-nowrap">
+                <span className="text-sm font-bold text-gray-900">
+                  ₹{car.pricePerDay?.toLocaleString() ?? 0}
+                </span>
+                <span className="text-[10px] text-gray-400 block">/day</span>
               </div>
-              <button 
-                onClick={() => setCarToDelete(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Delete Vehicle</h3>
-              <p className="text-sm text-gray-500 mt-1">
-                Are you sure you want to delete <span className="font-semibold text-gray-900">{carToDelete.name}</span>? This action soft-deletes the vehicle and sets its status to Unavailable.
-              </p>
-            </div>
-
-            {deleteError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{deleteError}</span>
+            {/* Footer Actions */}
+            <div className="pt-2 border-t flex items-center justify-between text-xs text-gray-400">
+              <span className="text-[11px] text-gray-500">
+                {getCategoryName(car.category)}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => router.push(`/admin/cars/${car.id}`)}
+                  className="p-1 hover:text-black rounded"
+                  title="View"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </button>
+                <Link
+                  href={`/admin/cars/${car.id}/edit`}
+                  className="p-1 hover:text-black rounded"
+                  title="Edit"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </Link>
+                <button
+                  onClick={() => handleDelete(car.id)}
+                  className="p-1 hover:text-red-600 rounded"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
-            )}
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setCarToDelete(null)}
-                disabled={deletingId !== null}
-                className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                disabled={deletingId !== null}
-                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 text-sm font-medium rounded-xl transition-colors shadow-xs inline-flex items-center gap-2 disabled:opacity-50"
-              >
-                {deletingId ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <span>Confirm Delete</span>
-                )}
-              </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    />
   )
 }

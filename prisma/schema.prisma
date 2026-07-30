@@ -73,22 +73,22 @@ model CategoryMaster {
 }
 
 model CarFeatureMaster {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @unique // e.g. "GPS Navigation", "Bluetooth", "Sunroof"
-  description String?
-  color       String?  // e.g. "bg-amber-400"
-  circleBg    String?  // e.g. "bg-amber-100"
-  textColor   String?  // e.g. "text-amber-700"
-  borderColor String?  // e.g. "border-amber-200"
-  status      String   @default("Active") // "Active" | "Inactive"
-  isActive    Boolean  @default(true)
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String   @unique // e.g. "GPS Navigation", "Bluetooth", "Sunroof"
+  description   String?
+  color         String?  // e.g. "bg-amber-400"
+  circleBg      String?  // e.g. "bg-amber-100"
+  textColor     String?  // e.g. "text-amber-700"
+  borderColor   String?  // e.g. "border-amber-200"
+  status        String   @default("Active") // "Active" | "Inactive"
+  isActive      Boolean  @default(true)
 
   // Relations
   featureCarIds String[] @db.ObjectId
   cars          Car[]    @relation(fields: [featureCarIds], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([isActive])
   @@map("car_feature_masters")
@@ -126,8 +126,8 @@ model User {
   staffType       StaffType? // Optional: DRIVER or CLEANER if role == STAFF
   
   // Link to Staff Master (if user is staff)
-  staffMasterId   String?    @db.ObjectId
-  staffMaster     StaffMaster? @relation("StaffMasterToUser", fields: [staffMasterId], references: [id])
+  staffMasterId   String?      @db.ObjectId
+  staffMaster     StaffMaster? @relation("StaffMasterToUser", fields: [staffMasterId], references: [id], onDelete: SetNull)
 
   isEmailVerified Boolean   @default(false)
   isActive        Boolean   @default(true)
@@ -168,7 +168,7 @@ enum StaffType {
 model Session {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   userId         String   @db.ObjectId
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token          String   @unique
   refreshToken   String   @unique
   expiresAt      DateTime
@@ -244,13 +244,13 @@ model Car {
 
   // Dynamic Settings Relations
   categoryId      String?          @db.ObjectId
-  category        CategoryMaster?  @relation(fields: [categoryId], references: [id])
+  category        CategoryMaster?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   transmissionId String?             @db.ObjectId
-  transmission   TransmissionMaster? @relation(fields: [transmissionId], references: [id])
+  transmission   TransmissionMaster? @relation(fields: [transmissionId], references: [id], onDelete: SetNull)
 
   fuelTypeId     String?          @db.ObjectId
-  fuelType       FuelTypeMaster?  @relation(fields: [fuelTypeId], references: [id])
+  fuelType       FuelTypeMaster?  @relation(fields: [fuelTypeId], references: [id], onDelete: SetNull)
 
   // Pricing (in cents / paise)
   pricePerDay     Int
@@ -315,9 +315,9 @@ model Reservation {
   id                    String            @id @default(auto()) @map("_id") @db.ObjectId
   reservationRef        String            @unique
   carId                 String            @db.ObjectId
-  car                   Car               @relation(fields: [carId], references: [id])
+  car                   Car               @relation(fields: [carId], references: [id], onDelete: Restrict)
   userId                String?           @db.ObjectId
-  user                  User?             @relation(fields: [userId], references: [id])
+  user                  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   
   // Customer info (denormalized)
   customerName          String
@@ -381,9 +381,9 @@ enum ReservationStatus {
 model Payment {
   id                String        @id @default(auto()) @map("_id") @db.ObjectId
   bookingId         String        @db.ObjectId
-  booking           Reservation   @relation(fields: [bookingId], references: [id])
+  booking           Reservation   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   userId            String?       @db.ObjectId
-  user              User?         @relation(fields: [userId], references: [id])
+  user              User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   
   // Payment details
   amount            Int           // In cents/paise
@@ -446,14 +446,14 @@ enum RefundStatus {
 model BookingAuditLog {
   id              String      @id @default(auto()) @map("_id") @db.ObjectId
   bookingId       String      @db.ObjectId
-  booking         Reservation @relation(fields: [bookingId], references: [id])
+  booking         Reservation @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   
   // Audit details
   action          String      // STATUS_CHANGED_TO_CONFIRMED, etc.
   previousStatus  String?
   newStatus       String?
   performedBy     String      @db.ObjectId
-  performedByUser User        @relation(fields: [performedBy], references: [id])
+  performedByUser User        @relation(fields: [performedBy], references: [id], onDelete: Cascade)
   notes           String?
   
   // Metadata
@@ -521,9 +521,9 @@ enum ContactStatus {
 model EmailLog {
   id            String       @id @default(auto()) @map("_id") @db.ObjectId
   userId        String?      @db.ObjectId
-  user          User?        @relation(fields: [userId], references: [id])
+  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   reservationId String?      @db.ObjectId
-  reservation   Reservation? @relation(fields: [reservationId], references: [id])
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
   
   emailType     EmailType
   recipient     String
@@ -591,7 +591,7 @@ enum EmailStatus {
 model AuditLog {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String?  @db.ObjectId
-  user        User?    @relation(fields: [userId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   
   // Audit details
   action      String   // LOGIN, LOGOUT, CREATE, UPDATE, DELETE, etc.

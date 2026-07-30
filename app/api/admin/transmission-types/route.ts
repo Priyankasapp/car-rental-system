@@ -8,10 +8,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status')
-    const includeDeleted = searchParams.get('includeDeleted') === 'true'
+    const includeInactive = searchParams.get('includeInactive') === 'true'
 
     const where: any = {
-      ...(includeDeleted ? {} : { isDeleted: false }),
+      ...(includeInactive ? {} : { isActive: true }),
       ...(status && { status }),
     }
 
@@ -22,8 +22,7 @@ export async function GET(request: Request) {
       ]
     }
 
-    // Note: Update 'transmissionMaster' if your Prisma model uses 'transmission' or 'transmissionType'
-    const transmissions = await (prisma as any).transmissionMaster.findMany({
+    const transmissions = await prisma.transmissionMaster.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -47,9 +46,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, description, color, circleBg, textColor, borderColor, status } = body
+    const { name, description, color, circleBg, textColor, borderColor, status, isActive } = body
 
-    if (!name || typeof name !== 'string') {
+    if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json(
         { success: false, message: 'Transmission name is required' },
         { status: 400 }
@@ -58,11 +57,11 @@ export async function POST(request: Request) {
 
     const trimmedName = name.trim()
 
-    // Check duplicate among active transmission types
-    const existing = await (prisma as any).transmissionMaster.findFirst({
+    // Check duplicate among active transmission types (case-insensitive)
+    const existing = await prisma.transmissionMaster.findFirst({
       where: {
-        name: trimmedName,
-        isDeleted: false,
+        name: { equals: trimmedName, mode: 'insensitive' },
+        isActive: true,
       },
     })
 
@@ -73,15 +72,21 @@ export async function POST(request: Request) {
       )
     }
 
-    const newTransmission = await (prisma as any).transmissionMaster.create({
+    // Ensure status and isActive flag align cleanly
+    const computedStatus = status || 'Active'
+    const computedIsActive =
+      isActive !== undefined ? Boolean(isActive) : computedStatus !== 'Inactive'
+
+    const newTransmission = await prisma.transmissionMaster.create({
       data: {
         name: trimmedName,
         description: description || null,
-        color: color || 'bg-emerald-400',
-        circleBg: circleBg || 'bg-emerald-100',
-        textColor: textColor || 'text-emerald-700',
-        borderColor: borderColor || 'border-emerald-200',
-        status: status || 'Active',
+        color: color || 'bg-indigo-400',
+        circleBg: circleBg || 'bg-indigo-100',
+        textColor: textColor || 'text-indigo-700',
+        borderColor: borderColor || 'border-indigo-200',
+        status: computedStatus,
+        isActive: computedIsActive,
       },
     })
 

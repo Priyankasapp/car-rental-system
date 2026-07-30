@@ -8,10 +8,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status');
-    const includeDeleted = searchParams.get('includeDeleted') === 'true';
+    const includeInactive = searchParams.get('includeInactive') === 'true';
 
+    // Build query conditions using schema-valid fields (isActive instead of isDeleted)
     const where: any = {
-      ...(includeDeleted ? {} : { isDeleted: false }),
+      ...(includeInactive ? {} : { isActive: true }),
       ...(status && { status }),
     };
 
@@ -22,7 +23,6 @@ export async function GET(request: Request) {
       ];
     }
 
-    // Verify model name matches schema.prisma (e.g., categoryMaster vs category)
     const categories = await prisma.categoryMaster.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, color, circleBg, textColor, borderColor, status } = body;
+    const { name, description, color, circleBg, textColor, borderColor, status, isActive } = body;
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json(
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     const existing = await prisma.categoryMaster.findFirst({
       where: {
         name: trimmedName,
-        isDeleted: false,
+        isActive: true,
       },
     });
 
@@ -82,6 +82,7 @@ export async function POST(request: Request) {
         textColor: textColor || 'text-sky-700',
         borderColor: borderColor || 'border-sky-200',
         status: status || 'Active',
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
       },
     });
 

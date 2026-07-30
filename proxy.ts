@@ -12,7 +12,7 @@ const alwaysPublicRoutes = [
 ]
 
 const publicApiGetRoutes = [
-  '/api/cars',
+  '/api/cars', // Public GET for vehicle browsing & search
   '/api/settings',
   '/api/admin/car-features', // Public GET for features (e.g., booking forms)
   '/api/admin/categories',

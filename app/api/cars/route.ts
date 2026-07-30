@@ -9,43 +9,50 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const category = searchParams.get('category')
     const city = searchParams.get('city')
-    const minPrice = searchParams.get('minPrice')
-    const maxPrice = searchParams.get('maxPrice')
+    const minPriceRaw = searchParams.get('minPrice')
+    const maxPriceRaw = searchParams.get('maxPrice')
     const status = searchParams.get('status') || 'AVAILABLE'
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const search = searchParams.get('search')
+    const limitParam = parseInt(searchParams.get('limit') || '100', 10)
+    const limit = isNaN(limitParam) ? 100 : limitParam
+    const search = searchParams.get('search')?.trim()
     
     // Get booking date range for availability check
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
     // Build filter conditions
-    const where: any = {
-      isDeleted: false,
-      status: status,
+    const where: any = {}
+
+    if (status && status !== 'ALL') {
+      where.status = status
     }
 
     // ADD DATE RANGE FILTER FOR AVAILABILITY
+    let parsedStart: Date | null = null
+    let parsedEnd: Date | null = null
+
     if (startDate && endDate) {
-      const start = new Date(startDate)
-      const end = new Date(endDate)
-      
-      // Exclude cars that have overlapping bookings
-      where.NOT = {
-        reservations: {
-          some: {
-            status: { in: ['CONFIRMED', 'PENDING'] },
-            AND: [
-              { pickupDate: { lte: end } },
-              { dropoffDate: { gte: start } }
-            ]
+      parsedStart = new Date(startDate)
+      parsedEnd = new Date(endDate)
+
+      if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
+        // Exclude cars that have overlapping bookings
+        where.NOT = {
+          reservations: {
+            some: {
+              status: { in: ['CONFIRMED', 'PENDING'] },
+              AND: [
+                { pickupDate: { lt: parsedEnd } },
+                { dropoffDate: { gt: parsedStart } }
+              ]
+            }
           }
         }
       }
     }
 
     if (category) {
-      where.category = category
+      where.categoryId = category
     }
 
     if (city) {
@@ -59,16 +66,21 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { manufacturer: { contains: search, mode: 'insensitive' } },
         { model: { contains: search, mode: 'insensitive' } },
+        { licensePlate: { contains: search, mode: 'insensitive' } },
       ]
     }
 
-    if (minPrice || maxPrice) {
+    // Safe price bounds parsing
+    const minPrice = minPriceRaw ? parseInt(minPriceRaw, 10) : null
+    const maxPrice = maxPriceRaw ? parseInt(maxPriceRaw, 10) : null
+
+    if ((minPrice !== null && !isNaN(minPrice)) || (maxPrice !== null && !isNaN(maxPrice))) {
       where.pricePerDay = {}
-      if (minPrice) {
-        where.pricePerDay.gte = parseInt(minPrice)
+      if (minPrice !== null && !isNaN(minPrice)) {
+        where.pricePerDay.gte = minPrice
       }
-      if (maxPrice) {
-        where.pricePerDay.lte = parseInt(maxPrice)
+      if (maxPrice !== null && !isNaN(maxPrice)) {
+        where.pricePerDay.lte = maxPrice
       }
     }
 
@@ -80,17 +92,10 @@ export async function GET(request: NextRequest) {
             status: { 
               in: ['CONFIRMED', 'PENDING'],
             },
-
-            ...(startDate && endDate ?
-              {
-                pickupDate:{
-                  lt:new Date(endDate),
-                },
-                dropoffDate:{
-                  gt: new Date(startDate),
-                },
-              }
-            :{}),
+            ...(parsedStart && parsedEnd ? {
+              pickupDate: { lt: parsedEnd },
+              dropoffDate: { gt: parsedStart },
+            } : {}),
           },
           select: {
             id: true,
@@ -110,11 +115,11 @@ export async function GET(request: NextRequest) {
 
     // Transform the response to include availability status
     const carsWithAvailability = cars.map(car => {
-      const isReserved = car.reservations.length > 0 && car.reservations.length > 0
+      const isReserved = car.reservations && car.reservations.length > 0
       
       // Determine if car is available based on date range
       let availabilityStatus = car.status
-      if (startDate && endDate) {
+      if (parsedStart && parsedEnd) {
         // If we filtered by dates, all returned cars are available for those dates
         availabilityStatus = 'AVAILABLE'
       } else if (isReserved) {
@@ -126,11 +131,11 @@ export async function GET(request: NextRequest) {
         manufacturer: car.manufacturer,
         model: car.model,
         year: car.year,
-        category: car.category,
+        category: car.categoryId,
         licensePlate: car.licensePlate,
         color: car.color,
-        transmission: car.transmission,
-        fuelType: car.fuelType,
+        transmission: car.transmissionId,
+        fuelType: car.fuelTypeId,
         seats: car.seats,
         luggageCapacity: car.luggageCapacity,
         features: car.features,
@@ -175,10 +180,10 @@ export async function GET(request: NextRequest) {
         }
       },
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching cars:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch cars' },
+      { success: false, message: error?.message || 'Failed to fetch cars' },
       { status: 500 }
     )
   }

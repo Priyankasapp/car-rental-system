@@ -6,13 +6,27 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🧹 Cleaning UrbanDrive database...");
 
-  // Delete dependent/related data first if required by your schema.
-  // Then delete users.
-  await prisma.oTP.deleteMany();
-  await prisma.user.deleteMany();
+  // Delete all dependent child records first, then parent records to avoid relation errors
+  await prisma.$transaction([
+    prisma.oTP.deleteMany(),
+    prisma.emailLog.deleteMany(),
+    prisma.payment.deleteMany(),
+    prisma.bookingAuditLog.deleteMany(),
+    prisma.auditLog.deleteMany(),
+    prisma.session.deleteMany(),
+    prisma.reservation.deleteMany(),
+    prisma.car.deleteMany(),
+    prisma.user.deleteMany(),
+    prisma.carFeatureMaster.deleteMany(),
+    prisma.categoryMaster.deleteMany(),
+    prisma.transmissionMaster.deleteMany(),
+    prisma.fuelTypeMaster.deleteMany(),
+    prisma.staffMaster.deleteMany(),
+  ]);
 
-  console.log("✅ Existing users and OTPs removed");
+  console.log("✅ Database wiped clean!");
 
+  // Create Super Admin
   const password = "SuperAdmin@123";
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -23,11 +37,10 @@ async function main() {
       lastName: "Admin",
       phone: "+91 98765 43000",
       password: hashedPassword,
-      role: "SUPERADMIN" as Role,
+      role: Role.SUPERADMIN,
 
       isEmailVerified: true,
       isActive: true,
-      isDeleted: false,
 
       profilePicture:
         "https://ui-avatars.com/api/?name=Super+Admin&background=1a1a1a&color=ffffff&size=128",
@@ -44,7 +57,7 @@ async function main() {
     },
   });
 
-  console.log("👑 Super Admin created");
+  console.log("👑 Super Admin created successfully!");
   console.log(`📧 Email: ${superAdmin.email}`);
   console.log(`🔑 Password: ${password}`);
 }

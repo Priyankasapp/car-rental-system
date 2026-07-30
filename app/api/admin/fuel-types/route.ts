@@ -3,9 +3,17 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET: Fetch all fuel types
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const includeInactive = searchParams.get('includeInactive') === 'true'
+
+    const where: any = {
+      ...(includeInactive ? {} : { isActive: true }),
+    }
+
     const fuelTypes = await prisma.fuelTypeMaster.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -30,7 +38,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, description, color, circleBg, textColor, borderColor, status, isActive } = body
 
-    if (!name || !name.trim()) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json(
         { success: false, message: 'Fuel type name is required' },
         { status: 400 }
@@ -39,7 +47,7 @@ export async function POST(request: Request) {
 
     const trimmedName = name.trim()
 
-    // Check for duplicate name
+    // Check for duplicate name (case-insensitive)
     const existing = await prisma.fuelTypeMaster.findFirst({
       where: {
         name: { equals: trimmedName, mode: 'insensitive' },
@@ -55,12 +63,13 @@ export async function POST(request: Request) {
 
     // Ensure status and isActive flag align cleanly
     const computedStatus = status || 'Active'
-    const computedIsActive = isActive !== undefined ? isActive : computedStatus !== 'Inactive'
+    const computedIsActive =
+      isActive !== undefined ? Boolean(isActive) : computedStatus !== 'Inactive'
 
     const fuelType = await prisma.fuelTypeMaster.create({
       data: {
         name: trimmedName,
-        description: description || '',
+        description: description || null,
         color: color || 'bg-emerald-400',
         circleBg: circleBg || 'bg-emerald-100',
         textColor: textColor || 'text-emerald-700',

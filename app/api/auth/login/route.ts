@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const { email, password } = validationResult.data
 
-    // 3. Find User
+    // 3. Find User (Removed 'isDeleted' from select)
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -89,8 +89,8 @@ export async function POST(request: NextRequest) {
         role: true,
         isEmailVerified: true,
         isActive: true,
-        isDeleted: true,
         profilePicture: true,
+        permissions: true, // Included permissions safely
       },
     })
 
@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Status & Verification Checks
-    if (!user.isActive || user.isDeleted) {
+    // 4. Status & Verification Checks (Checking 'isActive' only)
+    if (!user.isActive) {
       return NextResponse.json(
         { success: false, message: 'Your account has been disabled' },
         { status: 403 }
@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
           phone: user.phone,
           isEmailVerified: user.isEmailVerified,
           profilePicture: user.profilePicture,
+          permissions: user.permissions ?? [],
         },
         redirectUrl,
       },
