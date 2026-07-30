@@ -19,6 +19,7 @@ import {
   Tags,
   Settings2,
   Fuel,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -50,7 +51,7 @@ const sidebarLinks = [
   },
 ];
 
-//settings section
+// settings section
 const settingsLinks = [
   {
     href: "/admin/settings/categories",
@@ -66,6 +67,11 @@ const settingsLinks = [
     href: "/admin/settings/fuel-types",
     label: "Fuel Types",
     icon: Fuel,
+  },
+  {
+    href: "/admin/settings/car-features",
+    label: "Car Features",
+    icon: Sparkles,
   },
 ];
 
@@ -137,7 +143,7 @@ export default function AdminLayout({
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transition-transform duration-300 overflow-y-auto",
-          !sidebarOpen && "-translate-x-full",
+          !sidebarOpen && "-translate-x-full"
         )}
       >
         {/* Logo */}
@@ -172,7 +178,7 @@ export default function AdminLayout({
                     "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
                     active
                       ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100",
+                      : "text-gray-600 hover:bg-gray-100"
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -214,7 +220,7 @@ export default function AdminLayout({
                         "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
                         active
                           ? "bg-gray-900 text-white"
-                          : "text-gray-600 hover:bg-gray-100",
+                          : "text-gray-600 hover:bg-gray-100"
                       )}
                     >
                       <Icon className="h-5 w-5" />
@@ -225,6 +231,7 @@ export default function AdminLayout({
               </div>
             )}
           </div>
+
           {/* MANAGEMENT Section */}
           <div className="pt-4 mt-4 border-t border-gray-200">
             {/* Management Header */}
@@ -260,7 +267,7 @@ export default function AdminLayout({
                           "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
                           active
                             ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100",
+                            : "text-gray-600 hover:bg-gray-100"
                         )}
                       >
                         <Icon className="h-5 w-5" />
@@ -293,7 +300,7 @@ export default function AdminLayout({
       <div
         className={cn(
           "flex-1 flex flex-col transition-all duration-300",
-          sidebarOpen ? "lg:ml-64" : "ml-0",
+          sidebarOpen ? "lg:ml-64" : "ml-0"
         )}
       >
         {/* Header - White Background */}

@@ -72,6 +72,28 @@ model CategoryMaster {
   @@map("category_masters")
 }
 
+model CarFeatureMaster {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // e.g. "GPS Navigation", "Bluetooth", "Sunroof"
+  description String?
+  color       String?  // e.g. "bg-amber-400"
+  circleBg    String?  // e.g. "bg-amber-100"
+  textColor   String?  // e.g. "text-amber-700"
+  borderColor String?  // e.g. "border-amber-200"
+  status      String   @default("Active") // "Active" | "Inactive"
+  isActive    Boolean  @default(true)
+
+  // Relations
+  featureCarIds String[] @db.ObjectId
+  cars          Car[]    @relation(fields: [featureCarIds], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("car_feature_masters")
+}
+
 // ============== STAFF MASTER MODEL ==============
 model StaffMaster {
   id                 String     @id @default(auto()) @map("_id") @db.ObjectId
@@ -198,36 +220,48 @@ enum OTPScope {
 
 // ============== CAR MODEL ==============
 model Car {
-  id              String              @id @default(auto()) @map("_id") @db.ObjectId
-  manufacturer    String
-  model           String
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  manufacturer    String   // e.g. "BMW", "Mercedes-Benz", "Tesla"
+  model           String   // e.g. "M5 CS", "S-Class", "Model S"
   year            Int
-  licensePlate    String              @unique
+  licensePlate    String   @unique
+  vin             String?  @unique
   color           String?
+  doors           Int      @default(4)
   seats           Int
   luggageCapacity Int
-  features        String[]
   
+  // Performance & Specs
+  engineSize      String?  // e.g. "4.0L V8", "Dual Electric Motor"
+  horsepower      Int?     // e.g. 627
+  driveType       DriveType @default(AWD)
+  odometer        Int?     // Mileage on odometer in KM or Miles
+
+  // Feature Relations & Raw Feature List
+  featureIds      String[]           @db.ObjectId
+  featureMasters  CarFeatureMaster[] @relation(fields: [featureIds], references: [id])
+  features        String[]           // Array of feature names for fast query payload reading
+
   // Dynamic Settings Relations
-  categoryId      String?             @db.ObjectId
-  category        CategoryMaster?     @relation(fields: [categoryId], references: [id])
+  categoryId      String?          @db.ObjectId
+  category        CategoryMaster?  @relation(fields: [categoryId], references: [id])
 
   transmissionId String?             @db.ObjectId
   transmission   TransmissionMaster? @relation(fields: [transmissionId], references: [id])
 
-  fuelTypeId     String?             @db.ObjectId
-  fuelType       FuelTypeMaster?     @relation(fields: [fuelTypeId], references: [id])
-  
+  fuelTypeId     String?          @db.ObjectId
+  fuelType       FuelTypeMaster?  @relation(fields: [fuelTypeId], references: [id])
+
   // Pricing (in cents / paise)
   pricePerDay     Int
   pricePerWeek    Int?
   pricePerMonth   Int?
   securityDeposit Int
-  
-  // Mileage
-  mileageFree     Int?
-  mileageExtraFee Int?
-  
+
+  // Mileage Policy
+  mileageFree     Int?     // Free KM/Miles per day
+  mileageExtraFee Int?     // Fee per extra KM/Mile in cents/paise
+
   // Location
   locationAddress String
   locationCity    String
@@ -235,21 +269,25 @@ model Car {
   locationZipCode String
   locationLat     Float?
   locationLng     Float?
-  
+
   // Images
   imageMain       String
   imageGallery    String[]
-  
-  // Status
-  status          CarStatus           @default(AVAILABLE)
-  
+
+  // Status & Highlights
+  status          CarStatus @default(AVAILABLE)
+  isFeatured      Boolean   @default(false)
+  isPublished     Boolean   @default(true)
+
   // Relations
   reservations    Reservation[]
-  
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([status])
+  @@index([manufacturer])
+  @@index([isFeatured])
   @@index([categoryId, status])
   @@index([fuelTypeId])
   @@index([transmissionId])
@@ -263,6 +301,13 @@ enum CarStatus {
   RESERVED
   UNAVAILABLE
   MAINTENANCE
+}
+
+enum DriveType {
+  FWD
+  RWD
+  AWD
+  FOUR_WD
 }
 
 // ============== RESERVATION MODEL ==============

@@ -1,306 +1,242 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Add New Member | UrbanDrive</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-                    "on-error": "#ffffff",
-                    "surface-tint": "#5e5e5e",
-                    "on-primary-fixed": "#1b1b1b",
-                    "surface-container-high": "#e8e8e8",
-                    "surface-container": "#eeeeee",
-                    "primary": "#000000",
-                    "tertiary-fixed-dim": "#c6c6c6",
-                    "error": "#ba1a1a",
-                    "secondary-fixed-dim": "#c6c6c7",
-                    "inverse-surface": "#303030",
-                    "inverse-primary": "#c6c6c6",
-                    "on-tertiary": "#ffffff",
-                    "on-tertiary-fixed": "#1b1b1b",
-                    "glass-fill": "rgba(255, 255, 255, 0.7)",
-                    "tertiary-container": "#1b1b1b",
-                    "primary-container": "#1b1b1b",
-                    "on-secondary-fixed-variant": "#454747",
-                    "background": "#f9f9f9",
-                    "on-secondary": "#ffffff",
-                    "accent-success": "#22C55E",
-                    "on-primary-container": "#848484",
-                    "on-primary": "#ffffff",
-                    "tertiary-fixed": "#e2e2e2",
-                    "secondary-fixed": "#e2e2e2",
-                    "on-surface-variant": "#4c4546",
-                    "on-surface": "#1b1b1b",
-                    "surface-bright": "#f9f9f9",
-                    "secondary": "#5d5f5f",
-                    "surface-container-highest": "#e2e2e2",
-                    "surface-container-lowest": "#ffffff",
-                    "surface": "#F8F8F8",
-                    "on-primary-fixed-variant": "#474747",
-                    "on-background": "#1b1b1b",
-                    "text-primary": "#111111",
-                    "on-error-container": "#93000a",
-                    "surface-container-low": "#f3f3f3",
-                    "error-container": "#ffdad6",
-                    "primary-fixed": "#e2e2e2",
-                    "surface-dim": "#dadada",
-                    "on-secondary-container": "#616363",
-                    "inverse-on-surface": "#f1f1f1",
-                    "on-tertiary-fixed-variant": "#474747",
-                    "on-tertiary-container": "#848484",
-                    "text-secondary": "#666666",
-                    "border": "#E5E5E5",
-                    "primary-fixed-dim": "#c6c6c6",
-                    "outline-variant": "#cfc4c5",
-                    "outline": "#7e7576",
-                    "surface-variant": "#e2e2e2",
-                    "secondary-container": "#dfe0e0",
-                    "on-secondary-fixed": "#1a1c1c",
-                    "tertiary": "#000000"
-            },
-            "borderRadius": {
-                    "DEFAULT": "0.25rem",
-                    "lg": "0.5rem",
-                    "xl": "0.75rem",
-                    "full": "9999px"
-            },
-            "spacing": {
-                    "margin-mobile": "20px",
-                    "margin-desktop": "64px",
-                    "container-max": "1440px",
-                    "unit": "8px",
-                    "gutter": "24px"
-            },
-            "fontFamily": {
-                    "headline-lg-mobile": ["Inter"],
-                    "label-sm": ["Inter"],
-                    "body-lg": ["Inter"],
-                    "body-md": ["Inter"],
-                    "headline-lg": ["Inter"],
-                    "display-lg": ["Inter"],
-                    "headline-md": ["Inter"]
-            },
-            "fontSize": {
-                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
-                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
-                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
-                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
-                    "display-lg": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
-                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
-            }
-          }
-        }
-      }
-    </script>
-<style>
-        .executive-shadow {
-            box-shadow: 0px 10px 40px rgba(0,0,0,0.04);
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-        }
-        body {
-            background-color: #f9f9f9;
-            font-family: 'Inter', sans-serif;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #000000 !important;
-            ring: 0 !important;
-        }
-    </style>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UrbanDrive - Vehicle Registration Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="text-on-background antialiased overflow-x-hidden">
-<!-- TopNavBar  -->
-<nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-glass-fill border-b border-border transition-all duration-300">
-<div class="max-w-container-max mx-auto px-margin-desktop flex items-center justify-between h-20">
-<div class="text-headline-md font-bold tracking-tighter text-primary">UrbanDrive</div>
-<div class="hidden md:flex items-center space-x-8">
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors duration-300" href="#">Fleet</a>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors duration-300" href="#">Collections</a>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors duration-300" href="#">Locations</a>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors duration-300" href="#">Support</a>
-</div>
-<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-body-md text-body-md ease-out duration-300 hover:opacity-80 active:scale-95">
-                Book Now
-            </button>
-</div>
-</nav>
-<!-- Main Content Area -->
-<main class="pt-32 pb-24 px-margin-mobile md:px-margin-desktop">
-<div class="max-w-3xl mx-auto">
-<!-- Header Section -->
-<header class="mb-12 text-center">
-<h1 class="font-headline-lg text-headline-lg text-primary mb-2">Add New Member</h1>
-<p class="font-body-lg text-body-lg text-text-secondary">Onboard a new elite driver to the UrbanDrive collective.</p>
-</header>
-<!-- Form Container -->
-<div class="bg-surface-container-lowest executive-shadow border border-border rounded-xl p-8 md:p-12 space-y-16">
-<!-- Profile Section -->
-<section class="space-y-8">
-<div class="flex items-center gap-6">
-<div class="relative group">
-<div class="w-24 h-24 rounded-full bg-surface-container border border-border flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-300 group-hover:bg-surface-container-high">
-<span class="material-symbols-outlined text-4xl text-text-secondary">person</span>
-</div>
-<div class="absolute -bottom-1 -right-1 bg-primary text-on-primary w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-110 transition-transform">
-<span class="material-symbols-outlined text-sm">add</span>
-</div>
-</div>
-<div>
-<h3 class="font-headline-md text-headline-md text-primary">Member Profile</h3>
-<p class="font-body-md text-body-md text-text-secondary">Basic identity and contact details.</p>
-</div>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
-<div class="md:col-span-2">
-<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Full Name</label>
-<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="e.g. Julian Sterling" type="text"/>
-</div>
-<div>
-<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Email Address</label>
-<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="julian@sterling.com" type="email"/>
-</div>
-<div>
-<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Phone Number</label>
-<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="+1 (555) 000-0000" type="tel"/>
-</div>
-</div>
-</section>
-<!-- Account Configuration -->
-<section class="space-y-8">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary">settings</span>
-<h3 class="font-headline-md text-headline-md text-primary">Account Configuration</h3>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
-<div>
-<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Role Selection</label>
-<select class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md appearance-none">
-<option>Member</option>
-<option>Concierge</option>
-<option>Fleet Manager</option>
-<option>Admin</option>
-</select>
-</div>
-<div>
-<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Membership Tier</label>
-<select class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md appearance-none">
-<option>Silver</option>
-<option>Gold</option>
-<option>Platinum</option>
-<option>Black</option>
-</select>
-</div>
-<div class="md:col-span-2 flex items-center justify-between py-4 border-b border-border">
-<div>
-<p class="font-body-md text-body-md text-primary">Account Status</p>
-<p class="font-label-sm text-label-sm text-text-secondary">Set initial status for login access.</p>
-</div>
-<label class="relative inline-flex items-center cursor-pointer">
-<input checked="" class="sr-only peer" type="checkbox" value=""/>
-<div class="w-11 h-6 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:inset-s-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-<span class="ms-3 font-label-sm text-label-sm text-text-secondary uppercase">Active</span>
-</label>
-</div>
-</div>
-</section>
-<!-- Verification Details -->
-<section class="space-y-8">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary">verified_user</span>
-<h3 class="font-headline-md text-headline-md text-primary">Verification Details</h3>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
-<div>
-<label class="block font-label-sm text-label-sm text-text-secondary mb-2">License Number</label>
-<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="AB1234567" type="text"/>
-</div>
-<div>
-<label class="block font-label-sm text-label-sm text-text-secondary mb-2">Issuing Country</label>
-<input class="w-full bg-surface border-0 border-b border-border py-3 px-0 focus:border-primary transition-colors text-body-md font-body-md" placeholder="United States" type="text"/>
-</div>
-<div class="md:col-span-2">
-<label class="block font-label-sm text-label-sm text-text-secondary mb-4">Driver's License Copy</label>
-<div class="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer group">
-<div class="flex flex-col items-center gap-2">
-<span class="material-symbols-outlined text-4xl text-text-secondary group-hover:text-primary transition-colors">cloud_upload</span>
-<p class="font-body-md text-body-md text-text-secondary">Drag and drop file here, or <span class="text-primary font-semibold underline">browse</span></p>
-<p class="font-label-sm text-label-sm text-text-secondary opacity-60">High-resolution JPG or PDF (Max 10MB)</p>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Actions -->
-<div class="pt-8 flex flex-col md:flex-row items-center gap-6 border-t border-border">
-<button class="w-full md:w-auto px-12 py-4 bg-primary text-on-primary rounded-lg font-semibold text-body-md hover:scale-[1.02] active:scale-95 transition-all duration-300">
-                        Create User Account
-                    </button>
-<button class="w-full md:w-auto px-8 py-4 text-text-secondary hover:text-primary font-body-md text-body-md transition-colors">
-                        Cancel
-                    </button>
-</div>
-</div>
-</div>
-</main>
-<!-- Footer -->
-<footer class="bg-surface py-16 px-margin-desktop border-t border-border">
-<div class="max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-4 gap-gutter">
-<div class="space-y-6">
-<div class="text-headline-md font-bold text-primary">UrbanDrive</div>
-<p class="font-body-md text-body-md text-text-secondary max-w-60">
-                    Curating elite driving experiences for the modern executive.
-                </p>
-</div>
-<div class="flex flex-col space-y-4">
-<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Fleet</span>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Exotics</a>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Electric</a>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Executive</a>
-</div>
-<div class="flex flex-col space-y-4">
-<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Company</span>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">About Us</a>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Careers</a>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Newsroom</a>
-</div>
-<div class="flex flex-col space-y-4">
-<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Legal</span>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
-<a class="font-body-md text-body-md text-text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
-<p class="font-body-md text-body-md text-text-secondary mt-8">© 2024 UrbanDrive. All rights reserved.</p>
-</div>
-</div>
-</footer>
-<script>
-        // Simple scroll effect for navbar
-        window.addEventListener('scroll', () => {
-            const nav = document.querySelector('nav');
-            if (window.scrollY > 20) {
-                nav.classList.add('shadow-sm');
-                nav.classList.add('bg-white/90');
-            } else {
-                nav.classList.remove('shadow-sm');
-                nav.classList.remove('bg-white/90');
-            }
-        });
+<body class="bg-slate-100 min-h-screen py-10 px-4">
 
-        // Toggle interaction
-        const statusLabel = document.querySelector('label span.ms-3');
-        const statusCheckbox = document.querySelector('input[type="checkbox"]');
-        statusCheckbox.addEventListener('change', (e) => {
-            statusLabel.textContent = e.target.checked ? 'Active' : 'Pending';
-        });
-    </script>
-</body></html>
+  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+    
+    <!-- Header -->
+    <div class="bg-slate-900 text-white p-6 flex justify-between items-center border-b border-slate-800">
+      <div>
+        <h1 class="text-2xl font-bold">Register New Vehicle</h1>
+        <p class="text-slate-400 text-sm mt-1">Review all planned fields and decide what to keep or remove.</p>
+      </div>
+      <span class="bg-amber-500/20 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-amber-500/30">
+        HTML Preview Mode
+      </span>
+    </div>
+
+    <form onsubmit="return false;" class="p-8 space-y-10">
+
+      <!-- SECTION 1: Basic Information -->
+      <section class="space-y-4">
+        <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-900">1. Basic Information</h2>
+          <span class="text-xs text-slate-400 font-mono">[SECTION: BASIC_INFO]</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Vehicle Display Name *</label>
+            <input type="text" placeholder="e.g. Tesla Model 3 Long Range" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Brand / Make *</label>
+            <input type="text" placeholder="e.g. Tesla, BMW, Audi" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Model *</label>
+            <input type="text" placeholder="e.g. Model 3, X5, A6" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Category *</label>
+            <select class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+              <option value="">Select Category</option>
+              <option value="sedan">Sedan</option>
+              <option value="suv">SUV</option>
+              <option value="luxury">Luxury</option>
+              <option value="convertible">Convertible</option>
+              <option value="hatchback">Hatchback</option>
+              <option value="van">Van</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Manufacturing Year *</label>
+            <input type="number" placeholder="2024" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">License Plate Number *</label>
+            <input type="text" placeholder="e.g. ABC-1234" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm uppercase focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Exterior Color</label>
+            <input type="text" placeholder="e.g. Pearl White" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Vehicle Description / Listing Text</label>
+            <input type="text" placeholder="Short description for listing details page..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: Compliance & Location (NEW FIELDS) -->
+      <section class="space-y-4">
+        <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-900">2. Compliance & Location</h2>
+          <span class="text-xs text-slate-400 font-mono">[SECTION: COMPLIANCE]</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">VIN / Chassis Number</label>
+            <input type="text" placeholder="17-digit VIN number" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm uppercase focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Insurance Policy Number</label>
+            <input type="text" placeholder="e.g. POL-99887766" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Insurance Expiry Date</label>
+            <input type="date" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Current Odometer (km)</label>
+            <input type="number" placeholder="24500" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Branch / Location Office *</label>
+            <select class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+              <option value="">Select Location</option>
+              <option value="downtown">Downtown Hub</option>
+              <option value="airport">Airport Terminal 1</option>
+              <option value="north">North City Office</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: Technical Specs -->
+      <section class="space-y-4">
+        <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-900">3. Technical Specifications</h2>
+          <span class="text-xs text-slate-400 font-mono">[SECTION: SPECS]</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Transmission Type *</label>
+            <select class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+              <option value="">Select Transmission</option>
+              <option value="automatic">Automatic</option>
+              <option value="manual">Manual</option>
+              <option value="cvt">CVT</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Fuel Type *</label>
+            <select class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+              <option value="">Select Fuel</option>
+              <option value="petrol">Petrol</option>
+              <option value="diesel">Diesel</option>
+              <option value="electric">Electric</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Seating Capacity</label>
+            <input type="number" placeholder="5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Luggage Capacity (Bags)</label>
+            <input type="number" placeholder="3" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: Commercials & Pricing -->
+      <section class="space-y-4">
+        <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-900">4. Commercials & Pricing</h2>
+          <span class="text-xs text-slate-400 font-mono">[SECTION: PRICING]</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Daily Rate ($) *</label>
+            <input type="number" placeholder="85" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Weekly Rate ($)</label>
+            <input type="number" placeholder="500" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Monthly Rate ($)</label>
+            <input type="number" placeholder="1800" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Security Deposit ($)</label>
+            <input type="number" placeholder="300" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Daily Mileage Limit (km)</label>
+            <input type="number" placeholder="200 (0 for unlimited)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Min. Rental Duration (Days)</label>
+            <input type="number" placeholder="1" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Min. Driver Age Requirement</label>
+            <input type="number" placeholder="21" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Initial Availability Status *</label>
+            <select class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+              <option value="AVAILABLE">AVAILABLE</option>
+              <option value="MAINTENANCE">MAINTENANCE</option>
+              <option value="DRAFT">DRAFT</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 5: Media Upload -->
+      <section class="space-y-4">
+        <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-900">5. Media & Gallery</h2>
+          <span class="text-xs text-slate-400 font-mono">[SECTION: MEDIA]</span>
+        </div>
+        <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer">
+          <div class="text-slate-400 text-sm mb-1">Drag and drop images here or click to browse</div>
+          <p class="text-xs text-slate-400">Supports JPG, PNG, WEBP (Up to 5MB each)</p>
+        </div>
+      </section>
+
+      <!-- SECTION 6: Features & Amenities Checklist -->
+      <section class="space-y-4">
+        <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-900">6. Vehicle Amenities (12 Items)</h2>
+          <span class="text-xs text-slate-400 font-mono">[SECTION: AMENITIES]</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> GPS Navigation</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Bluetooth / Aux</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Apple CarPlay</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Backup Camera</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Heated Seats</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Leather Seats</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Sunroof / Moonroof</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Cruise Control</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Keyless Entry</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> Child Safety Seat</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> All-Wheel Drive</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="rounded text-amber-500 focus:ring-amber-500"> USB Charger Ports</label>
+        </div>
+      </section>
+
+      <!-- SECTION 7: Actions -->
+      <div class="pt-6 border-t border-slate-200 flex items-center justify-end gap-3">
+        <button type="button" class="px-5 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium text-sm hover:bg-slate-50 transition-colors">
+          Save as Draft
+        </button>
+        <button type="button" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-sm rounded-lg transition-colors shadow-sm">
+          Register Vehicle
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</body>
+</html>

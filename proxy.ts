@@ -13,7 +13,11 @@ const alwaysPublicRoutes = [
 
 const publicApiGetRoutes = [
   '/api/cars',
-  '/api/settings', // Public GET for categories, fuel types, transmissions
+  '/api/settings',
+  '/api/admin/car-features', // Public GET for features (e.g., booking forms)
+  '/api/admin/categories',
+  '/api/admin/fuel-types',
+  '/api/admin/transmission-types',
 ]
 
 const publicApiWriteRoutes = [
@@ -132,32 +136,33 @@ export async function proxy(request: NextRequest) {
     )
   }
 
-  // 7. Protected Admin API endpoints checks
+  // 7. Protected Master Settings & Admin API endpoints checks
+  const masterSettingsRoutes = [
+    '/api/settings',
+    '/api/admin/settings',
+    '/api/admin/staff-master',
+    '/api/admin/transmission-types',
+    '/api/admin/fuel-types',
+    '/api/admin/categories',
+    '/api/admin/car-features',
+  ]
+
+  const isMasterSettingsEndpoint = masterSettingsRoutes.some(
+    (route) => path === route || path.startsWith(`${route}/`)
+  )
+
+  if (isMasterSettingsEndpoint && !isStrictAdmin) {
+    return NextResponse.json(
+      { success: false, message: 'Admin access required for settings management' },
+      { status: 403 }
+    )
+  }
+
   if (path.startsWith('/api/admin')) {
     // SUPERADMIN-only permission endpoints
     if (path.includes('/permissions') && !isSuperAdmin) {
       return NextResponse.json(
         { success: false, message: 'Superadmin access required for permissions management' },
-        { status: 403 }
-      )
-    }
-
-    // Master settings & configuration endpoints (Requires ADMIN or SUPERADMIN)
-    const masterSettingsRoutes = [
-      '/api/admin/settings',
-      '/api/admin/staff-master',
-      '/api/admin/transmission-types',
-      '/api/admin/fuel-types',
-      '/api/admin/categories',
-    ]
-
-    const isMasterSettingsEndpoint = masterSettingsRoutes.some(
-      (route) => path === route || path.startsWith(`${route}/`)
-    )
-
-    if (isMasterSettingsEndpoint && !isStrictAdmin) {
-      return NextResponse.json(
-        { success: false, message: 'Admin access required for settings management' },
         { status: 403 }
       )
     }
