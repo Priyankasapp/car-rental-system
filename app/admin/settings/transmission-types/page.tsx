@@ -3,9 +3,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Settings2Icon, Loader2Icon } from 'lucide-react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
+import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 
 export default function TransmissionTypesPage() {
   const [items, setItems] = useState<EntityItem[]>([])
@@ -112,10 +112,11 @@ export default function TransmissionTypesPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-100 gap-3">
-        <Loader2Icon className="h-8 w-8 animate-spin text-gray-500" />
-        <p className="text-sm font-medium text-gray-500">Loading transmission types...</p>
-      </div>
+      <EntityGridSkeleton
+        title="Fuel Types"
+        description="Manage  transmission configurations supported in UrbanDrive."
+        cardCount={6}
+      />
     )
   }
 
@@ -138,7 +139,6 @@ export default function TransmissionTypesPage() {
       title="Transmission Types"
       entitySingularName="Transmission"
       description="Manage gearbox and transmission options available for vehicles."
-      icon={Settings2Icon}
       addButtonText="Add Transmission"
       initialItems={items}
       emptyStateTitle="No transmission types found"

@@ -3,9 +3,9 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import {  Loader2Icon } from 'lucide-react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
+import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<EntityItem[]>([])
@@ -75,11 +75,13 @@ export default function CategoriesPage() {
     await fetchCategories()
   }
 
-  if (loading) {
+ if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2Icon className="h-8 w-8 animate-spin text-slate-400" />
-      </div>
+      <EntityGridSkeleton
+        title="Fuel Types"
+        description="Manage categories configurations supported in UrbanDrive."
+        cardCount={6}
+      />
     )
   }
 

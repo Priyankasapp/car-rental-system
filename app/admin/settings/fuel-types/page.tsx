@@ -3,9 +3,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import {  Loader2 } from 'lucide-react'
+import {  FuelIcon } from 'lucide-react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
+import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 
 export default function FuelTypesPage() {
   const [items, setItems] = useState<EntityItem[]>([])
@@ -15,8 +16,9 @@ export default function FuelTypesPage() {
   // 1. Fetch Fuel Types from backend API
   const fetchFuelTypes = useCallback(async () => {
     try {
-      
+      setLoading(true)
       setError(null) 
+
       const res = await fetch('/api/admin/fuel-types')
       const json = await res.json()
 
@@ -77,13 +79,14 @@ export default function FuelTypesPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-slate-500">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-        <p className="text-sm font-medium">Loading fuel types...</p>
-      </div>
+      <EntityGridSkeleton
+        title="Fuel Types"
+        description="Manage engine fuel configurations supported in UrbanDrive."
+        icon={FuelIcon}
+        cardCount={6}
+      />
     )
   }
-
   if (error) {
     return (
       <div className="p-6 rounded-xl bg-red-50 text-red-600 border border-red-200 text-center my-8">
