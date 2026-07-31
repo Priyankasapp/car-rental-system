@@ -1,11 +1,11 @@
-// components/fleet/FleetGrid.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { FleetCar } from '@/types/fleet'
 import FleetCarCard from './FleetCarCard'
 
 interface FleetGridProps {
-  cars?: FleetCar[]
+  cars?: any[] 
   totalVehicles?: number
   isLoading?: boolean
   onLoadMore?: () => void
@@ -72,13 +72,39 @@ export default function FleetGrid({
   return (
     <div className="flex-1 w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-        {cars.map((car) => (
-          <FleetCarCard
-            key={car.id}
-            car={car}
-            onToggleFavorite={onToggleFavorite}
-          />
-        ))}
+        {cars.map((carItem) => {
+          // Normalize car data to match FleetCar props
+          const formattedCar: FleetCar = {
+            id: carItem.id,
+            name: carItem.name || `${carItem.manufacturer || ''} ${carItem.model || ''}`.trim() || 'Vehicle',
+            brand: carItem.brand || carItem.manufacturer,
+            category: typeof carItem.category === 'object' ? carItem.category?.name : carItem.category,
+            type: typeof carItem.category === 'object' ? carItem.category?.name : carItem.category,
+            year: carItem.year,
+            price: carItem.price || carItem.pricePerDay || 0,
+            image: carItem.image || carItem.imageMain || carItem.imageGallery?.[0] || '',
+            images: carItem.images || carItem.imageGallery || [],
+            status: carItem.status,
+            specs: {
+              transmission: typeof carItem.transmission === 'object' ? carItem.transmission?.name : carItem.transmission,
+              fuelType: typeof carItem.fuelType === 'object' ? carItem.fuelType?.name : carItem.fuelType,
+              seats: carItem.seats,
+              location: carItem.locationCity || carItem.locationAddress || 'Main Depot',
+              ...carItem.specs,
+            },
+            features: carItem.features || [],
+            model: '',
+            fuelType: ''
+          }
+
+          return (
+            <FleetCarCard
+              key={formattedCar.id}
+              car={formattedCar}
+              onToggleFavorite={onToggleFavorite}
+            />
+          )
+        })}
       </div>
     </div>
   )

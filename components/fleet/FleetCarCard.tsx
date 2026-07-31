@@ -77,7 +77,7 @@ export default function FleetCarCard({
 
   return (
     <Link
-      href={`/cars/${car.id}`}
+      href={`/fleet/${car.id}`}
       className="block group h-full focus:outline-none"
     >
       <article

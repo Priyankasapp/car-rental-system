@@ -1,6 +1,6 @@
 // types/fleet.ts
 
-// Your existing types
+// Existing filter types
 export interface FleetFilter {
   id: string
   label: string
@@ -18,16 +18,17 @@ export interface FleetFilterOption {
 }
 
 export interface FleetCar {
-  fuelType: string
   id: string
   name: string
   model: string
   brand: string
   category: string
+  type?: string
   price: number
   image: string
   imageGallery?: string[] // Primary array of extra gallery images
   images?: string[]       // Optional alias for image gallery compatibility
+  fuelType: string
   specs: {
     power: string
     transmission: string
@@ -35,6 +36,7 @@ export interface FleetCar {
   }
   status: 'available' | 'reserved' | 'new-arrival'
   favorite?: boolean
+  features?: string[]    // Added to resolve the features property error
   // Additional fields for display
   year?: number
   manufacturer?: string
@@ -83,17 +85,19 @@ export interface ApiCar {
   manufacturer: string
   model: string
   year: number
-  category: string
+  category: string | { id: string; name: string }
   pricePerDay: number
   imageMain: string
   imageGallery?: string[]
   images?: string[]
-  transmission: string
-  fuelType: string
+  features?: string[]
+  transmission: string | { id: string; name: string }
+  fuelType: string | { id: string; name: string }
   seats: number
-  locationCity: string
-  locationState: string
-  status: 'AVAILABLE' | 'RESERVED' | 'UNAVAILABLE' | 'MAINTENANCE'
+  locationCity?: string
+  locationAddress?: string
+  locationState?: string
+  status: 'AVAILABLE' | 'RESERVED' | 'UNAVAILABLE' | 'MAINTENANCE' | string
   isFavorite?: boolean
   averageRating?: number
   totalReviews?: number
@@ -105,7 +109,13 @@ export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
     'AVAILABLE': 'available',
     'RESERVED': 'reserved',
     'UNAVAILABLE': 'reserved',
-    'MAINTENANCE': 'reserved'
+    'MAINTENANCE': 'reserved',
+  }
+
+  // Helper to extract string name whether relation object or string
+  const getRelName = (val: string | { id: string; name: string } | undefined): string => {
+    if (!val) return ''
+    return typeof val === 'object' ? val.name : val
   }
 
   // Parse or normalize gallery images
@@ -114,28 +124,34 @@ export function apiCarToFleetCar(apiCar: ApiCar): FleetCar {
     apiCar.images?.length ? apiCar.images :
     apiCar.imageMain ? [apiCar.imageMain] : []
 
+  const categoryName = getRelName(apiCar.category)
+  const transmissionName = getRelName(apiCar.transmission)
+  const fuelTypeName = getRelName(apiCar.fuelType)
+  const location = apiCar.locationCity || apiCar.locationAddress || 'Main Depot'
+
   return {
-   
     id: apiCar.id,
-    name: `${apiCar.manufacturer} ${apiCar.model}`,
+    name: `${apiCar.manufacturer || ''} ${apiCar.model || ''}`.trim() || 'Vehicle',
     model: apiCar.model,
     brand: apiCar.manufacturer,
-    category: apiCar.category,
-    price: apiCar.pricePerDay,
-    image: apiCar.imageMain,
+    category: categoryName,
+    type: categoryName,
+    price: apiCar.pricePerDay || 0,
+    image: apiCar.imageMain || gallery[0] || '',
     imageGallery: gallery,
     images: gallery,
+    fuelType: fuelTypeName,
+    features: apiCar.features || [],
     specs: {
-      power: `${apiCar.seats} Seats`,
-      transmission: apiCar.transmission,
+      power: `${apiCar.seats || 0} Seats`,
+      transmission: transmissionName,
     },
     status: statusMap[apiCar.status] || 'available',
     favorite: apiCar.isFavorite || false,
     year: apiCar.year,
     manufacturer: apiCar.manufacturer,
     seats: apiCar.seats,
-    transmission: apiCar.transmission,
-     fuelType: apiCar.fuelType,
-    location: apiCar.locationCity,
+    transmission: transmissionName,
+    location,
   }
 }
