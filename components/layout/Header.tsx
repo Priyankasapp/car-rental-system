@@ -1,21 +1,59 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/Header.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Icon from '@/components/ui/Icon'
 import { navLinks } from '@/data'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/context/AuthContext'
+
+interface User {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: string
+}
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
   const pathname = usePathname()
   const router = useRouter()
-  const { user, isAuthenticated, logout } = useAuth()
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Fetch current authenticated user on mount or route change
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Cache-Control': 'no-cache' },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && data.data?.user) {
+            setUser(data.data.user)
+          } else {
+            setUser(null)
+          }
+        } else {
+          setUser(null)
+        }
+      } catch (err) {
+        setUser(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [pathname])
 
   // Handle scroll effect for dynamic padding & shadow
   useEffect(() => {
@@ -24,6 +62,17 @@ export default function Header() {
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   // Prevent background scroll when mobile menu is open
@@ -38,35 +87,44 @@ export default function Header() {
     }
   }, [isMobileMenuOpen])
 
+  // Logout handler calling API directly
   const handleLogout = async () => {
-    await logout()
-    setIsDropdownOpen(false)
-    router.push('/')
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      setUser(null)
+      setIsDropdownOpen(false)
+      setIsMobileMenuOpen(false)
+      router.push('/')
+      router.refresh()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
+
+  const isAuthenticated = !!user
 
   return (
     <>
-      <header 
+      <header
         className={cn(
           'fixed top-0 left-0 w-full z-50 bg-white transition-all duration-300',
           isScrolled ? 'py-3 shadow-sm' : 'py-5'
         )}
       >
-        <div className="max-w-[1440px] mx-auto flex justify-between items-center px-5 md:px-16 w-full">
-          
+        <div className="max-w-360 mx-auto flex justify-between items-center px-5 md:px-16 w-full">
           {/* Left: Logo & Mobile Menu Toggle */}
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden text-black focus:outline-none hover:opacity-70 transition-opacity"
               aria-label="Toggle Menu"
             >
-              <Icon 
-                name={isMobileMenuOpen ? "close" : "menu"} 
-                className="text-2xl" 
+              <Icon
+                name={isMobileMenuOpen ? 'close' : 'menu'}
+                className="text-2xl"
               />
             </button>
-            
+
             <Link href="/" className="hover:opacity-90 transition-opacity">
               <h1 className="text-2xl md:text-2xl font-bold tracking-tighter text-black">
                 UrbanDrive
@@ -80,12 +138,14 @@ export default function Header() {
               const isActive = pathname === link.href
 
               return (
-                <Link 
+                <Link
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "text-xs tracking-[0.05em] uppercase text-black transition-opacity",
-                    isActive ? "font-semibold opacity-100" : "font-normal opacity-60 hover:opacity-100"
+                    'text-xs tracking-wider uppercase text-black transition-opacity',
+                    isActive
+                      ? 'font-semibold opacity-100'
+                      : 'font-normal opacity-60 hover:opacity-100'
                   )}
                 >
                   {link.label}
@@ -96,8 +156,10 @@ export default function Header() {
 
           {/* Right: Auth Buttons */}
           <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <div className="relative">
+            {isLoading ? (
+              <div className="h-8 w-20 bg-gray-100 animate-pulse rounded-lg" />
+            ) : isAuthenticated ? (
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center gap-2 text-black hover:opacity-70 transition-opacity"
@@ -107,9 +169,9 @@ export default function Header() {
                   <span className="hidden md:inline text-sm font-medium">
                     {user?.firstName}
                   </span>
-                  <Icon 
-                    name={isDropdownOpen ? "expand_less" : "expand_more"} 
-                    className="text-xl hidden md:inline" 
+                  <Icon
+                    name={isDropdownOpen ? 'expand_less' : 'expand_more'}
+                    className="text-xl hidden md:inline"
                   />
                 </button>
 
@@ -124,7 +186,7 @@ export default function Header() {
                         {user?.email}
                       </p>
                     </div>
-                    
+
                     <Link
                       href="/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
@@ -132,7 +194,7 @@ export default function Header() {
                     >
                       My Profile
                     </Link>
-                    
+
                     <Link
                       href="/bookings"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
@@ -143,14 +205,14 @@ export default function Header() {
 
                     {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && (
                       <Link
-                        href="/admin/dashboard"
+                        href="/admin"
                         className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 transition border-t border-gray-100"
                         onClick={() => setIsDropdownOpen(false)}
                       >
                         Admin Dashboard
                       </Link>
                     )}
-                    
+
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition border-t border-gray-100"
@@ -181,10 +243,10 @@ export default function Header() {
       </header>
 
       {/* Mobile Navigation Drawer Overlay */}
-      <div 
+      <div
         className={cn(
-          "fixed inset-0 z-40 bg-white transition-transform duration-300 ease-in-out md:hidden pt-24 px-5",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          'fixed inset-0 z-40 bg-white transition-transform duration-300 ease-in-out md:hidden pt-24 px-5',
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <nav className="flex flex-col gap-6">
@@ -192,20 +254,22 @@ export default function Header() {
             const isActive = pathname === link.href
 
             return (
-              <Link 
+              <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
-                  "text-lg text-black transition-opacity",
-                  isActive ? "font-semibold opacity-100" : "font-normal opacity-70 hover:opacity-100"
+                  'text-lg text-black transition-opacity',
+                  isActive
+                    ? 'font-semibold opacity-100'
+                    : 'font-normal opacity-70 hover:opacity-100'
                 )}
               >
                 {link.label}
               </Link>
             )
           })}
-          
+
           {/* Mobile Auth Links */}
           {isAuthenticated ? (
             <>

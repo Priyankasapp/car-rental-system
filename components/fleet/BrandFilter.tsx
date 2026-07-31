@@ -36,7 +36,7 @@ export default function BrandFilter({
             key={brand.id}
             onClick={() => handleSelect(brand.value)}
             className={cn(
-              'px-3 py-1.5 border text-center text-[10px] uppercase tracking-[0.05em] cursor-pointer transition-colors duration-200 rounded-none',
+              'px-3 py-1.5 border text-center text-[10px] uppercase tracking-wider cursor-pointer transition-colors duration-200 rounded-none',
               selected === brand.value
                 ? 'border-primary bg-primary text-white font-bold'
                 : 'border-border text-text-secondary font-medium hover:border-primary hover:text-primary'

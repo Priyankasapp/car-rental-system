@@ -1,40 +1,34 @@
 // app/api/auth/logout/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth/jwt";
+import { revokeSession } from "@/lib/auth/session";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    // Get token from cookies
-    const token = request.cookies.get('token')?.value
+    const cookieStore = await cookies();
+    const token = cookieStore.get("accessToken")?.value;
 
     if (token) {
-      // Find and revoke session
-      const session = await prisma.session.findUnique({
-        where: { token },
-      })
-
-      if (session) {
-        await prisma.session.update({
-          where: { id: session.id },
-          data: { isRevoked: true },
-        })
+      const payload = await verifyToken(token);
+      if (payload?.sessionId) {
+        await revokeSession(payload.sessionId);
       }
     }
 
-    const response = NextResponse.json({
-      success: true,
-      message: 'Logged out successfully',
-    })
+    // Clear cookies
+    cookieStore.delete("accessToken");
+    cookieStore.delete("refreshToken");
 
-    // Clear cookie
-    response.cookies.delete('token')
-
-    return response
-  } catch (error) {
-    console.error('Logout error:', error)
     return NextResponse.json(
-      { success: false, message: 'Logout failed' },
+      { success: true, message: "Logged out successfully." },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Logout Error:", error);
+    return NextResponse.json(
+      { success: false, message: "Logout failed." },
       { status: 500 }
-    )
+    );
   }
 }

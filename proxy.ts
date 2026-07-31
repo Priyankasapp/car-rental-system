@@ -1,97 +1,110 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
+// middleware.ts
+import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
 const alwaysPublicRoutes = [
-  '/api/auth/register',
-  '/api/auth/login',
-  '/api/auth/verify-otp',
-  '/api/auth/resend-otp',
-  '/api/auth/forgot-password',
-  '/api/health',
-  '/api/contact',
-]
+  "/api/auth/register",
+  "/api/auth/login",
+  "/api/auth/verify-otp",
+  "/api/auth/resend-otp",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/health",
+  "/api/contact",
+];
 
 const publicApiGetRoutes = [
-  '/api/cars',
-  '/api/settings',
-  '/api/admin/car-features',
-  '/api/admin/categories',
-  '/api/admin/fuel-types',
-  '/api/admin/transmission-types',
-]
+  "/api/cars",
+  "/api/settings",
+  "/api/admin/car-features",
+  "/api/admin/categories",
+  "/api/admin/fuel-types",
+  "/api/admin/transmission-types",
+];
 
-const publicApiWriteRoutes = ['/api/reservations']
+const publicApiWriteRoutes = ["/api/reservations"];
 
-const guestOnlyPages = ['/login', '/register', '/forgot-password']
+const guestOnlyPages = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 async function verifyTokenEdge(token: string) {
   try {
-    const jwtSecret = process.env.JWT_SECRET
-    if (!jwtSecret) return null
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) return null;
 
-    const secret = new TextEncoder().encode(jwtSecret)
-    const { payload } = await jwtVerify(token, secret)
-    return payload as { userId: string; role: string; email: string }
+    const secret = new TextEncoder().encode(jwtSecret);
+    const { payload } = await jwtVerify(token, secret);
+    
+    return payload as { 
+      userId?: string; 
+      sub?: string; 
+      role: string; 
+      email: string 
+    };
   } catch {
-    return null
+    return null;
   }
 }
 
-export async function proxy(request: NextRequest) {
-  const path = request.nextUrl.pathname
-  const method = request.method
+export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const method = request.method;
 
   // 0. IMPORTANT: Bypass Next.js internal assets & static files
   if (
-    path.startsWith('/_next') ||
-    path.startsWith('/favicon.ico') ||
-    path.match(/\.(png|jpg|jpeg|gif|svg|webp|css|js)$/)
+    path.startsWith("/_next") ||
+    path.startsWith("/favicon.ico") ||
+    path.match(/\.(png|jpg|jpeg|gif|svg|webp|ico|css|js)$/)
   ) {
-    return NextResponse.next()
+    return NextResponse.next();
   }
 
-  const token = request.cookies.get('token')?.value
-  const payload = token ? await verifyTokenEdge(token) : null
+  // Look for `accessToken` set in your login route (fallback to `token`)
+  const token =
+    request.cookies.get("accessToken")?.value ||
+    request.cookies.get("token")?.value;
+
+  const payload = token ? await verifyTokenEdge(token) : null;
+  const userId = payload?.userId || payload?.sub;
 
   // Role Checks
   const isDashboardUser = payload
-    ? ['ADMIN', 'SUPERADMIN', 'STAFF'].includes(payload.role)
-    : false
+    ? ["ADMIN", "SUPERADMIN", "STAFF"].includes(payload.role)
+    : false;
 
   const isStrictAdmin = payload
-    ? ['ADMIN', 'SUPERADMIN'].includes(payload.role)
-    : false
+    ? ["ADMIN", "SUPERADMIN"].includes(payload.role)
+    : false;
 
-  const isSuperAdmin = payload?.role === 'SUPERADMIN'
+  const isSuperAdmin = payload?.role === "SUPERADMIN";
 
   // 1. Redirect dashboard users ONLY when they explicitly visit the homepage '/' or guest pages
   if (
     isDashboardUser &&
-    (path === '/' || guestOnlyPages.some((p) => path === p || path.startsWith(`${p}/`)))
+    (path === "/" || guestOnlyPages.some((p) => path === p || path.startsWith(`${p}/`)))
   ) {
-    return NextResponse.redirect(new URL('/admin', request.url))
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   // 2. Protect /admin UI pages
-  if (path.startsWith('/admin')) {
+  if (path.startsWith("/admin")) {
     if (!payload) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL("/login", request.url));
     }
     if (!isDashboardUser) {
-      return NextResponse.redirect(new URL('/', request.url))
+      return NextResponse.redirect(new URL("/", request.url));
     }
 
     // SUPERADMIN only UI routes
-    if (path.startsWith('/admin/permissions') && !isSuperAdmin) {
-      return NextResponse.redirect(new URL('/admin', request.url))
+    if (path.startsWith("/admin/permissions") && !isSuperAdmin) {
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
 
     // Strict Admin UI routes (ADMIN & SUPERADMIN)
     if (
-      (path.startsWith('/admin/staff-master') || path.startsWith('/admin/settings')) &&
+      (path.startsWith("/admin/staff-master") || path.startsWith("/admin/settings")) &&
       !isStrictAdmin
     ) {
-      return NextResponse.redirect(new URL('/admin', request.url))
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
   }
 
@@ -101,112 +114,112 @@ export async function proxy(request: NextRequest) {
     !isDashboardUser &&
     guestOnlyPages.some((p) => path === p || path.startsWith(`${p}/`))
   ) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   // 4. Pass non-API page requests through
-  if (!path.startsWith('/api')) {
-    return NextResponse.next()
+  if (!path.startsWith("/api")) {
+    return NextResponse.next();
   }
 
   // 5. Public API route handling
   if (alwaysPublicRoutes.some((route) => path === route || path.startsWith(`${route}/`))) {
-    return NextResponse.next()
+    return NextResponse.next();
   }
 
   if (
-    method === 'GET' &&
+    method === "GET" &&
     publicApiGetRoutes.some((route) => path === route || path.startsWith(`${route}/`))
   ) {
-    return NextResponse.next()
+    return NextResponse.next();
   }
 
   if (
-    method === 'POST' &&
+    method === "POST" &&
     publicApiWriteRoutes.some((route) => path === route || path.startsWith(`${route}/`))
   ) {
-    return NextResponse.next()
+    return NextResponse.next();
   }
 
   // 6. Unauthenticated API requests check
   if (!token) {
     return NextResponse.json(
-      { success: false, message: 'Authentication required' },
+      { success: false, message: "Authentication required" },
       { status: 401 }
-    )
+    );
   }
 
   if (!payload) {
     return NextResponse.json(
-      { success: false, message: 'Invalid or expired token' },
+      { success: false, message: "Invalid or expired token" },
       { status: 401 }
-    )
+    );
   }
 
   // 7. Protected Master Settings & Admin API endpoints checks
   const masterSettingsRoutes = [
-    '/api/settings',
-    '/api/admin/settings',
-    '/api/admin/staff-master',
-    '/api/admin/transmission-types',
-    '/api/admin/fuel-types',
-    '/api/admin/categories',
-    '/api/admin/car-features',
-  ]
+    "/api/settings",
+    "/api/admin/settings",
+    "/api/admin/staff-master",
+    "/api/admin/transmission-types",
+    "/api/admin/fuel-types",
+    "/api/admin/categories",
+    "/api/admin/car-features",
+  ];
 
   const isMasterSettingsEndpoint = masterSettingsRoutes.some(
     (route) => path === route || path.startsWith(`${route}/`)
-  )
+  );
 
   if (isMasterSettingsEndpoint && !isStrictAdmin) {
     return NextResponse.json(
-      { success: false, message: 'Admin access required for settings management' },
+      { success: false, message: "Admin access required for settings management" },
       { status: 403 }
-    )
+    );
   }
 
-  if (path.startsWith('/api/admin')) {
+  if (path.startsWith("/api/admin")) {
     // SUPERADMIN-only permission endpoints
-    if (path.includes('/permissions') && !isSuperAdmin) {
+    if (path.includes("/permissions") && !isSuperAdmin) {
       return NextResponse.json(
-        { success: false, message: 'Superadmin access required for permissions management' },
+        { success: false, message: "Superadmin access required for permissions management" },
         { status: 403 }
-      )
+      );
     }
 
     // General operational endpoints for dashboard users (STAFF, ADMIN, SUPERADMIN)
     const isStaffAccessibleEndpoint =
-      path === '/api/admin/staff' ||
-      path.startsWith('/api/admin/staff/') ||
-      path.startsWith('/api/admin/cars') ||
-      path.startsWith('/api/admin/reservations')
+      path === "/api/admin/staff" ||
+      path.startsWith("/api/admin/staff/") ||
+      path.startsWith("/api/admin/cars") ||
+      path.startsWith("/api/admin/reservations");
 
     if (!isStrictAdmin && !isStaffAccessibleEndpoint) {
       return NextResponse.json(
-        { success: false, message: 'Admin access required' },
+        { success: false, message: "Admin access required" },
         { status: 403 }
-      )
+      );
     }
   }
 
   // 8. Inject authenticated user context headers for API handlers
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-user-id', payload.userId || '')
-  requestHeaders.set('x-user-role', payload.role || '')
-  requestHeaders.set('x-user-email', payload.email || '')
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-user-id", userId || "");
+  requestHeaders.set("x-user-role", payload.role || "");
+  requestHeaders.set("x-user-email", payload.email || "");
 
   return NextResponse.next({
     request: {
       headers: requestHeaders,
     },
-  })
+  });
 }
 
-export default proxy
+export default middleware;
 
-// Updated matcher regex to prevent Next.js internals from triggering redirects
+// Prevents Next.js internals and static assets from triggering middleware logic
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
-}
+};

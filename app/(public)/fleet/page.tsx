@@ -185,12 +185,11 @@ function FleetContent() {
 
   return (
     <>
+        title={hero.title}
       <FleetHero
         label={hero.label}
-        title={hero.title}
         description={hero.description}
-        totalVehicles={totalVehicles}
-      />
+        totalVehicles={totalVehicles} title={''}      />
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-6">

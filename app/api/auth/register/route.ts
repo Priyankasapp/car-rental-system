@@ -1,187 +1,92 @@
 // app/api/auth/register/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
-import { generateOTP, generatePassword, hashPassword } from '@/lib/auth'
-import { sendWelcomeAndOtpEmails } from '@/lib/email/emailService'
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { RegisterSchema } from "@/lib/auth/validation";
+import { createOtpRecord } from "@/lib/auth/otp";
+import { sendEmail } from "@/lib/email";
+import { generateOtpHTML, generateOtpText } from "@/email/VerificationOtpEmail";
 
-// --- Rate Limiting Configuration ---
-const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 5       // 5 registrations per minute per IP
-
-interface RateLimitRecord {
-  count: number
-  resetTime: number
-}
-
-const rateLimitMap = new Map<string, RateLimitRecord>()
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const record = rateLimitMap.get(ip)
-
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, {
-      count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW_MS,
-    })
-    return true
-  }
-
-  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
-    return false
-  }
-
-  record.count += 1
-  return true
-}
-
-// --- Zod Validation Schema ---
-const registerSchema = z.object({
-  email: z.string().trim().email('Invalid email address'),
-  firstName: z.string().trim().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().trim().min(2, 'Last name must be at least 2 characters'),
-  phone: z.string().optional(),
-})
-
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    // 1. Rate Limiting Check
-    const clientIp =
-      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-      request.headers.get('x-real-ip') ||
-      'anonymous'
+    const body = await req.json();
+    const validation = RegisterSchema.safeParse(body);
 
-    if (!checkRateLimit(clientIp)) {
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, message: 'Too many registration requests. Please wait a minute and try again.' },
-        { status: 429 }
-      )
-    }
-
-    // 2. Validate Input Body with Zod
-    const body = await request.json()
-    const validationResult = registerSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      const errorMessage = validationResult.error.issues[0]?.message || 'Invalid registration data'
-      return NextResponse.json(
-        { success: false, message: errorMessage },
+        { success: false, message: validation.error.issues[0].message },
         { status: 400 }
-      )
+      );
     }
 
-    const { email, firstName, lastName, phone } = validationResult.data
+    const { firstName, lastName, email, phone } = validation.data;
 
-    // 3. Check for existing user
+    // 1. Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
-    })
+    });
 
     if (existingUser) {
+      // If user is already verified, reject registration
       if (existingUser.isEmailVerified) {
         return NextResponse.json(
-          { success: false, message: 'Email already registered. Please login.' },
-          { status: 409 }
-        )
+          { success: false, message: "An account with this email already exists." },
+          { status: 400 }
+        );
       }
-      
-      // Delete unverified user and previous OTPs to allow fresh registration
-      await prisma.$transaction([
-        prisma.oTP.deleteMany({
-          where: { email },
-        }),
-        prisma.user.delete({
-          where: { id: existingUser.id },
-        }),
-      ])
-    }
-
-    // 4. Generate Credentials & OTP
-    const plainPassword = generatePassword(12)
-    const hashedPassword = await hashPassword(plainPassword)
-    const otp = generateOTP()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-
-    // 5. Save User and OTP in a Database Transaction
-    await prisma.$transaction(async (tx) => {
-      await tx.user.create({
+      // If user exists but is unverified, update their basic info
+      await prisma.user.update({
+        where: { email },
+        data: { firstName, lastName, phone },
+      });
+    } else {
+      // Create new unverified user record
+      await prisma.user.create({
         data: {
-          email,
           firstName,
           lastName,
-          phone: phone || '',
-          role: 'CUSTOMER',
-          password: hashedPassword,
-          isEmailVerified: false,
-          isActive: true,
-        },
-      })
-
-      await tx.oTP.create({
-        data: {
           email,
-          otp,
-          purpose: 'REGISTER',
-          expiresAt,
-          maxAttempts: 3,
+          phone,
+          isEmailVerified: false,
         },
-      })
-    })
-
-    // 6. Send Emails
-    let emailSuccess = true
-    try {
-      await sendWelcomeAndOtpEmails(
-        email,
-        firstName,
-        plainPassword,
-        otp
-      )
-      console.log(`Welcome and OTP emails dispatched to ${email}`)
-    } catch (emailError) {
-      console.error('Failed to send registration emails:', emailError)
-      emailSuccess = false
+      });
     }
 
-    // 7. Safe Response (Secrets Omitted)
+    // 2. Generate 6-digit OTP code in MongoDB
+    const otpRecord = await createOtpRecord({
+      email,
+      purpose: "REGISTER",
+    });
+
+    // 3. Send Verification Email with generated OTP
+    await sendEmail({
+      to: email,
+      subject: `${otpRecord.otp} is your UrbanDrive verification code`,
+      html: generateOtpHTML({
+        customerName: firstName,
+        otp: otpRecord.otp,
+        purpose: "REGISTER",
+        expiryMinutes: 10,
+      }),
+      text: generateOtpText({
+        customerName: firstName,
+        otp: otpRecord.otp,
+        purpose: "REGISTER",
+        expiryMinutes: 10,
+      }),
+    });
+
     return NextResponse.json(
       {
         success: true,
-        message: 'Registration successful! Check your email for password and OTP.',
-        data: {
-          email,
-          expiresIn: 600, // 10 minutes in seconds
-          ...(process.env.NODE_ENV === 'development' && {
-            _debug: {
-              emailSent: emailSuccess,
-            },
-          }),
-        },
+        message: "Registration started! A verification code has been sent to your email.",
       },
-      { status: 201 }
-    )
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Registration error:', error)
-    
-    let errorMessage = 'Registration failed. Please try again.'
-    if (error instanceof Error) {
-      if (error.message.includes('Unique constraint')) {
-        errorMessage = 'Email already registered.'
-      } else if (error.message.includes('Prisma')) {
-        errorMessage = 'Database error. Please try again later.'
-      }
-    }
-    
+    console.error("Registration Error:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: errorMessage,
-        ...(process.env.NODE_ENV === 'development' && {
-          _debug: { error: error instanceof Error ? error.message : String(error) }
-        })
-      },
+      { success: false, message: "Registration failed. Please try again." },
       { status: 500 }
-    )
+    );
   }
 }
