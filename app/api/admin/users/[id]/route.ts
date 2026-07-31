@@ -3,36 +3,59 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
-import bcrypt from 'bcryptjs'
 
-//  GET - Get single user
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// Helper to verify Admin authorization
+function verifyAdminRole(request: NextRequest) {
+  const token =
+    request.cookies.get('accessToken')?.value ||
+    request.cookies.get('token')?.value
+
+  if (!token) return { isAuth: false, status: 401, message: 'Unauthorized - No token found' }
+
   try {
-    const { id } =  await params
+    const payload: any = verifyToken(token)
+    const role = payload?.role?.toUpperCase()
+    const isAllowed = role === 'SUPERADMIN' || role === 'SUPER_ADMIN' || role === 'ADMIN'
 
-    // Verify admin access
-    const token = request.cookies.get('token')?.value
-    if (!token) {
+    if (!payload || !isAllowed) {
+      return { isAuth: false, status: 403, message: 'Admin access required' }
+    }
+
+    return { isAuth: true, payload }
+  } catch (err: any) {
+    return { isAuth: false, status: 401, message: `Invalid token: ${err?.message}` }
+  }
+}
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+// ============================================================================
+// GET - Fetch Single Customer by ID
+// ============================================================================
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const authCheck = verifyAdminRole(request)
+    if (!authCheck.isAuth) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
+        { success: false, message: authCheck.message },
+        { status: authCheck.status }
       )
     }
 
-    const payload = verifyToken(token)
-    if (!payload || (payload.role !== 'SUPERADMIN' && payload.role !== 'ADMIN')) {
+    // Await params to get the user ID
+    const { id } = await params
+
+    if (!id) {
       return NextResponse.json(
-        { success: false, message: 'Admin access required' },
-        { status: 403 }
+        { success: false, message: 'User ID is required' },
+        { status: 400 }
       )
     }
 
-    // Get user
     const user = await prisma.user.findUnique({
-      where: { id, isDeleted: false },
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -49,8 +72,7 @@ export async function GET(
         _count: {
           select: {
             reservations: true,
-            sessions: true,
-            emailLogs: true,
+            payments: true,
           },
         },
       },
@@ -58,7 +80,7 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json(
-        { success: false, message: 'User not found' },
+        { success: false, message: 'Customer not found' },
         { status: 404 }
       )
     }
@@ -67,40 +89,60 @@ export async function GET(
       success: true,
       data: { user },
     })
-  } catch (error) {
-    console.error('Error fetching user:', error)
+  } catch (error: any) {
+    console.error('API GET Single Customer Error:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch user' },
+      {
+        success: false,
+        message: error?.message || 'Failed to fetch customer profile',
+        details: String(error),
+      },
       { status: 500 }
     )
   }
 }
 
-//  PUT - Update user
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// ============================================================================
+// PUT - Update Customer Profile
+// ============================================================================
+export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    const authCheck = verifyAdminRole(request)
+    if (!authCheck.isAuth) {
+      return NextResponse.json(
+        { success: false, message: authCheck.message },
+        { status: authCheck.status }
+      )
+    }
+
+    // Await params to get the user ID
     const { id } = await params
-    const body = await request.json()
 
-    // Verify admin access
-    const token = request.cookies.get('token')?.value
-    if (!token) {
+    if (!id) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
+        { success: false, message: 'User ID is required' },
+        { status: 400 }
       )
     }
 
-    const payload = verifyToken(token)
-    if (!payload || (payload.role !== 'SUPERADMIN' && payload.role !== 'ADMIN')) {
+    const body = await request.json().catch(() => null)
+    if (!body) {
       return NextResponse.json(
-        { success: false, message: 'Admin access required' },
-        { status: 403 }
+        { success: false, message: 'Invalid or missing JSON payload' },
+        { status: 400 }
       )
     }
+
+    const { firstName, lastName, email, phone, isActive, isEmailVerified } = body
+
+    if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
+      return NextResponse.json(
+        { success: false, message: 'First name, last name, and email are required.' },
+        { status: 400 }
+      )
+    }
+
+    const normalizedEmail = email.toLowerCase().trim()
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -109,46 +151,34 @@ export async function PUT(
 
     if (!existingUser) {
       return NextResponse.json(
-        { success: false, message: 'User not found' },
+        { success: false, message: 'Customer not found' },
         { status: 404 }
       )
     }
 
-    // Check if email is being changed and if it's taken
-    if (body.email && body.email !== existingUser.email) {
+    // Check email uniqueness if email changed
+    if (normalizedEmail !== existingUser.email) {
       const emailTaken = await prisma.user.findUnique({
-        where: { email: body.email },
+        where: { email: normalizedEmail },
       })
       if (emailTaken) {
         return NextResponse.json(
-          { success: false, message: 'Email already in use' },
+          { success: false, message: 'Another account already uses this email address.' },
           { status: 409 }
         )
       }
     }
 
-    // Prepare update data
-    const updateData: any = {}
-
-    if (body.firstName) updateData.firstName = body.firstName
-    if (body.lastName) updateData.lastName = body.lastName
-    if (body.email) updateData.email = body.email
-    if (body.phone !== undefined) updateData.phone = body.phone
-    if (body.role) updateData.role = body.role
-    if (body.isActive !== undefined) updateData.isActive = body.isActive
-    if (body.isEmailVerified !== undefined) updateData.isEmailVerified = body.isEmailVerified
-    if (body.profilePicture !== undefined) updateData.profilePicture = body.profilePicture
-    if (body.preferences) updateData.preferences = body.preferences
-
-    // If password is provided, hash it
-    if (body.password) {
-      updateData.password = await bcrypt.hash(body.password, 10)
-    }
-
-    // Update user
-    const user = await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id },
-      data: updateData,
+      data: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: normalizedEmail,
+        phone: phone ? phone.trim() : null,
+        isActive: isActive ?? existingUser.isActive,
+        isEmailVerified: isEmailVerified ?? existingUser.isEmailVerified,
+      },
       select: {
         id: true,
         email: true,
@@ -166,80 +196,66 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      message: 'User updated successfully',
-      data: { user },
+      message: 'Customer profile updated successfully',
+      data: { user: updatedUser },
     })
-  } catch (error) {
-    console.error('Error updating user:', error)
+  } catch (error: any) {
+    console.error('API PUT Customer Error:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to update user' },
+      {
+        success: false,
+        message: error?.message || 'Failed to update customer account.',
+        details: String(error),
+      },
       { status: 500 }
     )
   }
 }
 
-//  DELETE - Soft delete user
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// ============================================================================
+// DELETE - Remove Customer Account
+// ============================================================================
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    const authCheck = verifyAdminRole(request)
+    if (!authCheck.isAuth) {
+      return NextResponse.json(
+        { success: false, message: authCheck.message },
+        { status: authCheck.status }
+      )
+    }
+
     const { id } = await params
 
-    // Verify admin access
-    const token = request.cookies.get('token')?.value
-    if (!token) {
+    if (!id) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const payload = verifyToken(token)
-    if (!payload || (payload.role !== 'SUPERADMIN' && payload.role !== 'ADMIN')) {
-      return NextResponse.json(
-        { success: false, message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
-
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-    })
-
-    if (!existingUser) {
-      return NextResponse.json(
-        { success: false, message: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    // Prevent admin from deleting themselves
-    if (existingUser.id === payload.userId) {
-      return NextResponse.json(
-        { success: false, message: 'You cannot delete your own account' },
+        { success: false, message: 'User ID is required' },
         { status: 400 }
       )
     }
 
-    // Soft delete user
-    await prisma.user.update({
-      where: { id },
-      data: {
-        isDeleted: true,
-        isActive: false,
-      },
-    })
+    const existingUser = await prisma.user.findUnique({ where: { id } })
+    if (!existingUser) {
+      return NextResponse.json(
+        { success: false, message: 'Customer not found' },
+        { status: 404 }
+      )
+    }
+
+    await prisma.user.delete({ where: { id } })
 
     return NextResponse.json({
       success: true,
-      message: 'User deleted successfully',
+      message: 'Customer account deleted successfully',
     })
-  } catch (error) {
-    console.error('Error deleting user:', error)
+  } catch (error: any) {
+    console.error('API DELETE Customer Error:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to delete user' },
+      {
+        success: false,
+        message: error?.message || 'Failed to delete customer account.',
+        details: String(error),
+      },
       { status: 500 }
     )
   }

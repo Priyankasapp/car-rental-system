@@ -99,6 +99,7 @@ export interface AdminUser {
   createdAt: string
   updatedAt: string
   _count: {
+    payments: number
     reservations: number
     sessions: number
     emailLogs: number

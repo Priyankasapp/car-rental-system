@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
   ArrowLeft, 
-  UserPlus, 
+  Save, 
   Mail, 
   User, 
   Phone, 
@@ -14,8 +14,12 @@ import {
   Loader2 
 } from 'lucide-react'
 
-export default function AddCustomerPage() {
+export default function EditCustomerPage() {
   const router = useRouter()
+  const params = useParams()
+  const customerId = params?.id as string
+
+  const [fetching, setFetching] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -26,15 +30,52 @@ export default function AddCustomerPage() {
     email: '',
     phone: '',
     isActive: true,
-    isEmailVerified: true, // Default to true since Admin is creating them
+    isEmailVerified: true,
   })
 
-  // Strongly typed change handler for text inputs and checkboxes
+  // Fetch existing customer details on page load
+  useEffect(() => {
+    if (!customerId) return
+
+    const fetchCustomer = async () => {
+      try {
+        setFetching(true)
+        setError(null)
+        const res = await fetch(`/api/admin/users/${customerId}`)
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Failed to load customer details')
+        }
+
+        const user = data.data.user || data.data
+        setFormData({
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          isActive: user.isActive ?? true,
+          isEmailVerified: user.isEmailVerified ?? true,
+        })
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message)
+        } else {
+          setError('An error occurred while fetching customer data.')
+        }
+      } finally {
+        setFetching(false)
+      }
+    }
+
+    fetchCustomer()
+  }, [customerId])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
-    setFormData((prev) => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
     }))
   }
 
@@ -45,8 +86,8 @@ export default function AddCustomerPage() {
     setSuccess(null)
 
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
+      const res = await fetch(`/api/admin/users/${customerId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -56,11 +97,10 @@ export default function AddCustomerPage() {
       const data = await res.json()
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Failed to create customer account')
+        throw new Error(data.message || 'Failed to update customer account')
       }
 
-      setSuccess('Account created! An email with the temporary password has been sent.')
-      
+      setSuccess('Customer profile updated successfully!')
       setTimeout(() => {
         router.push('/admin/users')
         router.refresh()
@@ -69,11 +109,20 @@ export default function AddCustomerPage() {
       if (err instanceof Error) {
         setError(err.message)
       } else {
-        setError('An unexpected error occurred')
+        setError('An unexpected error occurred while updating.')
       }
     } finally {
       setLoading(false)
     }
+  }
+
+  if (fetching) {
+    return (
+      <div className="max-w-3xl mx-auto py-12 flex flex-col items-center justify-center text-gray-500 gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-900" />
+        <p className="text-sm">Loading customer details...</p>
+      </div>
+    )
   }
 
   return (
@@ -87,9 +136,9 @@ export default function AddCustomerPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to Customers
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Add New Customer</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Edit Customer Profile</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Create a customer profile. The system will auto-generate a secure password and email it to them.
+          Update personal information, contact details, or account permissions for this user.
         </p>
       </div>
 
@@ -251,12 +300,12 @@ export default function AddCustomerPage() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Creating...
+                Saving...
               </>
             ) : (
               <>
-                <UserPlus className="w-4 h-4" />
-                Create Customer
+                <Save className="w-4 h-4" />
+                Save Changes
               </>
             )}
           </button>
