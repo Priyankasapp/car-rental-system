@@ -227,7 +227,7 @@ export default function CarDetailPage({
               ← Back
             </Link>
             <h1 className="text-2xl font-bold text-slate-900">
-              {car.year} {car.manufacturer} {car.model}
+             {car.manufacturer} 
             </h1>
             <span
               className={`rounded-full px-3 py-0.5 text-xs font-bold tracking-wider ${
@@ -243,15 +243,13 @@ export default function CarDetailPage({
               {car.status}
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
-            ID: <span className="font-mono">{car.id}</span> | License Plate: <span className="font-mono font-bold text-slate-700">{car.licensePlate}</span> | VIN: {car.vin || 'N/A'}
-          </p>
+          
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
+            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
           >
             {isEditing ? 'Cancel Edit' : 'Edit Vehicle'}
           </button>
@@ -272,7 +270,7 @@ export default function CarDetailPage({
             onClick={() => setActiveTab(tab)}
             className={`border-b-2 px-4 py-2.5 capitalize transition-all ${
               activeTab === tab
-                ? 'border-blue-600 text-blue-600 font-bold'
+                ? 'border-blue-600 text-black font-bold'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >

@@ -24,7 +24,7 @@ async function main() {
     prisma.staffMaster.deleteMany(),
   ]);
 
-  console.log("✅ Database wiped clean!");
+  console.log(" Database wiped clean!");
 
   // Create Super Admin
   const password = "SuperAdmin@123";

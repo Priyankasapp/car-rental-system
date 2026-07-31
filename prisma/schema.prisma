@@ -225,7 +225,7 @@ model Car {
   model           String   // e.g. "M5 CS", "S-Class", "Model S"
   year            Int
   licensePlate    String   @unique
-  vin             String?  @unique
+  vin             String? 
   color           String?
   doors           Int      @default(4)
   seats           Int

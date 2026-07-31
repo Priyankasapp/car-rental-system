@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { CarCreateSchema } from '@/lib/cars/validation'
+import { ZodError } from 'zod'
 
 // GET /api/admin/cars — Fetch all cars with optional filter & search
 export async function GET(request: Request) {
@@ -12,13 +13,17 @@ export async function GET(request: Request) {
     const transmissionId = searchParams.get('transmissionId')
     const status = searchParams.get('status')
 
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (search) {
+      // Note: MongoDB via Prisma does not support `mode: 'insensitive'`.
+      // This is a case-sensitive match. For proper case-insensitive search,
+      // maintain a lowercase shadow field (e.g. `manufacturerLower`) and
+      // query against that instead.
       where.OR = [
-        { manufacturer: { contains: search, mode: 'insensitive' } },
-        { model: { contains: search, mode: 'insensitive' } },
-        { licensePlate: { contains: search, mode: 'insensitive' } },
+        { manufacturer: { contains: search } },
+        { model: { contains: search } },
+        { licensePlate: { contains: search } },
       ]
     }
 
@@ -39,12 +44,10 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json({ success: true, data: cars }, { status: 200 })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching cars:', error)
-    return NextResponse.json(
-      { success: false, message: error.message || 'Failed to fetch cars' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to fetch cars'
+    return NextResponse.json({ success: false, message }, { status: 500 })
   }
 }
 
@@ -52,47 +55,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    
-    console.log('Received payload:', JSON.stringify(body, null, 2))
 
-    const {
-      manufacturer,
-      model,
-      year,
-      licensePlate,
-      color,
-      seats,
-      luggageCapacity,
-      categoryId,
-      transmissionId,
-      fuelTypeId,
-      pricePerDay,
-      pricePerWeek,
-      pricePerMonth,
-      securityDeposit,
-      mileageFree,
-      mileageExtraFee,
-      locationAddress,
-      locationCity,
-      locationState,
-      locationZipCode,
-      imageMain,
-      imageGallery,
-      features,
-      status,
-    } = body
+    // Validate + coerce everything in one pass
+    const parsed = CarCreateSchema.parse(body)
 
-    // 1. Validation check
-    if (!licensePlate || !manufacturer || !model) {
-      return NextResponse.json(
-        { success: false, message: 'Manufacturer, model, and license plate are required.' },
-        { status: 400 }
-      )
-    }
-
-    // 2. Check if license plate already exists
+    // Check for existing license plate
     const existingCar = await prisma.car.findUnique({
-      where: { licensePlate: licensePlate.trim() },
+      where: { licensePlate: parsed.licensePlate },
     })
 
     if (existingCar) {
@@ -102,70 +71,50 @@ export async function POST(request: Request) {
       )
     }
 
-    // 3. Process image gallery
-    let galleryArray: string[] = []
-    if (Array.isArray(imageGallery)) {
-      galleryArray = imageGallery
-    } else if (typeof imageGallery === 'string' && imageGallery.trim()) {
-      galleryArray = imageGallery.split(',').map((img) => img.trim()).filter(Boolean)
-    }
-
-    // 4. Process features - get feature IDs from names
-    let featureIds: string[] = []
-    if (Array.isArray(features) && features.length > 0) {
-      // Find existing features by name
-      const existingFeatures = await prisma.carFeatureMaster.findMany({
-        where: {
-          name: { in: features }
-        },
-        select: { id: true }
+    // Verify referenced featureIds actually exist (defends against stale/bad IDs from client)
+    let validFeatureIds: string[] = []
+    let featureNames: string[] = []
+    if (parsed.featureIds.length > 0) {
+      const foundFeatures = await prisma.carFeatureMaster.findMany({
+        where: { id: { in: parsed.featureIds } },
+        select: { id: true, name: true },
       })
-      featureIds = existingFeatures.map(f => f.id)
+      validFeatureIds = foundFeatures.map((f) => f.id)
+      featureNames = foundFeatures.map((f) => f.name)
     }
 
-    // 5. Prepare data for creation
-    const carData: any = {
-      manufacturer: manufacturer.trim(),
-      model: model.trim(),
-      year: Number(year) || new Date().getFullYear(),
-      licensePlate: licensePlate.trim(),
-      color: color || null,
-      seats: Number(seats) || 5,
-      luggageCapacity: Number(luggageCapacity) || 0,
-      pricePerDay: Number(pricePerDay) || 0,
-      pricePerWeek: pricePerWeek ? Number(pricePerWeek) : null,
-      pricePerMonth: pricePerMonth ? Number(pricePerMonth) : null,
-      securityDeposit: Number(securityDeposit) || 0,
-      mileageFree: mileageFree ? Number(mileageFree) : null,
-      mileageExtraFee: mileageExtraFee ? Number(mileageExtraFee) : null,
-      locationAddress: locationAddress || '',
-      locationCity: locationCity || '',
-      locationState: locationState || '', // Required field - provide empty string if not provided
-      locationZipCode: locationZipCode || '',
-      imageMain: imageMain || '',
-      imageGallery: galleryArray,
-      features: Array.isArray(features) ? features : [],
-      status: status || 'AVAILABLE',
-      isPublished: true,
-      isFeatured: false,
-      // Set foreign keys (convert empty strings to null)
-      categoryId: categoryId || null,
-      transmissionId: transmissionId || null,
-      fuelTypeId: fuelTypeId || null,
-    }
+    const imageMain = parsed.imageMain || parsed.imageGallery[0]
 
-    // Add feature relations if there are feature IDs
-    if (featureIds.length > 0) {
-      carData.featureMasters = {
-        connect: featureIds.map((id: string) => ({ id }))
-      }
-    }
-
-    console.log('Creating car with data:', JSON.stringify(carData, null, 2))
-
-    // 6. Create the car
     const newCar = await prisma.car.create({
-      data: carData,
+      data: {
+        manufacturer: parsed.manufacturer,
+        model: parsed.model,
+        year: parsed.year,
+        licensePlate: parsed.licensePlate,
+        color: parsed.color || null,
+        seats: parsed.seats,
+        luggageCapacity: parsed.luggageCapacity,
+        pricePerDay: parsed.pricePerDay,
+        pricePerWeek: parsed.pricePerWeek || null,
+        pricePerMonth: parsed.pricePerMonth || null,
+        securityDeposit: parsed.securityDeposit,
+        mileageFree: parsed.mileageFree || null,
+        mileageExtraFee: parsed.mileageExtraFee || null,
+        locationAddress: parsed.locationAddress,
+        locationCity: parsed.locationCity,
+        locationState: parsed.locationState,
+        locationZipCode: parsed.locationZipCode,
+        imageMain,
+        imageGallery: parsed.imageGallery,
+        features: featureNames,           // denormalized names, kept in sync from real lookup
+        featureIds: validFeatureIds,       // only IDs confirmed to exist
+        status: parsed.status,
+        isPublished: true,
+        isFeatured: false,
+        categoryId: parsed.categoryId || null,
+        transmissionId: parsed.transmissionId || null,
+        fuelTypeId: parsed.fuelTypeId || null,
+      },
       include: {
         category: true,
         fuelType: true,
@@ -174,46 +123,42 @@ export async function POST(request: Request) {
       },
     })
 
-    console.log('Car created successfully:', newCar.id)
-
     return NextResponse.json(
-      { 
-        success: true, 
-        data: newCar,
-        message: 'Car created successfully' 
-      }, 
+      { success: true, data: newCar, message: 'Car created successfully' },
       { status: 201 }
     )
-  } catch (error: any) {
-    console.error('Error creating car record:', error)
-    
-    // Handle specific Prisma errors
-    if (error.code === 'P2002') {
+  } catch (error) {
+    if (error instanceof ZodError) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: `A record with this ${error.meta?.target || 'value'} already exists.` 
-        },
-        { status: 409 }
-      )
-    }
-
-    if (error.code === 'P2003') {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Invalid reference: One of the referenced records does not exist.' 
+        {
+          success: false,
+          message: 'Validation failed',
+          errors: error.flatten().fieldErrors,
         },
         { status: 400 }
       )
     }
 
+    console.error('Error creating car record:', error)
+
+    const prismaError = error as { code?: string; meta?: { target?: string }; message?: string }
+
+    if (prismaError.code === 'P2002') {
+      return NextResponse.json(
+        { success: false, message: `A record with this ${prismaError.meta?.target || 'value'} already exists.` },
+        { status: 409 }
+      )
+    }
+
+    if (prismaError.code === 'P2003') {
+      return NextResponse.json(
+        { success: false, message: 'Invalid reference: One of the referenced records does not exist.' },
+        { status: 400 }
+      )
+    }
+
     return NextResponse.json(
-      { 
-        success: false, 
-        message: error.message || 'Failed to create car record',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      },
+      { success: false, message: prismaError.message || 'Failed to create car record' },
       { status: 500 }
     )
   }

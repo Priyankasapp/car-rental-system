@@ -5,7 +5,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Edit, Trash2, Eye } from 'lucide-react'
+import {  Trash2, Eye } from 'lucide-react'
 import { DataExplorer, Column } from '@/components/admin/DataExplorer'
 
 interface MasterItem {
@@ -23,7 +23,7 @@ interface CarItem {
   securityDeposit: number
   imageMain?: string
   status: 'AVAILABLE' | 'RESERVED' | 'UNAVAILABLE' | 'MAINTENANCE'
-  category?: string | MasterItem
+  category?: MasterItem | null
 }
 
 export default function CarsPage() {
@@ -31,23 +31,17 @@ export default function CarsPage() {
   const [cars, setCars] = useState<CarItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
-  // Search & Filter State
   const [search, setSearch] = useState<string>('')
   const [debouncedSearch, setDebouncedSearch] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
-  const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL') // now holds categoryId
   const [categories, setCategories] = useState<MasterItem[]>([])
 
-  // Debounce search input
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search)
-    }, 300)
-
+    const handler = setTimeout(() => setDebouncedSearch(search), 300)
     return () => clearTimeout(handler)
   }, [search])
 
-  // Fetch Categories for Filter Dropdown
   useEffect(() => {
     async function loadCategories() {
       try {
@@ -63,27 +57,20 @@ export default function CarsPage() {
     loadCategories()
   }, [])
 
-  // Fetch Cars from standard /api/cars endpoint
   const fetchCars = useCallback(async () => {
     try {
       setLoading(true)
       const queryParams = new URLSearchParams()
-      
-      if (debouncedSearch.trim()) {
-        queryParams.set('search', debouncedSearch.trim())
-      }
-      if (statusFilter !== 'ALL') {
-        queryParams.set('status', statusFilter)
-      }
-      if (categoryFilter !== 'ALL') {
-        queryParams.set('category', categoryFilter)
-      }
 
-      const res = await fetch(`/api/cars?${queryParams.toString()}`)
+      if (debouncedSearch.trim()) queryParams.set('search', debouncedSearch.trim())
+      if (statusFilter !== 'ALL') queryParams.set('status', statusFilter)
+      if (categoryFilter !== 'ALL') queryParams.set('categoryId', categoryFilter)
+
+      const res = await fetch(`/api/admin/cars?${queryParams.toString()}`)
       const result = await res.json()
 
-      if (res.ok && result.success && result.data?.cars) {
-        setCars(result.data.cars)
+      if (res.ok && result.success && Array.isArray(result.data)) {
+        setCars(result.data)
       } else {
         setCars([])
       }
@@ -99,24 +86,18 @@ export default function CarsPage() {
     fetchCars()
   }, [fetchCars])
 
-  // Delete Handler with API Integration
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this vehicle?')) return
 
+    const previousCars = cars
+    setCars((prev) => prev.filter((c) => c.id !== id))
+
     try {
-      // Optimistic state update
-      setCars((prev) => prev.filter((c) => c.id !== id))
-
-      const res = await fetch(`/api/cars/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (!res.ok) {
-        throw new Error('Failed to delete')
-      }
+      const res = await fetch(`/api/admin/cars/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete')
     } catch (error) {
       alert('Could not delete vehicle. Rolling back.')
-      fetchCars()
+      setCars(previousCars)
     }
   }
 
@@ -149,13 +130,8 @@ export default function CarsPage() {
     }
   }
 
-  const getCategoryName = (category?: string | MasterItem) => {
-    if (!category) return 'Standard'
-    if (typeof category === 'string') return category
-    return category.name || 'Standard'
-  }
+  const getCategoryName = (category?: MasterItem | null) => category?.name || 'Standard'
 
-  // Table Columns Definition
   const columns: Column<CarItem>[] = [
     {
       header: 'Vehicle',
@@ -163,7 +139,7 @@ export default function CarsPage() {
         <div className="flex items-center gap-3">
           <img
             src={car.imageMain || '/placeholder.png'}
-            alt=""
+            alt="image of the car"
             className="w-10 h-10 rounded-md object-cover border bg-gray-50"
           />
           <div>
@@ -178,19 +154,11 @@ export default function CarsPage() {
     {
       header: 'Plate',
       accessor: (car) => (
-        <span className="font-mono text-xs text-gray-700">
-          {car.licensePlate || 'N/A'}
-        </span>
+        <span className="font-mono text-xs text-gray-700">{car.licensePlate || 'N/A'}</span>
       ),
     },
-    {
-      header: 'Category',
-      accessor: (car) => getCategoryName(car.category),
-    },
-    {
-      header: 'Status',
-      accessor: (car) => renderStatusBadge(car.status),
-    },
+    { header: 'Category', accessor: (car) => getCategoryName(car.category) },
+    { header: 'Status', accessor: (car) => renderStatusBadge(car.status) },
     {
       header: 'Rate / Day',
       accessor: (car) => (
@@ -211,13 +179,7 @@ export default function CarsPage() {
           >
             <Eye className="w-4 h-4" />
           </button>
-          <Link
-            href={`/admin/cars/${car.id}/edit`}
-            className="hover:text-black p-1"
-            title="Edit"
-          >
-            <Edit className="w-4 h-4" />
-          </Link>
+          
           <button
             onClick={() => handleDelete(car.id)}
             className="hover:text-red-600 p-1"
@@ -261,25 +223,21 @@ export default function CarsPage() {
           label: 'All Categories',
           value: categoryFilter,
           onChange: setCategoryFilter,
-          options: categories.map((c) => ({ label: c.name, value: c.name })),
+          options: categories.map((c) => ({ label: c.name, value: c.id })),
         },
       ]}
       columns={columns}
       renderGridCard={(car) => (
         <div className="border rounded-xl bg-white overflow-hidden shadow-sm hover:shadow transition flex flex-col justify-between">
-          {/* Card Image Header */}
           <div className="relative h-36 w-full bg-gray-100">
             <img
               src={car.imageMain || '/placeholder.png'}
               alt={`${car.manufacturer} ${car.model}`}
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-2.5 left-2.5">
-              {renderStatusBadge(car.status)}
-            </div>
+            <div className="absolute top-2.5 left-2.5">{renderStatusBadge(car.status)}</div>
           </div>
 
-          {/* Body */}
           <div className="p-3 flex-1 flex flex-col justify-between space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -298,11 +256,8 @@ export default function CarsPage() {
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="pt-2 border-t flex items-center justify-between text-xs text-gray-400">
-              <span className="text-[11px] text-gray-500">
-                {getCategoryName(car.category)}
-              </span>
+              <span className="text-[11px] text-gray-500">{getCategoryName(car.category)}</span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => router.push(`/admin/cars/${car.id}`)}
@@ -311,13 +266,7 @@ export default function CarsPage() {
                 >
                   <Eye className="w-3.5 h-3.5" />
                 </button>
-                <Link
-                  href={`/admin/cars/${car.id}/edit`}
-                  className="p-1 hover:text-black rounded"
-                  title="Edit"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                </Link>
+               
                 <button
                   onClick={() => handleDelete(car.id)}
                   className="p-1 hover:text-red-600 rounded"

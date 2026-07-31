@@ -12,17 +12,15 @@ const alwaysPublicRoutes = [
 ]
 
 const publicApiGetRoutes = [
-  '/api/cars', // Public GET for vehicle browsing & search
+  '/api/cars',
   '/api/settings',
-  '/api/admin/car-features', // Public GET for features (e.g., booking forms)
+  '/api/admin/car-features',
   '/api/admin/categories',
   '/api/admin/fuel-types',
   '/api/admin/transmission-types',
 ]
 
-const publicApiWriteRoutes = [
-  '/api/reservations',
-]
+const publicApiWriteRoutes = ['/api/reservations']
 
 const guestOnlyPages = ['/login', '/register', '/forgot-password']
 
@@ -42,8 +40,17 @@ async function verifyTokenEdge(token: string) {
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
   const method = request.method
-  const token = request.cookies.get('token')?.value
 
+  // 0. IMPORTANT: Bypass Next.js internal assets & static files
+  if (
+    path.startsWith('/_next') ||
+    path.startsWith('/favicon.ico') ||
+    path.match(/\.(png|jpg|jpeg|gif|svg|webp|css|js)$/)
+  ) {
+    return NextResponse.next()
+  }
+
+  const token = request.cookies.get('token')?.value
   const payload = token ? await verifyTokenEdge(token) : null
 
   // Role Checks
@@ -57,7 +64,7 @@ export async function proxy(request: NextRequest) {
 
   const isSuperAdmin = payload?.role === 'SUPERADMIN'
 
-  // 1. Redirect dashboard users away from public landing & guest pages
+  // 1. Redirect dashboard users ONLY when they explicitly visit the homepage '/' or guest pages
   if (
     isDashboardUser &&
     (path === '/' || guestOnlyPages.some((p) => path === p || path.startsWith(`${p}/`)))
@@ -195,16 +202,11 @@ export async function proxy(request: NextRequest) {
   })
 }
 
-// Next.js Middleware export entry
 export default proxy
 
+// Updated matcher regex to prevent Next.js internals from triggering redirects
 export const config = {
   matcher: [
-    '/api/:path*',
-    '/admin/:path*',
-    '/',
-    '/login',
-    '/register',
-    '/forgot-password',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
