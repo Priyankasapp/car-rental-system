@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/set-state-in-effect */
 // components/Header.tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Icon from '@/components/ui/Icon'
@@ -28,34 +28,38 @@ export default function Header() {
   const router = useRouter()
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Fetch current authenticated user on mount or route change
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/me', {
-          headers: { 'Cache-Control': 'no-cache' },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.success && data.data?.user) {
-            setUser(data.data.user)
-          } else {
-            setUser(null)
-          }
-        } else {
-          setUser(null)
+  // Memoized auth checker
+  const checkAuth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 
+          'Cache-Control': 'no-store, max-age=0',
+        },
+        credentials: 'include', // Ensures HTTP-only auth cookies are sent
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && data.data?.user) {
+          setUser(data.data.user)
+          return
         }
-      } catch (err) {
-        setUser(null)
-      } finally {
-        setIsLoading(false)
       }
+      setUser(null)
+    } catch (err) {
+      console.error('Error fetching auth state:', err)
+      setUser(null)
+    } finally {
+      setIsLoading(false)
     }
+  }, [])
 
+  // Re-run authentication check whenever route changes
+  useEffect(() => {
     checkAuth()
-  }, [pathname])
+  }, [pathname, checkAuth])
 
-  // Handle scroll effect for dynamic padding & shadow
+  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
@@ -87,14 +91,14 @@ export default function Header() {
     }
   }, [isMobileMenuOpen])
 
-  // Logout handler calling API directly
+  // Logout handler
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
       setUser(null)
       setIsDropdownOpen(false)
       setIsMobileMenuOpen(false)
-      router.push('/')
+      router.push('/login')
       router.refresh()
     } catch (error) {
       console.error('Logout error:', error)
@@ -157,7 +161,7 @@ export default function Header() {
           {/* Right: Auth Buttons */}
           <div className="flex items-center gap-4">
             {isLoading ? (
-              <div className="h-8 w-20 bg-gray-100 animate-pulse rounded-lg" />
+              <div className="h-8 w-24 bg-gray-100 animate-pulse rounded-lg" />
             ) : isAuthenticated ? (
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -167,7 +171,7 @@ export default function Header() {
                 >
                   <Icon name="account_circle" className="text-2xl" />
                   <span className="hidden md:inline text-sm font-medium">
-                    {user?.firstName}
+                    {user?.firstName || 'Account'}
                   </span>
                   <Icon
                     name={isDropdownOpen ? 'expand_less' : 'expand_more'}
@@ -177,7 +181,7 @@ export default function Header() {
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900">
                         {user?.firstName} {user?.lastName}
@@ -203,7 +207,7 @@ export default function Header() {
                       My Bookings
                     </Link>
 
-                    {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && (
+                    {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN' || user?.role === 'STAFF') && (
                       <Link
                         href="/admin"
                         className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 transition border-t border-gray-100"
@@ -215,7 +219,7 @@ export default function Header() {
 
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition border-t border-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition border-t border-gray-100 cursor-pointer"
                     >
                       Logout
                     </button>
@@ -242,7 +246,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile Navigation Drawer Overlay */}
+      {/* Mobile Navigation Drawer */}
       <div
         className={cn(
           'fixed inset-0 z-40 bg-white transition-transform duration-300 ease-in-out md:hidden pt-24 px-5',
@@ -273,6 +277,12 @@ export default function Header() {
           {/* Mobile Auth Links */}
           {isAuthenticated ? (
             <>
+              <div className="pt-4 border-t border-gray-100">
+                <p className="text-sm font-semibold text-gray-900">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-xs text-gray-500 mb-4">{user?.email}</p>
+              </div>
               <Link
                 href="/profile"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -292,7 +302,7 @@ export default function Header() {
                   handleLogout()
                   setIsMobileMenuOpen(false)
                 }}
-                className="text-lg text-red-600 text-left font-normal"
+                className="text-lg text-red-600 text-left font-normal cursor-pointer"
               >
                 Logout
               </button>

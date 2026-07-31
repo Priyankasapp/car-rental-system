@@ -9,6 +9,8 @@ const alwaysPublicRoutes = [
   "/api/auth/resend-otp",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
+  "/api/auth/me",
+  "/api/auth/logout",
   "/api/health",
   "/api/contact",
 ];
@@ -108,7 +110,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 3. Redirect logged-in standard customers away from guest pages
+  // 3. Redirect logged-in standard customers away from guest pages (/login, /register, etc.)
   if (
     payload &&
     !isDashboardUser &&

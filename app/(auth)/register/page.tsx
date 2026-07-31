@@ -26,10 +26,16 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      // Clean payload: send undefined or omit phone if empty
+      const payload = {
+        ...formData,
+        phone: formData.phone.trim() !== "" ? formData.phone.trim() : undefined,
+      };
+
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -52,73 +58,80 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md">
+    <div className="min-h-screen flex items-center justify-center bg-background text-on-surface px-4 py-12 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-surface-container-lowest dark:bg-surface-container-low p-8 rounded-2xl border border-border shadow-executive">
         <div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
-            Create your UrbanDrive Account
+          <h2 className="headline-lg text-center text-on-surface">
+            Join UrbanDrive
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign up to unlock seamless vehicle rentals.
+          <p className="mt-2 text-center body-md text-on-surface-variant">
+            Create an executive account to unlock seamless vehicle rentals.
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded text-sm text-red-700">
+          <div className="bg-error-container/20 border-l-4 border-error p-4 rounded-md text-sm text-error">
             {error}
           </div>
         )}
 
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">First Name</label>
+              <label className="block label-sm mb-1.5 text-on-surface">
+                First Name <span className="text-error">*</span>
+              </label>
               <input
                 type="text"
                 name="firstName"
                 required
                 value={formData.firstName}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="executive-input block w-full px-4 py-3 rounded-lg border border-border bg-background text-on-surface body-md focus:border-primary"
                 placeholder="John"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Last Name</label>
+              <label className="block label-sm mb-1.5 text-on-surface">
+                Last Name <span className="text-error">*</span>
+              </label>
               <input
                 type="text"
                 name="lastName"
                 required
                 value={formData.lastName}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="executive-input block w-full px-4 py-3 rounded-lg border border-border bg-background text-on-surface body-md focus:border-primary"
                 placeholder="Doe"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email Address</label>
+            <label className="block label-sm mb-1.5 text-on-surface">
+              Email Address <span className="text-error">*</span>
+            </label>
             <input
               type="email"
               name="email"
               required
               value={formData.email}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="executive-input block w-full px-4 py-3 rounded-lg border border-border bg-background text-on-surface body-md focus:border-primary"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+            <label className="block label-sm mb-1.5 text-on-surface">
+              Phone Number
+            </label>
             <input
               type="tel"
               name="phone"
-              required
               value={formData.phone}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="executive-input block w-full px-4 py-3 rounded-lg border border-border bg-background text-on-surface body-md focus:border-primary"
               placeholder="+1 (555) 000-0000"
             />
           </div>
@@ -127,16 +140,16 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="executive-btn w-full flex justify-center py-3 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:bg-primary-container disabled:opacity-50 transition-all cursor-pointer"
             >
               {loading ? "Registering..." : "Send Verification Code"}
             </button>
           </div>
         </form>
 
-        <p className="text-center text-sm text-gray-600 mt-4">
+        <p className="text-center body-md text-on-surface-variant mt-4">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <Link href="/login" className="font-semibold text-primary hover:underline">
             Sign in
           </Link>
         </p>

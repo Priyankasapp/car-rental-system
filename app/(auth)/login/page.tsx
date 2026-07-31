@@ -9,6 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +35,7 @@ export default function LoginPage() {
       if (["ADMIN", "SUPERADMIN", "STAFF"].includes(data.data.user.role)) {
         router.push("/admin");
       } else {
-        router.push("/cars");
+        router.push("/");
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -48,52 +49,107 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md">
+    <div className="min-h-screen flex items-center justify-center bg-background text-on-surface px-4 py-12 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-surface-container-lowest dark:bg-surface-container-low p-8 rounded-2xl border border-border shadow-executive">
         <div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
-            Welcome back to UrbanDrive
+          <h2 className="headline-lg text-center text-on-surface">
+            Welcome back
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to manage your rentals and book your next drive.
+          <p className="mt-2 text-center body-md text-on-surface-variant">
+            Sign in to manage your executive rentals and reserve your next drive.
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded text-sm text-red-700">
+          <div className="bg-error-container/20 border-l-4 border-error p-4 rounded-md text-sm text-error">
             {error}
           </div>
         )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email address</label>
+              <label className="block label-sm mb-1.5 text-on-surface">
+                Email address
+              </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="executive-input block w-full px-4 py-3 rounded-lg border border-border bg-background text-on-surface body-md focus:border-primary"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="••••••••"
-              />
+              <label className="block label-sm mb-1.5 text-on-surface">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="executive-input block w-full px-4 py-3 pr-12 rounded-lg border border-border bg-background text-on-surface body-md focus:border-primary"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    // Eye Off Icon
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"
+                      />
+                    </svg>
+                  ) : (
+                    // Eye Icon
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center justify-between text-sm">
-            <Link href="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link
+              href="/forgot-password"
+              className="label-sm text-primary hover:underline"
+            >
               Forgot password?
             </Link>
           </div>
@@ -102,16 +158,16 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="executive-btn w-full flex justify-center py-3 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:bg-primary-container disabled:opacity-50 transition-all cursor-pointer"
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>
           </div>
         </form>
 
-        <p className="text-center text-sm text-gray-600 mt-4">
+        <p className="text-center body-md text-on-surface-variant mt-4">
           Don&#39;t have an account?{" "}
-          <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <Link href="/register" className="font-semibold text-primary hover:underline">
             Register now
           </Link>
         </p>

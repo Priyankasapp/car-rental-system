@@ -6,13 +6,14 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🧹 Cleaning UrbanDrive database...");
 
-  // Delete all dependent child records first, then parent records to avoid relation errors
+  // Delete all records in correct dependent order
   await prisma.$transaction([
     prisma.oTP.deleteMany(),
     prisma.emailLog.deleteMany(),
     prisma.payment.deleteMany(),
     prisma.bookingAuditLog.deleteMany(),
     prisma.auditLog.deleteMany(),
+    prisma.contact.deleteMany(),
     prisma.session.deleteMany(),
     prisma.reservation.deleteMany(),
     prisma.car.deleteMany(),
@@ -24,10 +25,10 @@ async function main() {
     prisma.staffMaster.deleteMany(),
   ]);
 
-  console.log(" Database wiped clean!");
+  console.log("⚡ Database wiped clean!");
 
   // Create Super Admin
-  const password = "SuperAdmin@123";
+  const password = process.env.SUPERADMIN_PASSWORD || "SuperAdmin@123";
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const superAdmin = await prisma.user.create({
@@ -39,8 +40,14 @@ async function main() {
       password: hashedPassword,
       role: Role.SUPERADMIN,
 
+      // Auth & Security Flags
       isEmailVerified: true,
       isActive: true,
+      mustChangePassword: false,
+      tokenVersion: 0,
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      permissions: [], // SUPERADMIN bypasses permission checks implicitly in guards
 
       profilePicture:
         "https://ui-avatars.com/api/?name=Super+Admin&background=1a1a1a&color=ffffff&size=128",

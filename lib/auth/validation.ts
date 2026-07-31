@@ -1,14 +1,11 @@
 import { z } from "zod";
 import { OTPScope } from "@prisma/client";
 
-// Phone validation (E.164 format or standard 10-digit number)
-const phoneRegex = /^(\+?[1-9]\d{1,14}|[0-9]{10})$/;
-
 export const RegisterSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  phone: z.string().regex(phoneRegex, "Please enter a valid phone number").optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
 });
 
 export const VerifyOtpSchema = z.object({

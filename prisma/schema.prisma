@@ -118,36 +118,37 @@ model StaffMaster {
 // ============== USER MODEL ==============
 
 model User {
-  id             String     @id @default(auto()) @map("_id") @db.ObjectId
-  email          String     @unique
-  phone          String?
-  firstName      String
-  lastName       String
-  password       String?
-  role           Role       @default(CUSTOMER)
-  staffType      StaffType? // Optional: DRIVER or CLEANER if role == STAFF
+  id                 String     @id @default(auto()) @map("_id") @db.ObjectId
+  email              String     @unique
+  phone              String?
+  firstName          String
+  lastName           String
+  password           String?
+  role               Role       @default(CUSTOMER)
+  staffType          StaffType? // Optional: DRIVER or CLEANER if role == STAFF
 
   // Link to Staff Master (if user is staff)
   staffMasterId String?      @db.ObjectId
   staffMaster   StaffMaster? @relation("StaffMasterToUser", fields: [staffMasterId], references: [id], onDelete: SetNull)
 
-  // Security & Auth Flags
-  isEmailVerified    Boolean @default(false)
-  mustChangePassword Boolean @default(false) // Forced password reset on temp password usage
-  tokenVersion       Int     @default(0)     // Revokes all JWTs globally when incremented
-  isActive           Boolean @default(true)
+  // Security, Auth Flags & Lockout
+  isEmailVerified    Boolean   @default(false)
+  mustChangePassword Boolean   @default(false) // Forced password reset on temp password usage
+  tokenVersion       Int       @default(0)     // Revokes all JWTs globally when incremented
+  isActive           Boolean   @default(true)
+  failedLoginAttempts Int      @default(0)     // Brute-force protection
+  lockoutUntil       DateTime?                 // Temporarily locks account on repeated auth failures
 
   profilePicture String?
   preferences    Json?    // { language, currency, notifications }
   permissions    String[] @default([])
 
   // Relations
-  sessions         Session[]
-  reservations     Reservation[]
-  emailLogs        EmailLog[]
-  payments         Payment[]
-  auditLogs        AuditLog[]
-  bookingAuditLogs BookingAuditLog[]
+  sessions     Session[]
+  reservations Reservation[]
+  emailLogs    EmailLog[]
+  payments     Payment[]
+  auditLogs    AuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -155,6 +156,7 @@ model User {
   @@index([role])
   @@index([staffMasterId])
   @@index([isActive])
+  @@index([email, isActive])
   @@map("users")
 }
 
@@ -176,6 +178,7 @@ model Session {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   userId         String   @db.ObjectId
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role?    // Snapshot of role at time of login for quick validation
   token          String   @unique
   refreshToken   String   @unique
   expiresAt      DateTime
@@ -253,7 +256,7 @@ model Car {
   features       String[]
 
   // Dynamic Settings Relations
-  categoryId String?         @db.ObjectId
+  categoryId String?          @db.ObjectId
   category   CategoryMaster? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   transmissionId String?             @db.ObjectId
@@ -462,8 +465,8 @@ model BookingAuditLog {
   action          String
   previousStatus  String?
   newStatus       String?
-  performedBy     String      @db.ObjectId
-  performedByUser User        @relation(fields: [performedBy], references: [id], onDelete: Cascade)
+  performedBy     String      @db.ObjectId // User ID who performed the action
+  performedByName String?     // Preserves staff name if account gets deleted later
   notes           String?
 
   ipAddress String?

@@ -1,19 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import {
-  hashPassword,
-  validatePasswordStrength,
-  verifyPassword,
-} from '@/lib/auth'
-import { requireAuth, isAuthError } from '@/lib/api-auth'
+// app/api/profile/route.ts
+import { NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
-export async function GET(request: NextRequest) {
+// Helper to get authenticated user ID from headers (passed by middleware)
+async function getAuthUserId() {
+  const headerList = await headers();
+  return headerList.get("x-user-id");
+}
+
+// ----------------------------------------------------------------------
+// GET: Fetch authenticated user's profile
+// ----------------------------------------------------------------------
+export async function GET() {
   try {
-    const auth = await requireAuth(request)
-    if (isAuthError(auth)) return auth
+    const userId = await getAuthUserId();
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: "Unauthenticated" },
+        { status: 401 }
+      );
+    }
 
     const user = await prisma.user.findUnique({
-      where: { id: auth.user.id, isDeleted: false },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -22,93 +34,110 @@ export async function GET(request: NextRequest) {
         phone: true,
         role: true,
         isEmailVerified: true,
-        isActive: true,
         profilePicture: true,
         preferences: true,
-        permissions: true,
-        staffType: true,
-        staffMasterId: true,
         createdAt: true,
-        updatedAt: true,
         _count: {
           select: { reservations: true },
         },
       },
-    })
+    });
 
     if (!user) {
-      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ success: true, data: { user } })
-  } catch (error) {
-    console.error('Get profile error:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to load profile' },
+      {
+        success: true,
+        data: { user },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("GET /api/profile Error:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch profile" },
       { status: 500 }
-    )
+    );
   }
 }
 
-export async function PUT(request: NextRequest) {
+// ----------------------------------------------------------------------
+// PUT: Update personal details, password, and/or profile picture
+// ----------------------------------------------------------------------
+export async function PUT(req: Request) {
   try {
-    const auth = await requireAuth(request)
-    if (isAuthError(auth)) return auth
+    const userId = await getAuthUserId();
 
-    const body = await request.json()
-    const { firstName, lastName, phone, profilePicture, preferences, currentPassword, newPassword } =
-      body
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: "Unauthenticated" },
+        { status: 401 }
+      );
+    }
 
-    const updateData: Record<string, unknown> = {}
+    const body = await req.json();
+    const { firstName, lastName, phone, profilePicture, currentPassword, newPassword } = body;
 
-    if (firstName !== undefined) updateData.firstName = String(firstName).trim()
-    if (lastName !== undefined) updateData.lastName = String(lastName).trim()
-    if (phone !== undefined) updateData.phone = phone ? String(phone).trim() : null
-    if (profilePicture !== undefined) updateData.profilePicture = profilePicture || null
-    if (preferences !== undefined) updateData.preferences = preferences
+    // Fetch existing user to verify password if requested
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
+    if (!existingUser) {
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Build update payload
+    const updateData: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string | null;
+      profilePicture?: string | null;
+      password?: string;
+    } = {};
+
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+
+    // Password Update Logic
     if (newPassword) {
       if (!currentPassword) {
         return NextResponse.json(
-          { success: false, message: 'Current password is required to set a new password' },
+          { success: false, message: "Current password is required to set a new password." },
           { status: 400 }
-        )
+        );
       }
 
-      const strength = validatePasswordStrength(newPassword)
-      if (!strength.isValid) {
-        return NextResponse.json({ success: false, message: strength.message }, { status: 400 })
-      }
+      // Verify current password against stored hash
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        existingUser.password
+      );
 
-      const dbUser = await prisma.user.findUnique({
-        where: { id: auth.user.id },
-        select: { password: true },
-      })
-
-      if (!dbUser?.password) {
+      if (!isPasswordValid) {
         return NextResponse.json(
-          { success: false, message: 'Password change is not available for this account' },
+          { success: false, message: "Incorrect current password." },
           { status: 400 }
-        )
+        );
       }
 
-      const matches = await verifyPassword(currentPassword, dbUser.password)
-      if (!matches) {
-        return NextResponse.json(
-          { success: false, message: 'Current password is incorrect' },
-          { status: 401 }
-        )
-      }
-
-      updateData.password = await hashPassword(newPassword)
+      // Hash and store new password
+      updateData.password = await bcrypt.hash(newPassword, 10);
     }
 
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ success: false, message: 'No changes provided' }, { status: 400 })
-    }
-
-    const user = await prisma.user.update({
-      where: { id: auth.user.id },
+    // Execute update in database
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
       data: updateData,
       select: {
         id: true,
@@ -118,24 +147,25 @@ export async function PUT(request: NextRequest) {
         phone: true,
         role: true,
         isEmailVerified: true,
-        isActive: true,
         profilePicture: true,
         preferences: true,
-        permissions: true,
-        updatedAt: true,
+        createdAt: true,
       },
-    })
+    });
 
-    return NextResponse.json({
-      success: true,
-      message: newPassword ? 'Profile and password updated successfully' : 'Profile updated successfully',
-      data: { user },
-    })
-  } catch (error) {
-    console.error('Update profile error:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to update profile' },
+      {
+        success: true,
+        message: "Profile updated successfully.",
+        data: { user: updatedUser },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("PUT /api/profile Error:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to update profile" },
       { status: 500 }
-    )
+    );
   }
 }
