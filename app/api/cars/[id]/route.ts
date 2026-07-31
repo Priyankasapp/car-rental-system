@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/cars/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -30,7 +31,7 @@ function parseImageGallery(galleryInput: unknown, mainImage?: string): string[] 
   return Array.from(new Set(gallery))
 }
 
-//  GET: Get single car with multiple images by ID
+// 🌐 Public GET: Fetch single car details with relations for public view
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -43,6 +44,22 @@ export async function GET(
         id,
         isDeleted: false,
       },
+      include: {
+        category: true,
+        fuelType: true,
+        transmission: true,
+        reservations: {
+          where: {
+            status: { in: ['CONFIRMED', 'PENDING'] },
+          },
+          select: {
+            id: true,
+            pickupDate: true,
+            dropoffDate: true,
+            status: true,
+          },
+        },
+      },
     })
 
     if (!car) {
@@ -52,7 +69,7 @@ export async function GET(
       )
     }
 
-    // Process and ensure multiple images exist as an array
+    // Process gallery array cleanly
     const imageGallery = parseImageGallery(car.imageGallery, car.imageMain)
 
     return NextResponse.json({
@@ -60,180 +77,15 @@ export async function GET(
       data: {
         car: {
           ...car,
-          imageGallery, // Clean string array of image URLs
-          images: imageGallery, // Alias field for UI compatibility
+          imageGallery,
+          images: imageGallery, // Compatibility alias
         },
       },
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching car:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch car' },
-      { status: 500 }
-    )
-  }
-}
-
-//  PUT: Update car & multiple images (Admin only)
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-
-    // Verify admin access
-    const token = request.cookies.get('token')?.value
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const {
-      manufacturer,
-      model,
-      year,
-      category,
-      licensePlate,
-      color,
-      transmission,
-      fuelType,
-      seats,
-      luggageCapacity,
-      features,
-      pricePerDay,
-      pricePerWeek,
-      pricePerMonth,
-      securityDeposit,
-      mileageFree,
-      mileageExtraFee,
-      locationAddress,
-      locationCity,
-      locationState,
-      locationZipCode,
-      locationLat,
-      locationLng,
-      imageMain,
-      imageGallery,
-      status,
-      isDeleted,
-    } = body
-
-    // Check if car exists
-    const existingCar = await prisma.car.findUnique({
-      where: { id },
-    })
-
-    if (!existingCar) {
-      return NextResponse.json(
-        { success: false, message: 'Car not found' },
-        { status: 404 }
-      )
-    }
-
-    // Process multiple images for gallery update
-    const processedGallery = parseImageGallery(imageGallery, imageMain)
-
-    // Update car record
-    const updatedCar = await prisma.car.update({
-      where: { id },
-      data: {
-        manufacturer,
-        model,
-        year,
-        category,
-        licensePlate,
-        color,
-        transmission,
-        fuelType,
-        seats,
-        luggageCapacity,
-        features,
-        pricePerDay,
-        pricePerWeek,
-        pricePerMonth,
-        securityDeposit,
-        mileageFree,
-        mileageExtraFee,
-        locationAddress,
-        locationCity,
-        locationState,
-        locationZipCode,
-        locationLat,
-        locationLng,
-        imageMain: imageMain || processedGallery[0] || null,
-        imageGallery: processedGallery,
-        status,
-        isDeleted,
-      },
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Car updated successfully',
-      data: {
-        car: {
-          ...updatedCar,
-          imageGallery: processedGallery,
-          images: processedGallery,
-        },
-      },
-    })
-  } catch (error) {
-    console.error('Error updating car:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to update car' },
-      { status: 500 }
-    )
-  }
-}
-
-//  DELETE: Delete car (Admin only)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-
-    // Verify admin access
-    const token = request.cookies.get('token')?.value
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Check if car exists
-    const existingCar = await prisma.car.findUnique({ 
-      where: { id },
-    })
-
-    if (!existingCar) {
-      return NextResponse.json(
-        { success: false, message: 'Car not found' },
-        { status: 404 }
-      )
-    }
-
-    // Soft delete - mark as deleted
-    await prisma.car.update({
-      where: { id },
-      data: { isDeleted: true },
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Car deleted successfully',
-    })
-  } catch (error) {
-    console.error('Error deleting car:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to delete car' },
+      { success: false, message: error?.message || 'Failed to fetch car' },
       { status: 500 }
     )
   }

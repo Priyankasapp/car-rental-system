@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { CarProvider } from "@/context/CarContext";
 import { BookingProvider } from "@/context/BookingContext"; 
 import { AdminProvider } from "@/context/AdminContext";
 import { ContactProvider } from "@/context/ContactContext";
@@ -44,7 +43,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-background">
         <AuthProvider>
-          <CarProvider>
+        
             <BookingProvider> 
               <AdminProvider>
                 <ContactProvider>
@@ -52,7 +51,7 @@ export default function RootLayout({
                 </ContactProvider>
               </AdminProvider>
             </BookingProvider>
-          </CarProvider>
+         
         </AuthProvider>
       </body>
     </html>

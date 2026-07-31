@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get query parameters for filtering
     const searchParams = request.nextUrl.searchParams
     const category = searchParams.get('category')
     const city = searchParams.get('city')
@@ -15,7 +14,7 @@ export async function GET(request: NextRequest) {
     const limitParam = parseInt(searchParams.get('limit') || '100', 10)
     const limit = isNaN(limitParam) ? 100 : limitParam
     const search = searchParams.get('search')?.trim()
-    
+
     // Get booking date range for availability check
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
@@ -27,7 +26,7 @@ export async function GET(request: NextRequest) {
       where.status = status
     }
 
-    // ADD DATE RANGE FILTER FOR AVAILABILITY
+    // DATE RANGE FILTER FOR RESERVATION OVERLAPS
     let parsedStart: Date | null = null
     let parsedEnd: Date | null = null
 
@@ -36,17 +35,16 @@ export async function GET(request: NextRequest) {
       parsedEnd = new Date(endDate)
 
       if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
-        // Exclude cars that have overlapping bookings
         where.NOT = {
           reservations: {
             some: {
               status: { in: ['CONFIRMED', 'PENDING'] },
               AND: [
                 { pickupDate: { lt: parsedEnd } },
-                { dropoffDate: { gt: parsedStart } }
-              ]
-            }
-          }
+                { dropoffDate: { gt: parsedStart } },
+              ],
+            },
+          },
         }
       }
     }
@@ -74,28 +72,30 @@ export async function GET(request: NextRequest) {
     const minPrice = minPriceRaw ? parseInt(minPriceRaw, 10) : null
     const maxPrice = maxPriceRaw ? parseInt(maxPriceRaw, 10) : null
 
-    if ((minPrice !== null && !isNaN(minPrice)) || (maxPrice !== null && !isNaN(maxPrice))) {
-      where.pricePerDay = {}
-      if (minPrice !== null && !isNaN(minPrice)) {
-        where.pricePerDay.gte = minPrice
-      }
-      if (maxPrice !== null && !isNaN(maxPrice)) {
-        where.pricePerDay.lte = maxPrice
-      }
+    const priceFilter: any = {}
+    if (minPrice !== null && !isNaN(minPrice)) priceFilter.gte = minPrice
+    if (maxPrice !== null && !isNaN(maxPrice)) priceFilter.lte = maxPrice
+
+    if (Object.keys(priceFilter).length > 0) {
+      where.pricePerDay = priceFilter
     }
 
+    // Fetch cars with relations included
     const cars = await prisma.car.findMany({
       where,
       include: {
-        reservations: {  
+        category: true,
+        fuelType: true,
+        transmission: true,
+        reservations: {
           where: {
-            status: { 
-              in: ['CONFIRMED', 'PENDING'],
-            },
-            ...(parsedStart && parsedEnd ? {
-              pickupDate: { lt: parsedEnd },
-              dropoffDate: { gt: parsedStart },
-            } : {}),
+            status: { in: ['CONFIRMED', 'PENDING'] },
+            ...(parsedStart && parsedEnd
+              ? {
+                  pickupDate: { lt: parsedEnd },
+                  dropoffDate: { gt: parsedStart },
+                }
+              : {}),
           },
           select: {
             id: true,
@@ -104,8 +104,8 @@ export async function GET(request: NextRequest) {
             status: true,
             customerName: true,
             customerEmail: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
         pricePerDay: 'asc',
@@ -113,17 +113,15 @@ export async function GET(request: NextRequest) {
       take: limit,
     })
 
-    // Transform the response to include availability status
-    const carsWithAvailability = cars.map(car => {
+    // Transform response for client consumption
+    const carsWithAvailability = cars.map((car) => {
       const isReserved = car.reservations && car.reservations.length > 0
-      
-      // Determine if car is available based on date range
-      let availabilityStatus = car.status
+
+      let currentAvailability = car.status
       if (parsedStart && parsedEnd) {
-        // If we filtered by dates, all returned cars are available for those dates
-        availabilityStatus = 'AVAILABLE'
+        currentAvailability = car.status === 'AVAILABLE' ? 'AVAILABLE' : car.status
       } else if (isReserved) {
-        availabilityStatus = 'RESERVED'
+        currentAvailability = 'RESERVED'
       }
 
       return {
@@ -131,11 +129,14 @@ export async function GET(request: NextRequest) {
         manufacturer: car.manufacturer,
         model: car.model,
         year: car.year,
-        category: car.categoryId,
+        categoryId: car.categoryId,
+        category: car.category,
         licensePlate: car.licensePlate,
         color: car.color,
-        transmission: car.transmissionId,
-        fuelType: car.fuelTypeId,
+        transmissionId: car.transmissionId,
+        transmission: car.transmission,
+        fuelTypeId: car.fuelTypeId,
+        fuelType: car.fuelType,
         seats: car.seats,
         luggageCapacity: car.luggageCapacity,
         features: car.features,
@@ -154,9 +155,9 @@ export async function GET(request: NextRequest) {
         imageMain: car.imageMain,
         imageGallery: car.imageGallery,
         status: car.status,
-        currentAvailability: availabilityStatus,
+        currentAvailability,
         reservations: car.reservations || [],
-        isAvailable: availabilityStatus === 'AVAILABLE',
+        isAvailable: currentAvailability === 'AVAILABLE',
         createdAt: car.createdAt,
         updatedAt: car.updatedAt,
       }
@@ -177,7 +178,7 @@ export async function GET(request: NextRequest) {
           minPrice,
           maxPrice,
           search,
-        }
+        },
       },
     })
   } catch (error: any) {
