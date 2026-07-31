@@ -22,7 +22,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       const data = await res.json();
@@ -31,8 +31,15 @@ export default function LoginPage() {
         throw new Error(data.message || "Failed to log in.");
       }
 
-      // Check if user is staff/admin vs regular customer
-      if (["ADMIN", "SUPERADMIN", "STAFF"].includes(data.data.user.role)) {
+      const userRole = data?.data?.user?.role;
+
+      // Force Next.js router refresh to update active session state across Layouts & Middleware
+      router.refresh();
+
+      // Role-Based Route Handling
+      if (userRole === "SUPERADMIN") {
+        router.push("/admin"); // Redirects to Executive Admin Portal
+      } else if (["ADMIN", "STAFF"].includes(userRole)) {
         router.push("/admin");
       } else {
         router.push("/");
@@ -52,7 +59,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background text-on-surface px-4 py-12 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-surface-container-lowest dark:bg-surface-container-low p-8 rounded-2xl border border-border shadow-executive">
         <div>
-          <h2 className="headline-lg text-center text-on-surface">
+          <h2 className="headline-lg text-center text-on-surface font-semibold tracking-tight">
             Welcome back
           </h2>
           <p className="mt-2 text-center body-md text-on-surface-variant">
@@ -61,15 +68,28 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="bg-error-container/20 border-l-4 border-error p-4 rounded-md text-sm text-error">
-            {error}
+          <div className="bg-error-container/20 border-l-4 border-error p-4 rounded-lg text-sm text-error flex items-center gap-2">
+            <svg
+              className="w-5 h-5 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{error}</span>
           </div>
         )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label className="block label-sm mb-1.5 text-on-surface">
+              <label className="block label-sm mb-1.5 text-on-surface font-medium">
                 Email address
               </label>
               <input
@@ -77,13 +97,14 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="executive-input block w-full px-4 py-3 rounded-lg border border-border bg-background text-on-surface body-md focus:border-primary"
+                className="executive-input block w-full px-4 py-3 rounded-lg border border-border bg-background text-on-surface body-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 placeholder="you@example.com"
+                disabled={loading}
               />
             </div>
 
             <div>
-              <label className="block label-sm mb-1.5 text-on-surface">
+              <label className="block label-sm mb-1.5 text-on-surface font-medium">
                 Password
               </label>
               <div className="relative">
@@ -92,14 +113,16 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="executive-input block w-full px-4 py-3 pr-12 rounded-lg border border-border bg-background text-on-surface body-md focus:border-primary"
+                  className="executive-input block w-full px-4 py-3 pr-12 rounded-lg border border-border bg-background text-on-surface body-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="••••••••"
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
                 >
                   {showPassword ? (
                     // Eye Off Icon
@@ -108,7 +131,6 @@ export default function LoginPage() {
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
                         strokeLinecap="round"
@@ -124,7 +146,6 @@ export default function LoginPage() {
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
                         strokeLinecap="round"
@@ -148,7 +169,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-between text-sm">
             <Link
               href="/forgot-password"
-              className="label-sm text-primary hover:underline"
+              className="label-sm text-primary hover:underline font-medium"
             >
               Forgot password?
             </Link>
@@ -158,16 +179,45 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="executive-btn w-full flex justify-center py-3 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:bg-primary-container disabled:opacity-50 transition-all cursor-pointer"
+              className="executive-btn w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:bg-primary-container active:scale-[0.99] disabled:opacity-50 transition-all cursor-pointer shadow-md"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-on-primary"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
             </button>
           </div>
         </form>
 
         <p className="text-center body-md text-on-surface-variant mt-4">
           Don&#39;t have an account?{" "}
-          <Link href="/register" className="font-semibold text-primary hover:underline">
+          <Link
+            href="/register"
+            className="font-semibold text-primary hover:underline"
+          >
             Register now
           </Link>
         </p>

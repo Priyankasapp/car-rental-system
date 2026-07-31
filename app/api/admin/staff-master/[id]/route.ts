@@ -21,9 +21,21 @@ export async function GET(
       )
     }
 
-    const staffMaster = await prisma.staffMaster.findUnique({
-      where: { id, isDeleted: false },
-      include: { staffMembers: { select: { id: true, firstName: true, lastName: true } } },
+    const staffMaster = await prisma.staffMaster.findFirst({
+      where: { 
+        id,
+        isActive: true,
+      },
+      include: {
+        staffMembers: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
     })
 
     if (!staffMaster) {
@@ -81,7 +93,12 @@ export async function PUT(
         )
       }
       const validKeys = PERMISSIONS.map((p) => p.key)
-      const invalidKeys = defaultPermissions.filter((p: string) => !validKeys.includes(p as never))
+      
+      // ✅ TypeScript Fix: Cast validKeys to string[] for strict includes check
+      const invalidKeys = defaultPermissions.filter(
+        (p: string) => !(validKeys as string[]).includes(p)
+      )
+
       if (invalidKeys.length > 0) {
         return NextResponse.json(
           { success: false, message: `Invalid permissions: ${invalidKeys.join(', ')}` },
@@ -96,16 +113,16 @@ export async function PUT(
       data: {
         ...(title !== undefined && { title }),
         ...(department !== undefined && { department }),
-        ...(staffType !== undefined && { staffType }),
+        ...(staffType !== undefined && { staffType: staffType || null }),
         ...(permissions !== undefined && { defaultPermissions: permissions }),
-        ...(description !== undefined && { description }),
+        ...(description !== undefined && { description: description || null }),
         ...(isActive !== undefined && { isActive }),
       },
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Staff master role updated',
+      message: 'Staff master role updated successfully',
       data: { staffMaster },
     })
   } catch (error: any) {
@@ -129,7 +146,7 @@ export async function PUT(
   }
 }
 
-// DELETE — soft-delete a staff master role
+// DELETE — deactivate/delete a staff master role
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -145,28 +162,41 @@ export async function DELETE(
       )
     }
 
-    // Don't delete a role that's still assigned to active staff
+    // Check if any active staff members are assigned to this role
     const assignedCount = await prisma.user.count({
-      where: { staffMasterId: id, isDeleted: false },
+      where: { 
+        staffMasterId: id,
+        isActive: true,
+      },
     })
 
     if (assignedCount > 0) {
       return NextResponse.json(
         {
           success: false,
-          message: `Cannot delete — ${assignedCount} staff member(s) are still assigned to this role`,
+          message: `Cannot delete — ${assignedCount} active staff member(s) are still assigned to this role`,
         },
         { status: 400 }
       )
     }
 
+    // Soft-deactivate the role
     await prisma.staffMaster.update({
       where: { id },
-      data: { isDeleted: true, isActive: false },
+      data: { isActive: false },
     })
 
-    return NextResponse.json({ success: true, message: 'Staff master role deleted' })
-  } catch (error) {
+    return NextResponse.json({
+      success: true,
+      message: 'Staff master role deactivated successfully',
+    })
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { success: false, message: 'Staff master role not found' },
+        { status: 404 }
+      )
+    }
     console.error('Delete staff master error:', error)
     return NextResponse.json(
       { success: false, message: 'Failed to delete staff master role' },

@@ -1,121 +1,154 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/admin/staff-master/page.tsx
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useAdmin, StaffMaster } from '@/context/AdminContext'
-import StatsCard from '@/components/ui/StatsCard'
-import { PERMISSIONS } from '@/lib/permissions'
-import StaffMasterDrawer, { StaffMasterFormPayload } from '@/components/staff-master/StaffMasterDrawer'
-import StaffTypeCard from '@/components/staff-master/StaffTypeCard'
+import React, { useEffect, useState, useCallback } from 'react'
+import { EntityGridPage } from '@/components/settings/EntityGridPage'
+import { EntityItem } from '@/components/settings/EntityCard'
+import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 
-const StaffMasterPage = () => {
-  const { staffMasters, addStaffMaster, updateStaffMaster, deleteStaffMaster } = useAdmin()
+export default function StaffMasterPage() {
+  const [staffRoles, setStaffRoles] = useState<EntityItem[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [editing, setEditing] = useState<StaffMaster | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-
-  const stats = useMemo(() => {
-    const total = staffMasters.length
-    const active = staffMasters.filter((m) => m.isActive).length
-    const inactive = total - active
-    const distinctPermissions = new Set(staffMasters.flatMap((m) => m.defaultPermissions)).size
-
-    return [
-      { label: 'Total staff types', value: String(total), icon: 'layers', sub: 'Across the system' },
-      { label: 'Active roles', value: String(active), icon: 'check_circle', sub: `${total ? Math.round((active / total) * 100) : 0}% of total library` },
-      { label: 'Inactive roles', value: String(inactive), icon: 'cancel', sub: inactive > 0 ? 'Requires review' : 'None' },
-      { label: 'Permissions in use', value: String(distinctPermissions), icon: 'key', sub: `Out of ${PERMISSIONS.length} available` },
-    ]
-  }, [staffMasters])
-
-  const openCreate = () => {
-    setEditing(null)
-    setDrawerOpen(true)
-  }
-
-  const openEdit = (staffMaster: StaffMaster) => {
-    setEditing(staffMaster)
-    setDrawerOpen(true)
-  }
-
-  const handleSubmit = async (payload: StaffMasterFormPayload) => {
-    if (editing) {
-      await updateStaffMaster(editing.id, payload)
-    } else {
-      await addStaffMaster(payload)
-    }
-    setDrawerOpen(false)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this staff type? This only works if no staff are currently assigned to it.')) return
-
-    setDeletingId(id)
+  // Fetch Staff Master roles from API
+  const fetchStaffRoles = useCallback(async () => {
     try {
-      await deleteStaffMaster(id)
+      setError(null)
+      const res = await fetch('/api/admin/staff-master', {
+        headers: { 'x-user-role': 'SUPERADMIN' },
+      })
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.message || 'Failed to load staff master roles')
+      }
+
+      // Map API payload to standard EntityItem schema used by EntityGridPage
+      const mappedItems: EntityItem[] = (result.data.staffMasters || []).map(
+        (role: any) => ({
+          id: role.id,
+          name: role.title,
+          description: role.department
+            ? `Department: ${role.department}${
+                role.description ? ` • ${role.description}` : ''
+              }`
+            : role.description || undefined,
+          count: role._count?.staffMembers || 0,
+          createdAt: role.createdAt,
+        })
+      )
+
+      setStaffRoles(mappedItems)
     } catch (err: any) {
-      alert(err.message || 'Failed to delete staff type')
+      setError(err.message || 'Something went wrong')
     } finally {
-      setDeletingId(null)
+      setLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    fetchStaffRoles()
+  }, [fetchStaffRoles])
+
+  // Create or Update Staff Role Handler
+  const handleSaveStaffRole = async (item: Partial<EntityItem> & Record<string, any>) => {
+    const isEdit = Boolean(item.id)
+    const url = isEdit
+      ? `/api/admin/staff-master/${item.id}`
+      : '/api/admin/staff-master'
+    const method = isEdit ? 'PUT' : 'POST'
+
+    // Parse department from description input if entered or split
+    const body = {
+      title: item.name,
+      department: item.description?.startsWith('Department:')
+        ? item.description.split('Department:')[1].split('•')[0].trim()
+        : 'Operations', // Fallback department if omitted
+      description: item.description || null,
+      isActive: item.isActive ?? true,
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-role': 'SUPERADMIN',
+      },
+      body: JSON.stringify(body),
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) {
+      throw new Error(result.message || 'Failed to save staff master role')
+    }
+
+    // Refresh list after saving
+    await fetchCategories()
+  }
+
+  // Delete / Deactivate Staff Role Handler
+  const handleDeleteStaffRole = async (id: string) => {
+    const res = await fetch(`/api/admin/staff-master/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-user-role': 'SUPERADMIN' },
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) {
+      throw new Error(result.message || 'Failed to delete staff master role')
+    }
+
+    // Refresh list after deleting
+    await fetchStaffRoles()
+  }
+
+  const fetchCategories = fetchStaffRoles
+
+  if (loading) {
+    return (
+      <EntityGridSkeleton
+        title="Staff Master Roles"
+        description="Manage staff job titles and department roles supported in UrbanDrive."
+        cardCount={6}
+      />
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">
+          <p className="font-semibold text-base">Failed to load Staff Master Roles</p>
+          <p className="text-sm">{error}</p>
+          <button
+            onClick={() => {
+              setLoading(true)
+              fetchStaffRoles()
+            }}
+            className="mt-3 text-xs font-semibold underline hover:no-underline"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="p-8">
-      <header className="flex justify-between items-end mb-12">
-        <div>
-          <h2 className="text-3xl font-semibold text-text-primary">Staff management</h2>
-          <p className="text-text-secondary mt-2 max-w-md">
-            Manage your organization&apos;s administrative roles and system access.
-          </p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="bg-primary text-on-primary px-8 py-3 text-xs font-semibold uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-[0.98]"
-        >
-          Add staff type
-        </button>
-      </header>
-
-      <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 mb-10">
-        {stats.map((item, index) => (
-          <StatsCard key={item.label} {...item} index={index} />
-        ))}
-      </section>
-
-      {staffMasters.length === 0 ? (
-        <div className="border border-border bg-surface p-16 text-center">
-          <p className="text-text-secondary">No staff types yet — add your first one above.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {staffMasters.map((master) => (
-            <StaffTypeCard
-              key={master.id}
-              staffMaster={master}
-              onEdit={openEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      )}
-
-      <StaffMasterDrawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        editing={editing}
-        onSubmit={handleSubmit}
-      />
-
-      {deletingId && (
-        <div className="fixed bottom-6 right-6 bg-black text-white text-sm px-4 py-2 rounded-lg shadow-lg">
-          Deleting...
-        </div>
-      )}
-    </div>
+    <EntityGridPage
+      title="Staff Master Roles"
+      entitySingularName="Staff Role"
+      description="Manage job titles and departments for UrbanDrive staff members."
+      addButtonText="Add Staff Role"
+      initialItems={staffRoles}
+      emptyStateTitle="No staff roles defined yet"
+      emptyStateDescription="Create your first staff master role to configure team designations."
+      onSave={handleSaveStaffRole}
+      onDelete={handleDeleteStaffRole}
+    />
   )
 }
-
-export default StaffMasterPage

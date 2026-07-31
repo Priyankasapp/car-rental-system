@@ -1,15 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextResponse, NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { generateOTP, generatePassword, hashPassword } from "@/lib/auth";
-import { sendWelcomeAndOtpEmails } from "@/lib/email/emailService";
+// app/api/admin/staff/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+// GET — List all staff members
+export async function GET(request: NextRequest) {
   try {
-    const staff = await prisma.user.findMany({
+    const requestingRole = request.headers.get('x-user-role')
+
+    if (requestingRole !== 'SUPERADMIN' && requestingRole !== 'ADMIN') {
+      return NextResponse.json(
+        { success: false, message: 'Access denied' },
+        { status: 403 }
+      )
+    }
+
+    const staffMembers = await prisma.user.findMany({
       where: {
-        role: "STAFF",
-        isDeleted: false,
+        role: { in: ['ADMIN', 'STAFF'] },
       },
       select: {
         id: true,
@@ -18,203 +26,105 @@ export async function GET() {
         email: true,
         phone: true,
         role: true,
-        staffType: true,
-        staffMasterId: true,
-        permissions: true,
         isActive: true,
         createdAt: true,
+        staffMaster: {
+          select: {
+            id: true,
+            title: true,
+            department: true,
+          },
+        },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+      orderBy: { createdAt: 'desc' },
+    })
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        staff,
-      },
-    });
-  } catch (error) {
-    console.error("Get staff error:", error);
-
+    return NextResponse.json({ success: true, data: { staffMembers } })
+  } catch (error: any) {
+    // 💡 Print exact server error in terminal for debugging
+    console.error('Get staff members error details:', error)
     return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to fetch staff details",
-      },
+      { success: false, message: error?.message || 'Failed to fetch staff members' },
       { status: 500 }
-    );
+    )
   }
 }
 
+// POST — Create a new staff member
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const requestingRole = request.headers.get('x-user-role')
 
-    // Handle both camelCase (firstName) and lowercase (firstname)
-    const firstName = body.firstName || body.firstname;
-    const lastName = body.lastName || body.lastname;
-    const { email, phone, staffMasterId, isActive } = body;
-
-    // Validate required fields
-    if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
+    if (requestingRole !== 'SUPERADMIN' && requestingRole !== 'ADMIN') {
       return NextResponse.json(
-        {
-          success: false,
-          message: "First name, last name, and email are required",
-        },
-        { status: 400 }
-      );
+        { success: false, message: 'Access denied' },
+        { status: 403 }
+      )
     }
 
-    // Normalize email
-    const normalizedEmail = email.trim().toLowerCase();
+    const body = await request.json()
+    const { firstName, lastName, email, phone, staffMasterId, role } = body
 
-    // Check if user with this email already exists
+    if (!firstName || !lastName || !email || !staffMasterId) {
+      return NextResponse.json(
+        { success: false, message: 'First name, last name, email, and staff role are required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if email already exists
     const existingUser = await prisma.user.findUnique({
-      where: {
-        email: normalizedEmail,
-      },
-    });
+      where: { email: email.toLowerCase() },
+    })
 
     if (existingUser) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "A user with this email already exists",
-        },
+        { success: false, message: 'A user with this email address already exists' },
         { status: 409 }
-      );
+      )
     }
 
-    // Get staff type and default permissions dynamically from database
-    let staffType: any = null;
-    let permissions: string[] = [];
+    // Default password placeholder if the Prisma schema requires a non-null string
+    const defaultPassword = 'ChangeMe123!'
 
-    if (staffMasterId) {
-      const staffMaster = await prisma.staffMaster.findFirst({
-        where: {
-          id: staffMasterId,
-          isDeleted: false,
-        },
-      });
-
-      if (!staffMaster) {
-        return NextResponse.json(
-          { success: false, message: "Selected staff type was not found" },
-          { status: 400 }
-        );
-      }
-
-      staffType = staffMaster.staffType;
-      permissions = staffMaster.defaultPermissions;
-    }
-
-    // Generate temporary password
-    const temporaryPassword = generatePassword(12);
-
-    // Hash password before storing it
-    const hashedPassword = await hashPassword(temporaryPassword);
-
-    // Generate OTP
-    const otp = generateOTP();
-
-    // OTP expires in 10 minutes
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    // Create staff + handle OTP in one transaction
-    const staff = await prisma.$transaction(async (tx) => {
-      // Create user record
-      const createdStaff = await tx.user.create({
-        data: {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          email: normalizedEmail,
-          phone: phone?.trim() || null,
-          password: hashedPassword,
-          role: "STAFF",
-          staffMasterId: staffMasterId || null,
-          staffType,
-          permissions,
-          isEmailVerified: false,
-          isActive: isActive !== undefined ? isActive : true,
-        },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          phone: true,
-          role: true,
-          staffType: true,
-          staffMasterId: true,
-          permissions: true,
-          isActive: true,
-          createdAt: true,
-        },
-      });
-
-      // Clear any previous OTP records for this email to avoid unique constraint issues
-      await tx.oTP.deleteMany({
-        where: {
-          email: normalizedEmail,
-          purpose: "EMAIL_VERIFICATION",
-        },
-      });
-
-      // Create new OTP record
-      await tx.oTP.create({
-        data: {
-          email: normalizedEmail,
-          otp,
-          purpose: "EMAIL_VERIFICATION",
-          expiresAt,
-          maxAttempts: 3,
-        },
-      });
-
-      return createdStaff;
-    });
-
-    // Send welcome and OTP emails
-    let emailSent = false;
-    try {
-      await sendWelcomeAndOtpEmails(
-        normalizedEmail,
-        firstName.trim(),
-        temporaryPassword,
-        otp,
-        "EMAIL_VERIFICATION"
-      );
-      emailSent = true;
-    } catch (emailError: any) {
-      console.error("Failed to send staff welcome email:", emailError?.message || emailError);
-      // Logged as a non-blocking error so user creation still succeeds
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: emailSent
-          ? "Staff account created and email sent successfully"
-          : "Staff account created successfully, but failed to send notification email",
-        data: {
-          staff,
-          ...(process.env.NODE_ENV === "development" && { temporaryPassword, otp }),
+    const newStaff = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        phone: phone || null,
+        password: defaultPassword,
+        role: role || 'STAFF',
+        staffMasterId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        staffMaster: {
+          select: {
+            id: true,
+            title: true,
+            department: true,
+          },
         },
       },
+    })
+
+    return NextResponse.json(
+      { success: true, message: 'Staff member created successfully', data: { staff: newStaff } },
       { status: 201 }
-    );
-  } catch (error) {
-    console.error("Create staff error : ", error);
-
+    )
+  } catch (error: any) {
+    console.error('Create staff error details:', error)
     return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to create staff account",
-      },
+      { success: false, message: error?.message || 'Failed to create staff member' },
       { status: 500 }
-    );
+    )
   }
 }

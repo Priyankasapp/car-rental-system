@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { PERMISSIONS } from '@/lib/permissions'
 import { StaffType } from '@prisma/client'
 
-// GET — list all staff master roles
+// GET — list all active staff master roles
 export async function GET(request: NextRequest) {
   try {
     const requestingRole = request.headers.get('x-user-role')
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     const staffMasters = await prisma.staffMaster.findMany({
-      where: { isDeleted: false },
+      where: { isActive: true }, // ✅ Fixed: returns active roles
       include: {
         _count: { select: { staffMembers: true } },
       },
@@ -71,7 +71,11 @@ export async function POST(request: NextRequest) {
     // Reuse the same permission keys the Permissions page already validates against
     const permissions = Array.isArray(defaultPermissions) ? defaultPermissions : []
     const validKeys = PERMISSIONS.map((p) => p.key)
-    const invalidKeys = permissions.filter((p: string) => !validKeys.includes(p as never))
+
+    // ✅ TypeScript Fix: Cast validKeys to string[] for strict include checks
+    const invalidKeys = permissions.filter(
+      (p: string) => !(validKeys as string[]).includes(p)
+    )
 
     if (invalidKeys.length > 0) {
       return NextResponse.json(
@@ -95,7 +99,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error: any) {
-    // title is @unique in your schema — Prisma throws P2002 on duplicates
+    // title is @unique in schema — Prisma throws P2002 on duplicates
     if (error.code === 'P2002') {
       return NextResponse.json(
         { success: false, message: 'A staff master role with this title already exists' },

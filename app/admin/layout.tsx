@@ -20,6 +20,7 @@ import {
   Settings2,
   Fuel,
   Sparkles,
+  Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -111,15 +112,16 @@ export default function AdminLayout({
   const { user, logout } = useAuth();
 
   const userInitials = user
-    ? `${user.firstName[0] || ""}${user.lastName[0] || ""}`.toUpperCase()
-    : "A";
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
+    : "SA";
+
+  const isSuperAdmin = user?.role === "SUPERADMIN";
 
   // ── Permission filter helper ──────────────────────────────────────────────
-  // Returns true if the logged-in user should see a link
   const canSee = (permission: string | null) => {
     if (!permission) return true;
-    if (user?.role === "SUPERADMIN") return true; // superadmin sees all
-    if (permission === "superadmin_only") return false; // blocked for everyone else
+    if (isSuperAdmin) return true; // Superadmin sees everything
+    if (permission === "superadmin_only") return false; // Blocked for everyone else
     return user?.permissions?.includes(permission) ?? false;
   };
 
@@ -146,13 +148,19 @@ export default function AdminLayout({
           !sidebarOpen && "-translate-x-full"
         )}
       >
-        {/* Logo */}
+        {/* Logo Header */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <Link href="/admin" className="flex items-center gap-2">
             <span className="text-xl font-bold text-gray-900">UrbanDrive</span>
-            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-              Admin
-            </span>
+            {isSuperAdmin ? (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full">
+                <Crown className="w-3 h-3 text-amber-600" /> Super
+              </span>
+            ) : (
+              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                {user?.role || "Admin"}
+              </span>
+            )}
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -164,7 +172,7 @@ export default function AdminLayout({
 
         {/* Navigation */}
         <nav className="p-4 space-y-1">
-          {/* Main Navigation Links — filtered by permission */}
+          {/* Main Navigation Links */}
           {sidebarLinks
             .filter((link) => canSee(link.permission))
             .map((link) => {
@@ -234,7 +242,6 @@ export default function AdminLayout({
 
           {/* MANAGEMENT Section */}
           <div className="pt-4 mt-4 border-t border-gray-200">
-            {/* Management Header */}
             <div className="flex items-center justify-between px-4 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
                 Management
@@ -251,7 +258,6 @@ export default function AdminLayout({
               </button>
             </div>
 
-            {/* Management Links — filtered by permission */}
             {managementOpen && (
               <div className="space-y-1 mt-1">
                 {managementLinks
@@ -296,7 +302,7 @@ export default function AdminLayout({
         </nav>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div
         className={cn(
           "flex-1 flex flex-col transition-all duration-300",
@@ -313,36 +319,71 @@ export default function AdminLayout({
           </button>
 
           <div className="flex items-center space-x-4">
-            {/* Admin Badge */}
-            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              Admin Panel
-            </span>
+            {/* Dynamic Role Badge */}
+            {isSuperAdmin ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full shadow-xs">
+                <Crown className="w-3.5 h-3.5 text-amber-600" />
+                Super Admin Portal
+              </span>
+            ) : (
+              <span className="text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full">
+                {user?.role ? `${user.role} Panel` : "Admin Panel"}
+              </span>
+            )}
 
             {/* Avatar with dropdown */}
             <div className="relative group">
-              <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold text-sm cursor-pointer">
+              <div
+                className={cn(
+                  "w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm cursor-pointer transition-all ring-2 ring-offset-1",
+                  isSuperAdmin
+                    ? "bg-amber-600 text-white ring-amber-400"
+                    : "bg-gray-900 text-white ring-gray-300"
+                )}
+              >
                 {userInitials}
               </div>
+
               {/* Dropdown menu */}
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="p-3 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  <div className="mt-2">
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
+                        isSuperAdmin
+                          ? "bg-amber-100 text-amber-800 border border-amber-200"
+                          : "bg-gray-200 text-gray-700"
+                      )}
+                    >
+                      Role: {user?.role || "USER"}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="py-1">
                   <Link
                     href="/admin/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Profile
                   </Link>
                   <Link
                     href="/admin/settings"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Settings
                   </Link>
-                  <hr className="my-1" />
+                  <hr className="my-1 border-gray-100" />
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl"
                   >
+                    <LogOut className="w-4 h-4" />
                     Logout
                   </button>
                 </div>
