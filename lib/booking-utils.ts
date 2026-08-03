@@ -94,7 +94,6 @@ export async function findConflictingBookings(
     where: {
       carId,
       status: { in: ['PENDING', 'CONFIRMED'] },
-      isDeleted: false,
       ...(excludeId ? { id: { not: excludeId } } : {}),
       pickupDate: { lt: dropoffDate },
       dropoffDate: { gt: pickupDate },
@@ -116,7 +115,6 @@ export async function findDateOverlap(
   return prisma.reservation.findFirst({
     where: {
       carId,
-      isDeleted: false,
       status: { in: ['PENDING', 'CONFIRMED'] },
       pickupDate: { lt: dropoffDate },
       dropoffDate: { gt: pickupDate },
@@ -125,3 +123,6 @@ export async function findDateOverlap(
 }
 
 export const VALID_BOOKING_STATUSES = Object.values(ReservationStatus)
+
+
+

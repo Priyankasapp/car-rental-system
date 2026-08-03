@@ -4,7 +4,7 @@ import { generateReservationRef } from '@/lib/auth'
 import { getAuthenticatedUser } from '@/lib/api-auth'
 import { calculateBookingPricing } from '@/lib/pricing'
 import { findDateOverlap } from '@/lib/booking-utils'
-import { sendEmail } from '@/lib/email/emailService'
+import { sendBookingEmail } from '@/lib/email'
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -21,8 +21,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
-    const reservations = await prisma.reservation.findMany({
-      where: { userId: user.id, isDeleted: false },
+    // Removed `isDeleted: false` since the model does not contain that field
+    const rawReservations = await prisma.reservation.findMany({
+      where: { userId: user.id },
       include: {
         car: {
           select: {
@@ -31,12 +32,24 @@ export async function GET(request: NextRequest) {
             model: true,
             year: true,
             imageMain: true,
+            imageGallery: true,
             category: true,
           },
         },
       },
       orderBy: { createdAt: 'desc' },
     })
+
+    const reservations = rawReservations.map((res) => ({
+      ...res,
+      car: res.car
+        ? {
+            ...res.car,
+            imageMain: res.car.imageMain || '',
+            imageGallery: res.car.imageGallery || [],
+          }
+        : null,
+    }))
 
     return NextResponse.json({ success: true, data: { reservations } })
   } catch (error) {
@@ -60,7 +73,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let userId: string | undefined
+    let userId: string | null = null
     let isGuestBooking = true
 
     const user = await getAuthenticatedUser(request)
@@ -71,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     const car = await prisma.car.findUnique({ where: { id: carId } })
 
-    if (!car || car.isDeleted) {
+    if (!car) {
       return NextResponse.json({ success: false, message: 'Car not found' }, { status: 404 })
     }
 
@@ -82,8 +95,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const pickupDate = new Date(pickup.date)
-    const dropoffDate = new Date(dropoff.date)
+    // Ensure valid JavaScript Date objects
+    const pickupDate = new Date(`${pickup.date}T${pickup.time || '10:00'}:00`)
+    const dropoffDate = new Date(`${dropoff.date}T${dropoff.time || '10:00'}:00`)
+
+    if (isNaN(pickupDate.getTime()) || isNaN(dropoffDate.getTime())) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid pickup or return date format.' },
+        { status: 400 }
+      )
+    }
 
     if (pickupDate >= dropoffDate) {
       return NextResponse.json(
@@ -115,14 +136,28 @@ export async function POST(request: NextRequest) {
       satelliteConnectivity,
     })
 
+    // Safeguard against NaN pricing values
+    if (
+      isNaN(pricing.dailyRate) ||
+      isNaN(pricing.rentalDays) ||
+      isNaN(pricing.subtotal) ||
+      isNaN(pricing.tax) ||
+      isNaN(pricing.total)
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Failed to calculate reservation pricing.' },
+        { status: 400 }
+      )
+    }
+
     const reservationRef = generateReservationRef()
     const totalBeforeTax = pricing.subtotal + pricing.addOnsTotal
 
-    const reservation = await prisma.reservation.create({
+    const rawReservation = await prisma.reservation.create({
       data: {
         reservationRef,
         carId,
-        userId,
+        ...(userId ? { userId } : {}), // Only attach userId if logged in
         customerName: customer.name,
         customerEmail: customer.email,
         customerPhone: customer.phone || '',
@@ -152,31 +187,40 @@ export async function POST(request: NextRequest) {
             model: true,
             year: true,
             imageMain: true,
+            imageGallery: true,
           },
         },
       },
     })
 
+    const reservation = {
+      ...rawReservation,
+      car: rawReservation.car
+        ? {
+            ...rawReservation.car,
+            imageMain: rawReservation.car.imageMain || '',
+            imageGallery: rawReservation.car.imageGallery || [],
+          }
+        : null,
+    }
+
+    // Isolated Async Email Sender (Non-blocking)
     try {
       const fullCarName =
-        `${reservation.car.year} ${reservation.car.manufacturer} ${reservation.car.model}`.trim()
+        `${reservation.car?.year ?? ''} ${reservation.car?.manufacturer ?? ''} ${reservation.car?.model ?? ''}`.trim()
       const formattedPickupDate = `${formatDate(reservation.pickupDate)} at ${reservation.pickupTime}`
       const formattedDropoffDate = `${formatDate(reservation.dropoffDate)} at ${reservation.dropoffTime}`
 
-      await sendEmail({
+      await sendBookingEmail({
         to: reservation.customerEmail,
-        type: 'BOOKING_PENDING',
-        data: {
-          bookingDetails: {
-            customerName: reservation.customerName,
-            bookingId: reservation.reservationRef,
-            carName: fullCarName,
-            startDate: formattedPickupDate,
-            endDate: formattedDropoffDate,
-            pickupLocation: reservation.pickupLocation,
-            totalPrice: reservation.total.toLocaleString('en-IN'),
-          },
-        },
+        customerName: reservation.customerName,
+        reservationRef: reservation.reservationRef,
+        carName: fullCarName,
+        pickupDate: formattedPickupDate,
+        dropoffDate: formattedDropoffDate,
+        pickupLocation: reservation.pickupLocation,
+        totalAmount: reservation.total.toLocaleString('en-IN'),
+        status: 'PENDING',
       })
     } catch (emailError) {
       console.error('Reservation created, but email notification failed:', emailError)
@@ -194,8 +238,10 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error creating reservation:', error)
+
+    const errMessage = error instanceof Error ? error.message : 'Failed to create reservation'
     return NextResponse.json(
-      { success: false, message: 'Failed to create reservation' },
+      { success: false, message: errMessage },
       { status: 500 }
     )
   }

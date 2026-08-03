@@ -193,12 +193,21 @@ function CarDetailContent({ id }: { id: string }) {
 
           {/* Action Button */}
           <div className="pt-6 border-t border-gray-100">
-            <button
-              disabled={car.status !== 'available'}
-              className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-            >
-              {car.status === 'available' ? 'Book This Vehicle' : 'Currently Unavailable'}
-            </button>
+            {car.status === 'available' ? (
+  <Link
+    href={`/reservation/${car.id}`}
+    className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-800 transition flex items-center justify-center"
+  >
+    Book This Vehicle
+  </Link>
+) : (
+  <button
+    disabled
+    className="w-full py-4 bg-gray-300 text-gray-500 font-semibold rounded-xl cursor-not-allowed"
+  >
+    Currently Unavailable
+  </button>
+)}
           </div>
         </div>
       </div>
