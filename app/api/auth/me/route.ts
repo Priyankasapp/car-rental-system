@@ -50,6 +50,7 @@ export async function GET() {
         lastName: true,
         email: true,
         role: true,
+         permissions: true,
         isEmailVerified: true,
         createdAt: true,
       },

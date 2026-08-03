@@ -1,89 +1,188 @@
-// lib/permissions.ts
 
-// ─── All available permissions 
-// ────────────────────────────────────────────────
-export const PERMISSIONS = [
-  {
-    key: 'view_dashboard',
-    label: 'View Dashboard',
-    description: 'Access the admin dashboard overview and stats',
-    category: 'General',
-  },
-  {
-    key: 'manage_cars',
-    label: 'Manage Cars',
-    description: 'Add, edit, and delete car listings',
-    category: 'Fleet',
-  },
-  {
-    key: 'manage_pricing',
-    label: 'Manage Pricing',
-    description: 'Update car pricing and promotional offers',
-    category: 'Fleet',
-  },
-  {
-    key: 'manage_reservations',
-    label: 'Manage Reservations',
-    description: 'View, update, and cancel customer bookings',
-    category: 'Bookings',
-  },
-  {
-    key: 'manage_users',
-    label: 'Manage Users',
-    description: 'View and manage customer accounts',
-    category: 'Users',
-  },
-  {
-    key: 'manage_staff',
-    label: 'Manage Staff',
-    description: 'Add and manage staff and admin accounts',
-    category: 'Users',
-  },
-  {
-    key: 'view_analytics',
-    label: 'View Analytics',
-    description: 'Access reports, charts, and business analytics',
-    category: 'Reports',
-  },
-  {
-    key: 'export_data',
-    label: 'Export Data',
-    description: 'Export bookings and user data as CSV',
-    category: 'Reports',
-  },
-  {
-    key: 'send_notifications',
-    label: 'Send Notifications',
-    description: 'Send emails and notifications to customers',
-    category: 'Communication',
-  },
-] as const
+// constants/permissions.ts
 
-// Type for a single permission key
-export type PermissionKey = (typeof PERMISSIONS)[number]['key']
+import { Role } from "@prisma/client";
 
-// All unique categories
-export const PERMISSION_CATEGORIES = [
-  ...new Set(PERMISSIONS.map((p) => p.category)),
-]
+/**
+ * Fine-grained permission keys used across
+ * authorization guards and UI checks.
+ */
+export const PERMISSIONS = {
+  // ==========================================================
+  // DASHBOARD
+  // ==========================================================
 
-// ─── Permission check helper ──────────────────────────────────────────────────
-// Use this inside any API route handler to check if user can do something
+  DASHBOARD_VIEW: "dashboard:view",
+
+  // ==========================================================
+  // CAR MANAGEMENT
+  // ==========================================================
+
+  CARS_VIEW: "cars:view",
+  CARS_CREATE: "cars:create",
+  CARS_EDIT: "cars:edit",
+  CARS_DELETE: "cars:delete",
+
+  // ==========================================================
+  // RESERVATIONS / BOOKINGS
+  // ==========================================================
+
+  RESERVATIONS_VIEW: "reservations:view",
+
+  // ==========================================================
+  // USERS
+  // ==========================================================
+
+  USERS_VIEW: "users:view",
+
+  // Add more permissions here later...
+} as const;
+
+export type PermissionKey =
+  (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+/**
+ * ==========================================================
+ * PERMISSION GROUPS
+ * Used for the permission management UI.
+ * ==========================================================
+ */
+
+export const PERMISSION_GROUPS = [
+  // ==========================================================
+  // DASHBOARD
+  // ==========================================================
+
+  {
+    category: "Dashboard",
+    permissions: [
+      {
+        key: PERMISSIONS.DASHBOARD_VIEW,
+        label: "View Dashboard",
+        description:
+          "Can view the main admin dashboard and summary metrics",
+      },
+    ],
+  },
+
+  // ==========================================================
+  // CAR MANAGEMENT
+  // ==========================================================
+
+  {
+    category: "Car Management",
+    permissions: [
+      {
+        key: PERMISSIONS.CARS_VIEW,
+        label: "View Cars",
+        description:
+          "Can view the car list and basic car details",
+      },
+      {
+        key: PERMISSIONS.CARS_CREATE,
+        label: "Create Cars",
+        description:
+          "Can add new cars to the inventory",
+      },
+      {
+        key: PERMISSIONS.CARS_EDIT,
+        label: "Edit Cars",
+        description:
+          "Can edit general car information",
+      },
+      {
+        key: PERMISSIONS.CARS_DELETE,
+        label: "Delete Cars",
+        description:
+          "Can delete cars from the system",
+      },
+    ],
+  },
+
+  // ==========================================================
+  // RESERVATIONS / BOOKINGS
+  // ==========================================================
+
+  {
+    category: "Reservations",
+    permissions: [
+      {
+        key: PERMISSIONS.RESERVATIONS_VIEW,
+        label: "View Reservations",
+        description:
+          "Can view customer reservations and booking details",
+      },
+    ],
+  },
+
+  // ==========================================================
+  // USERS
+  // ==========================================================
+
+  {
+    category: "Users",
+    permissions: [
+      {
+        key: PERMISSIONS.USERS_VIEW,
+        label: "View Users",
+        description:
+          "Can view registered users and customer information",
+      },
+    ],
+  },
+] as const;
+
+/**
+ * ==========================================================
+ * CHECK USER PERMISSION
+ * ==========================================================
+ */
 export function hasPermission(
-  user: { role: string; permissions: string[] },
-  permission: PermissionKey
+  userRole: string | Role | undefined | null,
+  userPermissions: string[] | undefined | null,
+  requiredPermission: PermissionKey
 ): boolean {
-  // SUPERADMIN always has everything — no restrictions
-  if (user.role === 'SUPERADMIN') return true
+  if (!userRole) return false;
 
-  return user.permissions.includes(permission)
+  const role = userRole.toString().toUpperCase();
+
+  // ==========================================================
+  // SUPER ADMIN
+  // ==========================================================
+
+  if (
+    role === Role.SUPERADMIN ||
+    role === "SUPERADMIN" ||
+    role === "SUPER_ADMIN"
+  ) {
+    return true;
+  }
+
+  // ==========================================================
+  // USER PERMISSIONS
+  // ==========================================================
+
+  if (
+    !userPermissions ||
+    !Array.isArray(userPermissions)
+  ) {
+    return false;
+  }
+
+  // Example:
+  // requiredPermission = "cars:view"
+  //
+  // domain = "cars"
+  // wildcard = "cars:*"
+
+  const domain = requiredPermission.split(":")[0];
+
+  const wildcard = `${domain}:*`;
+
+  return (
+    userPermissions.includes("*") ||
+    userPermissions.includes(wildcard) ||
+    userPermissions.includes(requiredPermission)
+  );
 }
 
-// Check multiple permissions at once (user must have ALL of them)
-export function hasAllPermissions(
-  user: { role: string; permissions: string[] },
-  permissions: PermissionKey[]
-): boolean {
-  if (user.role === 'SUPERADMIN') return true
-  return permissions.every((p) => user.permissions.includes(p))
-}
