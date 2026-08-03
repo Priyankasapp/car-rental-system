@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Check if account is active (Fix: uses `isActive` instead of `isBlocked`)
+    // 2. Check if account is active
     if (!user.isActive) {
       return NextResponse.json(
         { success: false, message: "Your account has been deactivated or suspended. Please contact support." },
@@ -65,11 +66,17 @@ export async function POST(req: Request) {
     const ipAddress = req.headers.get("x-forwarded-for") || undefined;
     const userAgent = req.headers.get("user-agent") || undefined;
 
-    // 5. Create Session & Tokens
+    // Extract user permissions safely
+    const userPermissions = Array.isArray((user as any).permissions)
+      ? (user as any).permissions
+      : [];
+
+    // 5. Create Session & Tokens (PASSING PERMISSIONS HERE)
     const { accessToken, refreshToken } = await createSession({
       userId: user.id,
       email: user.email,
       role: user.role,
+      permissions: userPermissions, // 👈 CRITICAL FIX HERE
       tokenVersion: user.tokenVersion,
       ipAddress,
       userAgent,
@@ -104,6 +111,7 @@ export async function POST(req: Request) {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          permissions: userPermissions,
           mustChangePassword: user.mustChangePassword,
         },
       },

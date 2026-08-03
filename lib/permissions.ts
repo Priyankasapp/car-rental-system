@@ -3,10 +3,6 @@
 
 import { Role } from "@prisma/client";
 
-/**
- * Fine-grained permission keys used across
- * authorization guards and UI checks.
- */
 export const PERMISSIONS = {
   // ==========================================================
   // DASHBOARD
@@ -34,6 +30,9 @@ export const PERMISSIONS = {
   // ==========================================================
 
   USERS_VIEW: "users:view",
+  USERS_CREATE: 'users:create',
+  USERS_EDIT: 'users:edit',
+  USERS_DELETE: 'users:delete',
 
   // Add more permissions here later...
 } as const;
@@ -120,13 +119,31 @@ export const PERMISSION_GROUPS = [
   // ==========================================================
 
   {
-    category: "Users",
+    category: "User Management",
     permissions: [
       {
         key: PERMISSIONS.USERS_VIEW,
         label: "View Users",
         description:
           "Can view registered users and customer information",
+      },
+      {
+        key: PERMISSIONS.USERS_CREATE,
+        label: "Create Users",
+        description:
+          "Can add new users to the system",
+      },
+      {
+        key: PERMISSIONS.USERS_EDIT,
+        label: "Edit Users",
+        description:
+          "Can edit user information and profiles",
+      },
+      {
+        key: PERMISSIONS.USERS_DELETE,
+        label: "Delete Users",
+        description:
+          "Can remove users from the system",
       },
     ],
   },

@@ -15,10 +15,11 @@ export interface UserSession {
 }
 
 export interface JWTPayload {
-  sub: any;
+  sub?: any;
   userId: string;
   email: string;
   role: Role;
+  permissions: string[];
   tokenVersion: number;
   sessionId: string;
   iat?: number;

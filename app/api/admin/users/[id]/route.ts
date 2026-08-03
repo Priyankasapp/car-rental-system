@@ -1,61 +1,50 @@
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/api/admin/users/[id]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
-
-// Helper to verify Admin authorization
-function verifyAdminRole(request: NextRequest) {
-  const token =
-    request.cookies.get('accessToken')?.value ||
-    request.cookies.get('token')?.value
-
-  if (!token) return { isAuth: false, status: 401, message: 'Unauthorized - No token found' }
-
-  try {
-    const payload: any = verifyToken(token)
-    const role = payload?.role?.toUpperCase()
-    const isAllowed = role === 'SUPERADMIN' || role === 'SUPER_ADMIN' || role === 'ADMIN'
-
-    if (!payload || !isAllowed) {
-      return { isAuth: false, status: 403, message: 'Admin access required' }
-    }
-
-    return { isAuth: true, payload }
-  } catch (err: any) {
-    return { isAuth: false, status: 401, message: `Invalid token: ${err?.message}` }
-  }
-}
+import { authorizeUser } from '@/lib/auth-guard'
+import { PERMISSIONS } from '@/lib/permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
 // ============================================================================
-// GET - Fetch Single Customer by ID
+// GET - Fetch Single Customer
+// Permission: users:view
 // ============================================================================
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const authCheck = verifyAdminRole(request)
-    if (!authCheck.isAuth) {
-      return NextResponse.json(
-        { success: false, message: authCheck.message },
-        { status: authCheck.status }
-      )
-    }
+export async function GET(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  // 🔐 Check users:view permission
+  const authResult = await authorizeUser(
+    request,
+    PERMISSIONS.USERS_VIEW
+  )
 
-    // Await params to get the user ID
+  if (!authResult.isAuth) {
+    return authResult.response
+  }
+
+  try {
     const { id } = await params
 
     if (!id) {
       return NextResponse.json(
-        { success: false, message: 'User ID is required' },
+        {
+          success: false,
+          message: 'User ID is required',
+        },
         { status: 400 }
       )
     }
 
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: {
+        id,
+      },
       select: {
         id: true,
         email: true,
@@ -69,6 +58,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         preferences: true,
         createdAt: true,
         updatedAt: true,
+
         _count: {
           select: {
             reservations: true,
@@ -80,22 +70,43 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, message: 'Customer not found' },
+        {
+          success: false,
+          message: 'Customer not found',
+        },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: { user },
-    })
+    // Users module is for customers only
+    if (user.role !== 'CUSTOMER') {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Customer not found',
+        },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          user,
+        },
+      },
+      { status: 200 }
+    )
   } catch (error: any) {
     console.error('API GET Single Customer Error:', error)
+
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || 'Failed to fetch customer profile',
-        details: String(error),
+        message:
+          error?.message ||
+          'Failed to fetch customer profile',
       },
       { status: 500 }
     )
@@ -104,40 +115,68 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // ============================================================================
 // PUT - Update Customer Profile
+// Permission: users:edit
 // ============================================================================
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const authCheck = verifyAdminRole(request)
-    if (!authCheck.isAuth) {
-      return NextResponse.json(
-        { success: false, message: authCheck.message },
-        { status: authCheck.status }
-      )
-    }
+export async function PUT(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  // 🔐 Check users:edit permission
+  const authResult = await authorizeUser(
+    request,
+    PERMISSIONS.USERS_EDIT
+  )
 
-    // Await params to get the user ID
+  if (!authResult.isAuth) {
+    return authResult.response
+  }
+
+  try {
     const { id } = await params
 
     if (!id) {
       return NextResponse.json(
-        { success: false, message: 'User ID is required' },
+        {
+          success: false,
+          message: 'User ID is required',
+        },
         { status: 400 }
       )
     }
 
     const body = await request.json().catch(() => null)
+
     if (!body) {
       return NextResponse.json(
-        { success: false, message: 'Invalid or missing JSON payload' },
+        {
+          success: false,
+          message: 'Invalid or missing JSON payload',
+        },
         { status: 400 }
       )
     }
 
-    const { firstName, lastName, email, phone, isActive, isEmailVerified } = body
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      isActive,
+      isEmailVerified,
+    } = body
 
-    if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
+    // Required fields
+    if (
+      !firstName?.trim() ||
+      !lastName?.trim() ||
+      !email?.trim()
+    ) {
       return NextResponse.json(
-        { success: false, message: 'First name, last name, and email are required.' },
+        {
+          success: false,
+          message:
+            'First name, last name, and email are required.',
+        },
         { status: 400 }
       )
     }
@@ -146,12 +185,28 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id },
+      where: {
+        id,
+      },
     })
 
     if (!existingUser) {
       return NextResponse.json(
-        { success: false, message: 'Customer not found' },
+        {
+          success: false,
+          message: 'Customer not found',
+        },
+        { status: 404 }
+      )
+    }
+
+    // Make sure admin cannot edit another type of account
+    if (existingUser.role !== 'CUSTOMER') {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Customer not found',
+        },
         { status: 404 }
       )
     }
@@ -159,26 +214,49 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Check email uniqueness if email changed
     if (normalizedEmail !== existingUser.email) {
       const emailTaken = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
+        where: {
+          email: normalizedEmail,
+        },
       })
+
       if (emailTaken) {
         return NextResponse.json(
-          { success: false, message: 'Another account already uses this email address.' },
+          {
+            success: false,
+            message:
+              'Another account already uses this email address.',
+          },
           { status: 409 }
         )
       }
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id },
+      where: {
+        id,
+      },
+
       data: {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: normalizedEmail,
-        phone: phone ? phone.trim() : null,
-        isActive: isActive ?? existingUser.isActive,
-        isEmailVerified: isEmailVerified ?? existingUser.isEmailVerified,
+
+        phone:
+          phone && phone.trim()
+            ? phone.trim()
+            : null,
+
+        isActive:
+          isActive !== undefined
+            ? Boolean(isActive)
+            : existingUser.isActive,
+
+        isEmailVerified:
+          isEmailVerified !== undefined
+            ? Boolean(isEmailVerified)
+            : existingUser.isEmailVerified,
       },
+
       select: {
         id: true,
         email: true,
@@ -194,18 +272,46 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: 'Customer profile updated successfully',
-      data: { user: updatedUser },
-    })
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Customer profile updated successfully',
+        data: {
+          user: updatedUser,
+        },
+      },
+      { status: 200 }
+    )
   } catch (error: any) {
     console.error('API PUT Customer Error:', error)
+
+    if (error?.code === 'P2002') {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Another account already uses this email address.',
+        },
+        { status: 409 }
+      )
+    }
+
+    if (error?.code === 'P2025') {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Customer record not found.',
+        },
+        { status: 404 }
+      )
+    }
+
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || 'Failed to update customer account.',
-        details: String(error),
+        message:
+          error?.message ||
+          'Failed to update customer account.',
       },
       { status: 500 }
     )
@@ -213,48 +319,124 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // ============================================================================
-// DELETE - Remove Customer Account
+// PATCH - Partial Update
+// Permission: users:edit
 // ============================================================================
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const authCheck = verifyAdminRole(request)
-    if (!authCheck.isAuth) {
-      return NextResponse.json(
-        { success: false, message: authCheck.message },
-        { status: authCheck.status }
-      )
-    }
+export async function PATCH(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  // PUT already performs the users:edit permission check.
+  // Reuse it so PATCH follows the same authorization rules.
+  return PUT(request, { params })
+}
 
+// ============================================================================
+// DELETE - Remove Customer Account
+// Permission: users:delete
+// ============================================================================
+export async function DELETE(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  // 🔐 Check users:delete permission
+  const authResult = await authorizeUser(
+    request,
+    PERMISSIONS.USERS_DELETE
+  )
+
+  if (!authResult.isAuth) {
+    return authResult.response
+  }
+
+  try {
     const { id } = await params
 
     if (!id) {
       return NextResponse.json(
-        { success: false, message: 'User ID is required' },
+        {
+          success: false,
+          message: 'User ID is required',
+        },
         { status: 400 }
       )
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { id } })
-    if (!existingUser) {
+    // Check if customer exists
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+
+      include: {
+        reservations: {
+          where: {
+            status: {
+              in: ['PENDING', 'CONFIRMED'],
+            },
+          },
+        },
+      },
+    })
+
+    if (!existingUser || existingUser.role !== 'CUSTOMER') {
       return NextResponse.json(
-        { success: false, message: 'Customer not found' },
+        {
+          success: false,
+          message: 'Customer not found',
+        },
         { status: 404 }
       )
     }
 
-    await prisma.user.delete({ where: { id } })
+    // Prevent deleting customer with active reservations
+    if (
+      existingUser.reservations &&
+      existingUser.reservations.length > 0
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Cannot delete customer with active reservations. Please cancel or complete all reservations first.',
+        },
+        { status: 409 }
+      )
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Customer account deleted successfully',
+    // Delete customer
+    await prisma.user.delete({
+      where: {
+        id,
+      },
     })
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Customer account deleted successfully',
+      },
+      { status: 200 }
+    )
   } catch (error: any) {
     console.error('API DELETE Customer Error:', error)
+
+    if (error?.code === 'P2025') {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Customer record not found.',
+        },
+        { status: 404 }
+      )
+    }
+
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || 'Failed to delete customer account.',
-        details: String(error),
+        message:
+          error?.message ||
+          'Failed to delete customer account.',
       },
       { status: 500 }
     )

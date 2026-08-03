@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 
 function verifyAdminRole(request: NextRequest) {
   const token =
@@ -13,11 +14,17 @@ function verifyAdminRole(request: NextRequest) {
 
   try {
     const payload: any = verifyToken(token)
-    const role = payload?.role?.toUpperCase()
-    const isAllowed = role === 'SUPERADMIN' || role === 'SUPER_ADMIN' || role === 'ADMIN'
 
-    if (!payload || !isAllowed) {
-      return { isAuth: false, status: 403, message: 'Admin access required' }
+    // Handle nested token payloads (e.g., payload.user.role vs payload.role)
+    const rawRole = payload?.role || payload?.user?.role || ''
+    const role = String(rawRole).toUpperCase()
+    const permissions = payload?.permissions || payload?.user?.permissions || []
+
+    const isElevatedRole = ['SUPERADMIN', 'SUPER_ADMIN', 'ADMIN', 'STAFF'].includes(role)
+    const canViewDashboard = hasPermission(role, permissions, PERMISSIONS.DASHBOARD_VIEW)
+
+    if (!payload || (!isElevatedRole && !canViewDashboard)) {
+      return { isAuth: false, status: 403, message: 'Admin or Staff access required' }
     }
 
     return { isAuth: true, payload }
@@ -93,11 +100,11 @@ export async function GET(request: NextRequest) {
           id: true,
           reservationRef: true,
           status: true,
-          total: true,          // Schema: total
-          pickupDate: true,     // Schema: pickupDate
-          dropoffDate: true,    // Schema: dropoffDate
-          customerName: true,   // Schema: customerName
-          customerEmail: true,  // Schema: customerEmail
+          total: true,          
+          pickupDate: true,     
+          dropoffDate: true,    
+          customerName: true,   
+          customerEmail: true,  
           createdAt: true,
           user: {
             select: {
@@ -110,7 +117,7 @@ export async function GET(request: NextRequest) {
           car: {
             select: {
               id: true,
-              manufacturer: true, // Schema: manufacturer
+              manufacturer: true,
               model: true,
               year: true,
               licensePlate: true,

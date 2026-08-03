@@ -36,7 +36,7 @@ export default function AdminBookingsPage() {
 
     // Redirect if not admin
     if (!authLoading && user && user.role !== 'SUPERADMIN' && user.role !== 'ADMIN') {
-      router.push('/fleet')
+      router.push('/admin')
       return
     }
 

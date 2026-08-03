@@ -11,6 +11,7 @@ export async function createSession({
   userId,
   email,
   role,
+  permissions = [], 
   tokenVersion,
   ipAddress,
   userAgent,
@@ -18,6 +19,7 @@ export async function createSession({
   userId: string;
   email: string;
   role: any;
+  permissions?: string[]; 
   tokenVersion: number;
   ipAddress?: string;
   userAgent?: string;
@@ -28,22 +30,23 @@ export async function createSession({
   const session = await prisma.session.create({
     data: {
       userId,
-      token: "", // Placeholder
-      refreshToken: "", // Placeholder
+      token: "", 
+      refreshToken: "", 
       expiresAt,
       ipAddress,
       userAgent,
     },
   });
 
-  // 2. Sign tokens using session ID
+  // Sign tokens using session ID
   const accessToken = await signAccessToken({
-      userId,
-      email,
-      role,
-      tokenVersion,
-      sessionId: session.id,
-      sub: undefined
+    userId,
+    email,
+    role,
+    permissions, 
+    tokenVersion,
+    sessionId: session.id,
+    sub: undefined,
   });
 
   const refreshToken = await signRefreshToken({
@@ -78,16 +81,16 @@ export async function revokeSession(sessionId: string) {
 }
 
 /**
- * Revoke all active sessions for a user (e.g. on Password Reset)
+ * Revoke all active sessions for a user 
  */
 export async function revokeAllUserSessions(userId: string) {
-  // 1. Mark all DB sessions as revoked
+  //  Mark all DB sessions as revoked
   await prisma.session.updateMany({
     where: { userId, isRevoked: false },
     data: { isRevoked: true },
   });
 
-  // 2. Increment user tokenVersion to immediately invalidate active JWTs
+  //  Increment user tokenVersion to immediately invalidate active JWTs
   await prisma.user.update({
     where: { id: userId },
     data: { tokenVersion: { increment: 1 } },
