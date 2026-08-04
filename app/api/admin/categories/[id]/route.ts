@@ -1,16 +1,79 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { jwtVerify } from 'jose';
+import { hasPermission, PERMISSIONS } from '@/lib/permissions';
 
 type Params = { params: Promise<{ id: string }> };
+
+// Reusable: get current user from JWT in cookies
+async function getCurrentUser() {
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get('accessToken')?.value ||
+    cookieStore.get('token')?.value;
+
+  if (!token) return null;
+
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) return null;
+
+  try {
+    const secret = new TextEncoder().encode(jwtSecret);
+    const { payload } = await jwtVerify(token, secret);
+    const userId = (payload.userId || payload.sub) as string;
+    if (!userId) return null;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+        permissions: true, // String[]
+      },
+    });
+
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      role: user.role,
+      permissions: user.permissions, // already string[]
+    };
+  } catch {
+    return null;
+  }
+}
 
 // GET: Fetch a single category by ID
 export async function GET(request: Request, { params }: Params) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthenticated' },
+        { status: 401 }
+      );
+    }
+
+    if (
+      !hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.CATEGORIES_VIEW
+      )
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
 
     const category = await prisma.categoryMaster.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, isActive: true },
       include: {
         _count: {
           select: { cars: true },
@@ -38,12 +101,33 @@ export async function GET(request: Request, { params }: Params) {
 // PATCH: Update category details
 export async function PATCH(request: Request, { params }: Params) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthenticated' },
+        { status: 401 }
+      );
+    }
+
+    if (
+      !hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.CATEGORIES_EDIT
+      )
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { name, description, color, circleBg, textColor, borderColor, status } = body;
 
     const existingCategory = await prisma.categoryMaster.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, isActive: true },
     });
 
     if (!existingCategory) {
@@ -53,12 +137,12 @@ export async function PATCH(request: Request, { params }: Params) {
       );
     }
 
-    // Check duplicate name against ACTIVE categories only (MongoDB compatible)
+    // Check duplicate name against ACTIVE categories only
     if (name && name.trim().toLowerCase() !== existingCategory.name.toLowerCase()) {
       const duplicate = await prisma.categoryMaster.findFirst({
         where: {
           name: name.trim(),
-          isDeleted: false,
+          isActive: true,
           NOT: { id },
         },
       });
@@ -94,13 +178,34 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-// DELETE: Clean soft delete (No need for name renaming since @unique was removed)
+// DELETE: Soft delete category
 export async function DELETE(request: Request, { params }: Params) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthenticated' },
+        { status: 401 }
+      );
+    }
+
+    if (
+      !hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.CATEGORIES_DELETE
+      )
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
 
     const category = await prisma.categoryMaster.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, isActive: true },
     });
 
     if (!category) {
@@ -113,7 +218,7 @@ export async function DELETE(request: Request, { params }: Params) {
     const deletedCategory = await prisma.categoryMaster.update({
       where: { id },
       data: {
-        isDeleted: true,
+        isActive: false,
         status: 'Inactive',
       },
     });

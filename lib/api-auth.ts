@@ -21,8 +21,6 @@ function jsonError(message: string, status: number) {
 export async function getAuthenticatedUser(
   request: NextRequest
 ): Promise<AuthUser | null> {
-  // Current logins use `accessToken`; retain `token` as a compatibility
-  // fallback for sessions created by the previous authentication flow.
   const token =
     request.cookies.get('accessToken')?.value ||
     request.cookies.get('token')?.value
@@ -59,7 +57,7 @@ export async function getAuthenticatedUser(
     id: user.id,
     email: user.email,
     role: user.role,
-    permissions: user.permissions,
+    permissions: user.permissions || [],
     isActive: user.isActive,
   }
 }
@@ -72,9 +70,14 @@ export async function requireAuth(
   return { user }
 }
 
+export type PermissionCheck =
+  | PermissionKey
+  | PermissionKey[]
+  | { mode: 'ALL' | 'ANY'; permissions: PermissionKey[] }
+
 export async function requireDashboardUser(
   request: NextRequest,
-  permission?: PermissionKey
+  permissionRequirement?: PermissionCheck
 ): Promise<{ user: AuthUser } | NextResponse> {
   const result = await requireAuth(request)
   if (result instanceof NextResponse) return result
@@ -84,8 +87,39 @@ export async function requireDashboardUser(
     return jsonError('Admin access required', 403)
   }
 
-  if (permission && !hasPermission(user.role, user.permissions, permission)) {
-    return jsonError(`Permission required: ${permission}`, 403)
+  if (permissionRequirement) {
+    let isAllowed = false
+    let requiredLabel = ''
+
+    if (typeof permissionRequirement === 'string') {
+      // Single permission requirement
+      isAllowed = hasPermission(user.role, user.permissions, permissionRequirement)
+      requiredLabel = permissionRequirement
+    } else if (Array.isArray(permissionRequirement)) {
+      // Array defaults to ANY (user needs at least one of these permissions)
+      isAllowed = permissionRequirement.some((perm) =>
+        hasPermission(user.role, user.permissions, perm)
+      )
+      requiredLabel = permissionRequirement.join(' or ')
+    } else {
+      // Explicit mode configuration: 'ANY' or 'ALL'
+      const { mode, permissions } = permissionRequirement
+      if (mode === 'ALL') {
+        isAllowed = permissions.every((perm) =>
+          hasPermission(user.role, user.permissions, perm)
+        )
+        requiredLabel = permissions.join(' and ')
+      } else {
+        isAllowed = permissions.some((perm) =>
+          hasPermission(user.role, user.permissions, perm)
+        )
+        requiredLabel = permissions.join(' or ')
+      }
+    }
+
+    if (!isAllowed) {
+      return jsonError(`Permission required: ${requiredLabel}`, 403)
+    }
   }
 
   return { user }

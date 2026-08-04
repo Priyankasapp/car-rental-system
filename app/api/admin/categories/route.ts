@@ -1,16 +1,79 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { jwtVerify } from 'jose';
+import { hasPermission, PERMISSIONS } from '@/lib/permissions';
+
+// Reusable: get current user from JWT in cookies
+async function getCurrentUser() {
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get('accessToken')?.value ||
+    cookieStore.get('token')?.value;
+
+  if (!token) return null;
+
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) return null;
+
+  try {
+    const secret = new TextEncoder().encode(jwtSecret);
+    const { payload } = await jwtVerify(token, secret);
+    const userId = (payload.userId || payload.sub) as string;
+    if (!userId) return null;
+
+    // permissions is just a String[] on User, so select it directly
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+        permissions: true, // String[]
+      },
+    });
+
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      role: user.role,
+      permissions: user.permissions, // already string[]
+    };
+  } catch {
+    return null;
+  }
+}
 
 // GET: Fetch all categories
 export async function GET(request: Request) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthenticated' },
+        { status: 401 }
+      );
+    }
+
+    if (
+      !hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.CATEGORIES_VIEW
+      )
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status');
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
-    // Build query conditions using schema-valid fields (isActive instead of isDeleted)
     const where: any = {
       ...(includeInactive ? {} : { isActive: true }),
       ...(status && { status }),
@@ -46,6 +109,27 @@ export async function GET(request: Request) {
 // POST: Create a new category
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthenticated' },
+        { status: 401 }
+      );
+    }
+
+    if (
+      !hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.CATEGORIES_CREATE
+      )
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { name, description, color, circleBg, textColor, borderColor, status, isActive } = body;
 
