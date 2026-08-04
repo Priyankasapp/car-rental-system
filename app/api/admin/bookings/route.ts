@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
 import { requireDashboardUser, isAuthError } from '@/lib/api-auth'
+import { ReservationStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireDashboardUser(request, 'manage_reservations')
+    const auth = await requireDashboardUser(request, 'reservations:view')
     if (isAuthError(auth)) return auth
 
     const searchParams = request.nextUrl.searchParams
@@ -14,18 +15,36 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    const where: Record<string, unknown> = { isDeleted: false }
+    const where: any = {}
 
-    if (status) where.status = status
-    if (search) {
+    if (status && Object.values(ReservationStatus).includes(status as ReservationStatus)) {
+      where.status = status as ReservationStatus
+    }
+
+    if (search?.trim()) {
       where.OR = [
         { customerName: { contains: search, mode: 'insensitive' } },
         { customerEmail: { contains: search, mode: 'insensitive' } },
+        { customerPhone: { contains: search, mode: 'insensitive' } },
         { reservationRef: { contains: search, mode: 'insensitive' } },
+        {
+          car: {
+            manufacturer: { contains: search, mode: 'insensitive' },
+          },
+        },
+        {
+          car: {
+            model: { contains: search, mode: 'insensitive' },
+          },
+        },
       ]
     }
-    if (startDate) where.pickupDate = { gte: new Date(startDate) }
-    if (endDate) where.dropoffDate = { lte: new Date(endDate) }
+
+    if (startDate || endDate) {
+      where.pickupDate = {}
+      if (startDate) where.pickupDate.gte = new Date(startDate)
+      if (endDate) where.pickupDate.lte = new Date(endDate)
+    }
 
     const bookings = await prisma.reservation.findMany({
       where,
@@ -37,6 +56,8 @@ export async function GET(request: NextRequest) {
             model: true,
             year: true,
             imageMain: true,
+            licensePlate: true,
+            status: true,
           },
         },
         user: {
@@ -46,6 +67,7 @@ export async function GET(request: NextRequest) {
             firstName: true,
             lastName: true,
             phone: true,
+            role: true,
           },
         },
       },
