@@ -1,10 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// app/api/admin/reservations/[id]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { ReservationStatus } from '@prisma/client'
+import { CarStatus, ReservationStatus } from '@prisma/client'
 import { requireDashboardUser, isAuthError } from '@/lib/api-auth'
 import { sendBookingEmail } from '@/lib/email'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
 
 type PaymentSummary = {
   id: string
@@ -75,20 +79,13 @@ function formatDateForEmail(date: Date): string {
   })
 }
 
-function requireAdmin(request: NextRequest) {
-  return requireDashboardUser(request, 'reservations:view')
-}
-
-function getBookingStatusLabel(status: ReservationStatus) {
-  return status
-}
-
+// GET /api/admin/reservations/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
-    const auth = await requireAdmin(request)
+    const auth = await requireDashboardUser(request, 'reservations:view')
     if (isAuthError(auth)) return auth
 
     const { id } = await params
@@ -168,7 +165,7 @@ export async function GET(
       )
     }
 
-    const payments = booking.payments as PaymentSummary[]
+    const payments = (booking.payments || []) as PaymentSummary[]
     const totalPaid = payments
       .filter((p) => p.status === 'COMPLETED')
       .reduce((sum, p) => sum + p.amount, 0)
@@ -196,7 +193,7 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error('Error fetching booking:', error)
+    console.error('Error fetching admin booking detail:', error)
     return NextResponse.json(
       {
         success: false,
@@ -207,12 +204,13 @@ export async function GET(
   }
 }
 
+// PUT /api/admin/reservations/[id]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
-    const auth = await requireAdmin(request)
+    const auth = await requireDashboardUser(request, 'reservations:view')
     if (isAuthError(auth)) return auth
 
     const { id } = await params
@@ -232,7 +230,7 @@ export async function PUT(
     const mappedStatus = mapActionToStatus(statusInput)
     if (!mappedStatus) {
       return NextResponse.json(
-        { success: false, message: 'Invalid booking status' },
+        { success: false, message: 'Invalid booking status action' },
         { status: 400 }
       )
     }
@@ -264,10 +262,11 @@ export async function PUT(
       )
     }
 
+    // Car status sync
     if (mappedStatus === 'CONFIRMED' && existingBooking.status === 'PENDING') {
       await prisma.car.update({
         where: { id: existingBooking.carId },
-        data: { status: 'RESERVED' },
+        data: { status: CarStatus.RESERVED },
       })
     }
 
@@ -309,26 +308,23 @@ export async function PUT(
       },
     })
 
+    // Perform audit logging with resolved admin context
+    const activeUserId = auth.user?.id || existingBooking.userId || 'ADMIN_SYSTEM'
     await prisma.bookingAuditLog.create({
       data: {
         bookingId: id,
         action: `STATUS_CHANGED_TO_${mappedStatus}`,
         previousStatus: existingBooking.status,
         newStatus: mappedStatus,
-        performedBy: existingBooking.userId ?? existingBooking.carId,
+        performedBy: activeUserId,
         notes: cancellationReason || adminNotes || null,
         userAgent: request.headers.get('user-agent') || undefined,
       },
     })
 
+    // Customer email dispatch
     if (statusInput) {
       try {
-        const subjectMap: Record<'PENDING' | 'CONFIRMED' | 'CANCELLED', string> = {
-          PENDING: 'Booking Request Received - UrbanDrive',
-          CONFIRMED: 'Booking Confirmed! - UrbanDrive',
-          CANCELLED: 'Booking Cancelled - UrbanDrive',
-        }
-
         await sendBookingEmail({
           to: updatedBooking.customerEmail,
           customerName: updatedBooking.customerName,
@@ -341,7 +337,7 @@ export async function PUT(
           status: mappedStatus === 'CONFIRMED' ? 'CONFIRMED' : mappedStatus === 'CANCELLED' ? 'CANCELLED' : 'PENDING',
         })
       } catch (e) {
-        console.error('Failed to send booking email:', e)
+        console.error('Failed to send booking email notification:', e)
       }
     }
 
@@ -354,7 +350,7 @@ export async function PUT(
       },
     })
   } catch (error) {
-    console.error('Error updating booking:', error)
+    console.error('Error updating admin booking:', error)
     return NextResponse.json(
       {
         success: false,
@@ -365,19 +361,21 @@ export async function PUT(
   }
 }
 
+// PATCH /api/admin/reservations/[id]
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   return PUT(request, { params })
 }
 
+// DELETE /api/admin/reservations/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
-    const auth = await requireAdmin(request)
+    const auth = await requireDashboardUser(request, 'reservations:view')
     if (isAuthError(auth)) return auth
 
     const { id } = await params
@@ -423,13 +421,14 @@ export async function DELETE(
       where: { id },
     })
 
+    const activeUserId = auth.user?.id || existingBooking.userId || 'ADMIN_SYSTEM'
     await prisma.bookingAuditLog.create({
       data: {
         bookingId: id,
         action: 'DELETED',
         previousStatus: existingBooking.status,
         newStatus: 'CANCELLED',
-        performedBy: existingBooking.userId ?? existingBooking.carId,
+        performedBy: activeUserId,
         notes: 'Booking deleted by admin',
         userAgent: request.headers.get('user-agent') || undefined,
       },
@@ -444,7 +443,7 @@ export async function DELETE(
       },
     })
   } catch (error) {
-    console.error('Error deleting booking:', error)
+    console.error('Error deleting admin booking:', error)
     return NextResponse.json(
       {
         success: false,

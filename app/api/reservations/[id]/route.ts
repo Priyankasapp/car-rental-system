@@ -1,34 +1,31 @@
 // app/api/reservations/[id]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { getAuthenticatedUser } from '@/lib/api-auth'
+import { isUnitAvailable } from '@/lib/reservations/availability'
+import { calculateReservationPricing } from '@/lib/reservations/pricing'
 
-//  GET: Get single reservation
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+// GET /api/reservations/[id] - Get single reservation
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
     const { id } = await params
+    const user = await getAuthenticatedUser(request)
 
-    //  Verify user
-    const token = request.cookies.get('token')?.value
-    if (!token) {
+    if (!user) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    //  Get reservation
     const reservation = await prisma.reservation.findUnique({
       where: { id },
       include: {
@@ -52,10 +49,14 @@ export async function GET(
       )
     }
 
-    // Check if user owns this reservation or is admin
-    if (reservation.userId !== payload.userId && payload.role !== 'ADMIN' && payload.role !== 'SUPERADMIN') {
+    // Check ownership or admin status
+    if (
+      reservation.userId !== user.id &&
+      user.role !== 'ADMIN' &&
+      user.role !== 'SUPER_ADMIN'
+    ) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { success: false, message: 'Forbidden' },
         { status: 403 }
       )
     }
@@ -73,36 +74,36 @@ export async function GET(
   }
 }
 
-//  PUT: Update reservation (cancel, reschedule)
+// PUT /api/reservations/[id] - Update reservation (reschedule, status, add-ons)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
     const { id } = await params
-    const body = await request.json()
-    const { status, pickupDate, dropoffDate } = body
+    const user = await getAuthenticatedUser(request)
 
-    //  Verify user
-    const token = request.cookies.get('token')?.value
-    if (!token) {
+    if (!user) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
-    }
+    const body = await request.json()
+    const {
+      status,
+      pickupDate,
+      dropoffDate,
+      chauffeur,
+      conciergeDelivery,
+      platinumInsurance,
+      satelliteConnectivity,
+    } = body
 
-    // Get existing reservation
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
+      include: { car: true },
     })
 
     if (!existingReservation) {
@@ -112,15 +113,52 @@ export async function PUT(
       )
     }
 
-    //  Check if user owns this reservation or is admin
-    if (existingReservation.userId !== payload.userId && payload.role !== 'ADMIN' && payload.role !== 'SUPERADMIN') {
+    // Verify ownership or admin permission
+    if (
+      existingReservation.userId !== user.id &&
+      user.role !== 'ADMIN' &&
+      user.role !== 'SUPER_ADMIN'
+    ) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { success: false, message: 'Forbidden' },
         { status: 403 }
       )
     }
 
-    //  If cancelling, update car status
+    const newPickupDate = pickupDate ? new Date(pickupDate) : existingReservation.pickupDate
+    const newDropoffDate = dropoffDate ? new Date(dropoffDate) : existingReservation.dropoffDate
+
+    // Verify date availability if dates are changing
+    if (pickupDate || dropoffDate) {
+      const available = await isUnitAvailable({
+        unitId: existingReservation.carId,
+        startDate: newPickupDate,
+        endDate: newDropoffDate,
+        excludeReservationId: id,
+      })
+
+      if (!available) {
+        return NextResponse.json(
+          { success: false, message: 'This car is already booked for the newly selected dates.' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Re-calculate pricing
+    const pricing = calculateReservationPricing({
+      pricePerDay: existingReservation.car.pricePerDay,
+      startDate: newPickupDate,
+      endDate: newDropoffDate,
+      chauffeur: chauffeur ?? existingReservation.chauffeur,
+      conciergeDelivery: conciergeDelivery ?? existingReservation.conciergeDelivery,
+      platinumInsurance: platinumInsurance ?? existingReservation.platinumInsurance,
+      satelliteConnectivity: satelliteConnectivity ?? existingReservation.satelliteConnectivity,
+    })
+
+    const totalBeforeTax = pricing.subtotal + pricing.addOnsTotal
+
+    // If cancelling, restore car status to AVAILABLE
     if (status === 'CANCELLED' && existingReservation.status !== 'CANCELLED') {
       await prisma.car.update({
         where: { id: existingReservation.carId },
@@ -128,13 +166,21 @@ export async function PUT(
       })
     }
 
-    //  Update reservation
     const updatedReservation = await prisma.reservation.update({
       where: { id },
       data: {
         status: status || existingReservation.status,
-        pickupDate: pickupDate ? new Date(pickupDate) : existingReservation.pickupDate,
-        dropoffDate: dropoffDate ? new Date(dropoffDate) : existingReservation.dropoffDate,
+        pickupDate: newPickupDate,
+        dropoffDate: newDropoffDate,
+        chauffeur: chauffeur ?? existingReservation.chauffeur,
+        conciergeDelivery: conciergeDelivery ?? existingReservation.conciergeDelivery,
+        platinumInsurance: platinumInsurance ?? existingReservation.platinumInsurance,
+        satelliteConnectivity: satelliteConnectivity ?? existingReservation.satelliteConnectivity,
+        dailyRate: pricing.dailyRate,
+        rentalDays: pricing.rentalDays,
+        subtotal: totalBeforeTax,
+        tax: pricing.tax,
+        total: pricing.total,
       },
       include: {
         car: true,
@@ -155,32 +201,22 @@ export async function PUT(
   }
 }
 
-//  DELETE: Cancel reservation
+// DELETE /api/reservations/[id] - Soft delete & cancel reservation
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
     const { id } = await params
+    const user = await getAuthenticatedUser(request)
 
-    //  Verify user
-    const token = request.cookies.get('token')?.value
-    if (!token) {
+    if (!user) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    //  Get existing reservation
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
     })
@@ -192,15 +228,18 @@ export async function DELETE(
       )
     }
 
-    //  Check if user owns this reservation or is admin
-    if (existingReservation.userId !== payload.userId && payload.role !== 'ADMIN' && payload.role !== 'SUPERADMIN') {
+    if (
+      existingReservation.userId !== user.id &&
+      user.role !== 'ADMIN' &&
+      user.role !== 'SUPER_ADMIN'
+    ) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { success: false, message: 'Forbidden' },
         { status: 403 }
       )
     }
 
-    //  Soft delete
+    // Soft delete reservation and set status to CANCELLED
     await prisma.reservation.update({
       where: { id },
       data: {
@@ -209,7 +248,7 @@ export async function DELETE(
       },
     })
 
-    //  Update car status back to available
+    // Restore car availability
     await prisma.car.update({
       where: { id: existingReservation.carId },
       data: { status: 'AVAILABLE' },

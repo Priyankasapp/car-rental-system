@@ -21,7 +21,11 @@ function jsonError(message: string, status: number) {
 export async function getAuthenticatedUser(
   request: NextRequest
 ): Promise<AuthUser | null> {
-  const token = request.cookies.get('token')?.value
+  // Current logins use `accessToken`; retain `token` as a compatibility
+  // fallback for sessions created by the previous authentication flow.
+  const token =
+    request.cookies.get('accessToken')?.value ||
+    request.cookies.get('token')?.value
   if (!token) return null
 
   const payload = verifyToken(token)
@@ -31,7 +35,6 @@ export async function getAuthenticatedUser(
     where: {
       token,
       isRevoked: false,
-      isDeleted: false,
       expiresAt: { gt: new Date() },
     },
     select: { id: true },
@@ -47,11 +50,10 @@ export async function getAuthenticatedUser(
       role: true,
       permissions: true,
       isActive: true,
-      isDeleted: true,
     },
   })
 
-  if (!user || !user.isActive || user.isDeleted) return null
+  if (!user || !user.isActive) return null
 
   return {
     id: user.id,
@@ -82,7 +84,7 @@ export async function requireDashboardUser(
     return jsonError('Admin access required', 403)
   }
 
-  if (permission && !hasPermission(user, permission)) {
+  if (permission && !hasPermission(user.role, user.permissions, permission)) {
     return jsonError(`Permission required: ${permission}`, 403)
   }
 

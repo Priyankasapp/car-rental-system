@@ -1,9 +1,11 @@
+// app/api/reservations/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateReservationRef } from '@/lib/auth'
 import { getAuthenticatedUser } from '@/lib/api-auth'
-import { calculateBookingPricing } from '@/lib/pricing'
-import { findDateOverlap } from '@/lib/booking-utils'
+import { isUnitAvailable } from '@/lib/reservations/availability'
+import { calculateReservationPricing } from '@/lib/reservations/pricing'
 import { sendBookingEmail } from '@/lib/email'
 
 function formatDate(date: Date): string {
@@ -21,7 +23,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Removed `isDeleted: false` since the model does not contain that field
     const rawReservations = await prisma.reservation.findMany({
       where: { userId: user.id },
       include: {
@@ -95,7 +96,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure valid JavaScript Date objects
     const pickupDate = new Date(`${pickup.date}T${pickup.time || '10:00'}:00`)
     const dropoffDate = new Date(`${dropoff.date}T${dropoff.time || '10:00'}:00`)
 
@@ -113,8 +113,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const existingReservation = await findDateOverlap(carId, pickupDate, dropoffDate)
-    if (existingReservation) {
+    // 1. Availability check using lib/reservations/availability.ts
+    const available = await isUnitAvailable({
+      unitId: carId,
+      startDate: pickupDate,
+      endDate: dropoffDate,
+    })
+
+    if (!available) {
       return NextResponse.json(
         { success: false, message: 'This car is already booked for the selected dates.' },
         { status: 400 }
@@ -126,17 +132,17 @@ export async function POST(request: NextRequest) {
     const satelliteConnectivity = Boolean(enhancements?.satelliteConnectivity)
     const platinumInsurance = enhancements?.platinumInsurance !== false
 
-    const pricing = calculateBookingPricing({
+    // 2. Pricing calculation using lib/reservations/pricing.ts
+    const pricing = calculateReservationPricing({
       pricePerDay: car.pricePerDay,
-      pickupDate,
-      dropoffDate,
+      startDate: pickupDate,
+      endDate: dropoffDate,
       chauffeur: chauffeurSelected,
       conciergeDelivery,
       platinumInsurance,
       satelliteConnectivity,
     })
 
-    // Safeguard against NaN pricing values
     if (
       isNaN(pricing.dailyRate) ||
       isNaN(pricing.rentalDays) ||
@@ -157,7 +163,7 @@ export async function POST(request: NextRequest) {
       data: {
         reservationRef,
         carId,
-        ...(userId ? { userId } : {}), // Only attach userId if logged in
+        ...(userId ? { userId } : {}),
         customerName: customer.name,
         customerEmail: customer.email,
         customerPhone: customer.phone || '',
@@ -204,7 +210,7 @@ export async function POST(request: NextRequest) {
         : null,
     }
 
-    // Isolated Async Email Sender (Non-blocking)
+    // 3. Isolated Async Email Notification
     try {
       const fullCarName =
         `${reservation.car?.year ?? ''} ${reservation.car?.manufacturer ?? ''} ${reservation.car?.model ?? ''}`.trim()
