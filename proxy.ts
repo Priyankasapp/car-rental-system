@@ -1,3 +1,4 @@
+// middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
@@ -149,10 +150,27 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // Added frontend guard for bookings/reservations page routes
     if (path === '/admin/bookings' || path.startsWith('/admin/bookings/')) {
       if (!hasPermission('reservations:view')) {
         return NextResponse.redirect(new URL('/admin', request.url))
       }
+    }
+
+    const isReservationsEndpoint =
+      path === '/api/admin/reservations' ||
+      path.startsWith('/api/admin/reservations/') ||
+      path === '/api/admin/bookings' ||
+      path.startsWith('/api/admin/bookings/')
+
+    if (isReservationsEndpoint && !hasPermission('reservations:view') && !hasPermission('reservations:manage')) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'You do not have permission to access reservations',
+        },
+        { status: 403 }
+      )
     }
   }
 

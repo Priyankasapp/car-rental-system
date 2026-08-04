@@ -1,4 +1,4 @@
-// app/api/admin/reservations/[id]/route.ts
+// app/api/admin/bookings/[id]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -79,13 +79,13 @@ function formatDateForEmail(date: Date): string {
   })
 }
 
-// GET /api/admin/reservations/[id]
+// GET /api/admin/bookings/[id]
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const auth = await requireDashboardUser(request, 'reservations:view')
+    const auth = await requireDashboardUser(request)
     if (isAuthError(auth)) return auth
 
     const { id } = await params
@@ -176,19 +176,17 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: {
-        booking: {
-          ...booking,
-          customerFullName: booking.user
-            ? `${booking.user.firstName} ${booking.user.lastName}`
-            : booking.customerName,
-          availableActions: getAvailableActions(booking.status),
-          paymentSummary: {
-            totalPaid,
-            totalRefunded,
-            paymentCount: payments.length,
-            completedPayments: payments.filter((p) => p.status === 'COMPLETED').length,
-          },
+      booking: {
+        ...booking,
+        customerFullName: booking.user
+          ? `${booking.user.firstName} ${booking.user.lastName}`
+          : booking.customerName,
+        availableActions: getAvailableActions(booking.status),
+        paymentSummary: {
+          totalPaid,
+          totalRefunded,
+          paymentCount: payments.length,
+          completedPayments: payments.filter((p) => p.status === 'COMPLETED').length,
         },
       },
     })
@@ -204,13 +202,13 @@ export async function GET(
   }
 }
 
-// PUT /api/admin/reservations/[id]
+// PUT /api/admin/bookings/[id]
 export async function PUT(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const auth = await requireDashboardUser(request, 'reservations:view')
+    const auth = await requireDashboardUser(request)
     if (isAuthError(auth)) return auth
 
     const { id } = await params
@@ -361,7 +359,7 @@ export async function PUT(
   }
 }
 
-// PATCH /api/admin/reservations/[id]
+// PATCH /api/admin/bookings/[id]
 export async function PATCH(
   request: NextRequest,
   { params }: RouteParams
@@ -369,13 +367,13 @@ export async function PATCH(
   return PUT(request, { params })
 }
 
-// DELETE /api/admin/reservations/[id]
+// DELETE /api/admin/bookings/[id]
 export async function DELETE(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const auth = await requireDashboardUser(request, 'reservations:view')
+    const auth = await requireDashboardUser(request)
     if (isAuthError(auth)) return auth
 
     const { id } = await params

@@ -7,8 +7,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { use } from 'react'
-import { useAdmin } from '@/context/AdminContext'
-import { useAuth } from '@/context/AuthContext'
 import { 
   ArrowLeft, 
   Calendar, 
@@ -31,7 +29,6 @@ import {
   ChevronDown
 } from 'lucide-react'
 
-//  Define BookingDetail interface
 interface BookingDetail {
   id: string
   reservationRef: string
@@ -99,61 +96,110 @@ interface BookingDetail {
   }>
 }
 
+interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  phone: string | null
+  role: string
+}
+
 export default function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const { user, isLoading: authLoading } = useAuth()
-  const { 
-    currentBooking,
-    isLoading,
-    error,
-    fetchBookingById,
-    deleteBooking,
-    fetchBookings,
-  } = useAdmin()
-
-  //  Unwrap params using use()
   const { id } = use(params)
   
-  //  Use all state variables
+  const [user, setUser] = useState<User | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [booking, setBooking] = useState<BookingDetail | null>(null)
-  const [isLoadingLocal, setIsLoadingLocal] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancellationReason, setCancellationReason] = useState('')
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isLoadingLocal, setIsLoadingLocal] = useState(false)
 
-  //  Update booking when currentBooking changes
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me', { credentials: 'include' })
+      if (response.ok) {
+        const data = await response.json()
+
+        const userObj = data.data?.user || data.user || data.data
+      setUser(userObj || null)
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error)
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const fetchBookingById = async (bookingId: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/admin/reservations/${bookingId}`, { credentials: 'include' })
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch booking')
+      }
+      
+      setBooking(data.booking)
+    } catch (error) {
+      console.error('Error fetching booking:', error)
+      setError(error instanceof Error ? error.message : 'Failed to fetch booking')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const deleteBooking = async (bookingId: string) => {
+    const response = await fetch(`/api/admin/reservations/${bookingId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+    
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.message || 'Failed to delete booking')
+    }
+  }
+
   useEffect(() => {
-    if (currentBooking) {
-      setBooking(currentBooking as unknown as BookingDetail)
-    }
-  }, [currentBooking])
+    fetchCurrentUser()
+  }, [])
 
-  //  Fetch booking when id changes
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-      return
-    }
+    if (!authLoading) {
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
-    if (!authLoading && user && user.role !== 'SUPERADMIN' && user.role !== 'ADMIN') {
-      router.push('/fleet')
-      return
-    }
+      const role = user.role?.toUpperCase()
+      console.log('Current user role:', role)
+      if (role !== 'SUPERADMIN' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+        router.push('/fleet')
+        return
+      }
 
-    if (user && (user.role === 'SUPERADMIN' || user.role === 'ADMIN')) {
-      fetchBookingById(id)
+      if (id) {
+        fetchBookingById(id)
+      }
     }
-  }, [user, authLoading, router, fetchBookingById, id])
+  }, [user, authLoading, router, id])
 
-  //  Status change handler
   const handleStatusChange = async (status: string, reason?: string) => {
     if (!booking) return
     setIsLoadingLocal(true)
     try {
-      const response = await fetch(`/api/admin/bookings/${booking.id}`, {
+      const response = await fetch(`/api/admin/reservations/${booking.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ 
           status,
           cancellationReason: reason 
@@ -178,13 +224,11 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  //  Delete handler
   const handleDelete = async () => {
     if (!booking) return
     setIsLoadingLocal(true)
     try {
       await deleteBooking(booking.id)
-      await fetchBookings()
       router.push('/admin/bookings')
     } catch (error) {
       console.error('Error deleting booking:', error)
@@ -195,7 +239,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  //  Helper functions
   const getStatusColor = (status: string) => {
     const colors = {
       PENDING: 'bg-yellow-50 text-yellow-800 border-yellow-200',
@@ -244,7 +287,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     return labels[action] || action
   }
 
-  // Loading state
   if (authLoading || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -254,12 +296,11 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     )
   }
 
-  // Check admin access
-  if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN')) {
+  const role = user?.role?.toUpperCase()
+  if (!user || (role !== 'SUPERADMIN' && role !== 'ADMIN' && role !== 'SUPER_ADMIN')) {
     return null
   }
 
-  // Error state
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -276,7 +317,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     )
   }
 
-  // No booking found
   if (!booking) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -295,7 +335,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link
@@ -321,7 +360,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Status Dropdown */}
           {booking.availableActions && booking.availableActions.length > 0 && (
             <div className="relative">
               <button
@@ -335,10 +373,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
               {showStatusDropdown && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowStatusDropdown(false)}
-                  />
+                  <div className="fixed inset-0 z-40" onClick={() => setShowStatusDropdown(false)} />
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
                     {booking.availableActions.map((action) => (
                       <button
@@ -366,9 +401,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-         
-         
-          
           <button
             onClick={() => setShowDeleteModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
@@ -379,7 +411,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      {/* Cancel Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowCancelModal(false)} />
@@ -417,7 +448,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      {/* Delete Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowDeleteModal(false)} />
@@ -445,11 +475,8 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Customer Information */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <User className="w-5 h-5 text-gray-400" />
@@ -482,21 +509,9 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                   {booking.isGuestBooking ? 'Guest Booking' : 'Registered User'}
                 </p>
               </div>
-              {booking.user && (
-                <div className="sm:col-span-2">
-                  <p className="text-sm text-gray-500">User Account</p>
-                  <p className="font-medium text-gray-900">
-                    {booking.user.firstName} {booking.user.lastName}
-                    <span className="text-sm text-gray-500 ml-2">
-                      ({booking.user.email})
-                    </span>
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Rental Details */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-gray-400" />
@@ -530,106 +545,10 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-4 text-sm text-gray-600">
-              <span>Rental Days: <strong>{booking.rentalDays}</strong></span>
-              <span>Daily Rate: <strong>{formatCurrency(booking.dailyRate)}</strong></span>
-            </div>
           </div>
-
-          {/* Extras */}
-          {(booking.chauffeur || booking.conciergeDelivery || booking.platinumInsurance || booking.satelliteConnectivity) && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-gray-400" />
-                Additional Services
-              </h2>
-              <div className="flex flex-wrap gap-3">
-                {booking.chauffeur && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
-                    <Users className="w-4 h-4" />
-                    Chauffeur
-                  </span>
-                )}
-                {booking.conciergeDelivery && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm">
-                    <Building2 className="w-4 h-4" />
-                    Concierge Delivery
-                  </span>
-                )}
-                {booking.platinumInsurance && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm">
-                    <Shield className="w-4 h-4" />
-                    Platinum Insurance
-                  </span>
-                )}
-                {booking.satelliteConnectivity && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm">
-                    <Award className="w-4 h-4" />
-                    Satellite Connectivity
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Admin Notes */}
-          {booking.adminNotes && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Admin Notes</h2>
-              <p className="text-gray-600">{booking.adminNotes}</p>
-            </div>
-          )}
-
-          {booking.cancellationReason && (
-            <div className="bg-red-50 rounded-xl border border-red-200 p-6">
-              <h2 className="text-lg font-semibold text-red-800 mb-2 flex items-center gap-2">
-                <XCircle className="w-5 h-5" />
-                Cancellation Reason
-              </h2>
-              <p className="text-red-700">{booking.cancellationReason}</p>
-            </div>
-          )}
-
-          {/* Audit Log */}
-          {booking.auditLogs && booking.auditLogs.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-gray-400" />
-                Activity Log
-              </h2>
-              <div className="space-y-4">
-                {booking.auditLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0">
-                    <div className="w-2 h-2 mt-2 rounded-full bg-gray-300"></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {log.action.replace(/_/g, ' ')}
-                        {log.previousStatus && log.newStatus && (
-                          <span className="text-gray-500">
-                            {' '}from <span className="text-yellow-600">{log.previousStatus}</span>
-                            {' '}to <span className="text-green-600">{log.newStatus}</span>
-                          </span>
-                        )}
-                      </p>
-                      {log.notes && (
-                        <p className="text-sm text-gray-500">{log.notes}</p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                        <span>{log.performedByUser.firstName} {log.performedByUser.lastName}</span>
-                        <span>•</span>
-                        <span>{new Date(log.createdAt).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Right Column - Summary & Actions */}
         <div className="space-y-6">
-          {/* Car Summary */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Car className="w-5 h-5 text-gray-400" />
@@ -654,34 +573,17 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                   {booking.car.manufacturer} {booking.car.model}
                 </p>
                 <p className="text-sm text-gray-500">{booking.car.year}</p>
-                <p className="text-sm text-gray-500">{booking.car.category}</p>
                 <p className="text-xs text-gray-400">License: {booking.car.licensePlate}</p>
               </div>
             </div>
-            <Link
-              href={`/admin/cars/${booking.car.id}`}
-              className="mt-3 text-sm text-gray-600 hover:text-gray-900 font-medium inline-flex items-center gap-1"
-            >
-              View Car Details
-              <ArrowLeft className="w-4 h-4 rotate-180" />
-            </Link>
           </div>
 
-          {/* Pricing Summary */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-gray-400" />
               Payment Summary
             </h2>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Daily Rate</span>
-                <span className="text-gray-900">{formatCurrency(booking.dailyRate)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Rental Days</span>
-                <span className="text-gray-900">{booking.rentalDays} days</span>
-              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Subtotal</span>
                 <span className="text-gray-900">{formatCurrency(booking.subtotal)}</span>
@@ -696,69 +598,6 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                   <span className="text-gray-900 text-lg">{formatCurrency(booking.total)}</span>
                 </div>
               </div>
-              {booking.paymentSummary && booking.paymentSummary.totalPaid > 0 && (
-                <div className="border-t border-gray-200 pt-2 mt-2">
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Paid</span>
-                    <span>{formatCurrency(booking.paymentSummary.totalPaid)}</span>
-                  </div>
-                  {booking.paymentSummary.totalRefunded > 0 && (
-                    <div className="flex justify-between text-sm text-red-600">
-                      <span>Refunded</span>
-                      <span>{formatCurrency(booking.paymentSummary.totalRefunded)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Booking Timeline */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Timeline</h2>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 mt-2 rounded-full bg-green-500"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Booking Created</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(booking.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              {booking.status === 'CONFIRMED' && (
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 mt-2 rounded-full bg-blue-500"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Booking Confirmed</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(booking.updatedAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {booking.status === 'CANCELLED' && (
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 mt-2 rounded-full bg-red-500"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Booking Cancelled</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(booking.updatedAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {booking.status === 'COMPLETED' && (
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 mt-2 rounded-full bg-purple-500"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Booking Completed</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(booking.updatedAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

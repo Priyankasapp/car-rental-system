@@ -6,7 +6,20 @@ import { ArrowRight, CheckCircle, XCircle } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { contactForm } from "@/data/contact";
-import { useContact } from "@/context/ContactContext";
+
+type ContactFormData = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  service: string;
+  message: string;
+  source: string;
+};
+
+const initialFormData: ContactFormData = {
+  firstName: '', lastName: '', email: '', phone: '', service: '', message: '', source: 'website',
+};
 
 
 // Register ScrollTrigger
@@ -20,17 +33,10 @@ export default function ContactForm() {
   const imageRef = useRef<HTMLDivElement>(null);
   const floatingCardRef = useRef<HTMLDivElement>(null);
   
-  //  Use Contact Context
-  const { 
-    formData, 
-    setFormData, 
-    submitContact, 
-    loading, 
-    error, 
-    success,
-    clearError,
-    resetForm
-  } = useContact();
+  const [formData, setFormData] = useState<ContactFormData>(initialFormData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -39,7 +45,7 @@ export default function ContactForm() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData({ [name]: value });
+    setFormData((current) => ({ ...current, [name]: value }));
   };
 
   //  Handle field blur for validation
@@ -51,13 +57,22 @@ export default function ContactForm() {
   //  Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
+    setError(null);
+    setLoading(true);
     
     try {
-      await submitContact(formData);
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Failed to submit contact form');
+      setSuccess(true);
     } catch (err) {
-      // Error is already handled in context
-      console.error('Form submission error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to submit contact form');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -235,7 +250,11 @@ export default function ContactForm() {
               Please check your email for confirmation.
             </p>
             <button
-              onClick={resetForm}
+              onClick={() => {
+                setFormData(initialFormData);
+                setSuccess(false);
+                setError(null);
+              }}
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-black px-8 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
               Send Another Message

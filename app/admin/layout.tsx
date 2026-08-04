@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/context/AuthContext";
+import { getCurrentUser, logoutCurrentUser, type CurrentUser } from "@/lib/client-auth";
 import {
   hasPermission,
   PermissionKey,
@@ -132,7 +132,11 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  const { user, logout } = useAuth();
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   // ==========================================================
   // USER INITIALS
@@ -174,7 +178,7 @@ export default function AdminLayout({
   // ==========================================================
 
   const handleLogout = async () => {
-    await logout();
+    await logoutCurrentUser();
     router.push("/login");
   };
 
@@ -554,4 +558,3 @@ export default function AdminLayout({
     </div>
   );
 }
-

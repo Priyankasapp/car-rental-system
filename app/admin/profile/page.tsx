@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '@/context/AuthContext'
 import { Loader2, User, Mail, Phone, Shield, Calendar, Save } from 'lucide-react'
 
 interface ProfileUser {
@@ -22,7 +21,6 @@ interface ProfileUser {
 
 export default function AdminProfilePage() {
   const router = useRouter()
-  const { user: authUser, updateUser, isLoading: authLoading } = useAuth()
   const [profile, setProfile] = useState<ProfileUser | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -36,16 +34,16 @@ export default function AdminProfilePage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (authLoading) return
-    if (!authUser) {
-      router.push('/login')
-      return
-    }
-
     fetch('/api/profile', { credentials: 'include' })
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (res.status === 401) {
+          router.push('/login')
+          return null
+        }
+        return res.json()
+      })
       .then((data) => {
-        if (data.success && data.data?.user) {
+        if (data?.success && data.data?.user) {
           const u = data.data.user as ProfileUser
           setProfile(u)
           setFirstName(u.firstName)
@@ -55,7 +53,7 @@ export default function AdminProfilePage() {
       })
       .catch(() => setError('Failed to load profile'))
       .finally(() => setLoading(false))
-  }, [authUser, authLoading, router])
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,7 +82,6 @@ export default function AdminProfilePage() {
       if (!res.ok) throw new Error(data.message || 'Update failed')
 
       setProfile(data.data.user)
-      updateUser(data.data.user)
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
@@ -96,7 +93,7 @@ export default function AdminProfilePage() {
     }
   }
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />

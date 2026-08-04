@@ -4,7 +4,7 @@ import { requireDashboardUser, isAuthError } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireDashboardUser(request, 'view_dashboard')
+    const auth = await requireDashboardUser(request)
     if (isAuthError(auth)) return auth
 
     const [
@@ -17,15 +17,15 @@ export async function GET(request: NextRequest) {
       cancelledBookings,
       revenue,
     ] = await Promise.all([
-      prisma.user.count({ where: { isDeleted: false } }),
-      prisma.car.count({ where: { isDeleted: false } }),
-      prisma.reservation.count({ where: { isDeleted: false } }),
-      prisma.reservation.count({ where: { status: 'PENDING', isDeleted: false } }),
-      prisma.reservation.count({ where: { status: 'CONFIRMED', isDeleted: false } }),
-      prisma.reservation.count({ where: { status: 'COMPLETED', isDeleted: false } }),
-      prisma.reservation.count({ where: { status: 'CANCELLED', isDeleted: false } }),
+      prisma.user.count(),
+      prisma.car.count(),
+      prisma.reservation.count(),
+      prisma.reservation.count({ where: { status: 'PENDING' } }),
+      prisma.reservation.count({ where: { status: 'CONFIRMED' } }),
+      prisma.reservation.count({ where: { status: 'COMPLETED' } }),
+      prisma.reservation.count({ where: { status: 'CANCELLED' } }),
       prisma.reservation.aggregate({
-        where: { status: 'CONFIRMED', isDeleted: false },
+        where: { status: 'CONFIRMED' },
         _sum: { total: true },
       }),
     ])

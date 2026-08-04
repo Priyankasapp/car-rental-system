@@ -2,7 +2,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { useAuth } from '@/context/AuthContext'
+import { getCurrentUser, type CurrentUser } from '@/lib/client-auth'
 import { useRouter } from 'next/navigation'
 import { Calendar, AlertCircle } from 'lucide-react'
 import BookingTable from '@/components/admin/BookingTable'
@@ -58,7 +58,8 @@ export type BookingFiltersState = {
 
 export default function AdminBookingsPage() {
   const router = useRouter()
-  const { user, isLoading: authLoading } = useAuth()
+  const [user, setUser] = useState<CurrentUser | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
 
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -67,6 +68,10 @@ export default function AdminBookingsPage() {
   const [filters, setFiltersState] = useState<BookingFiltersState>({})
 
   const hasInitialized = useRef(false)
+
+  useEffect(() => {
+    getCurrentUser().then(setUser).finally(() => setAuthLoading(false))
+  }, [])
 
   // API Call to fetch bookings
   const fetchBookings = useCallback(async (activeFilters: BookingFiltersState = filters) => {
