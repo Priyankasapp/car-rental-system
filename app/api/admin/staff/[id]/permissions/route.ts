@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { PERMISSIONS } from '@/lib/permissions'
+import { revokeAllUserSessions } from '@/lib/auth/session'
 
 // GET — fetch a staff member's current permissions
 
@@ -129,10 +130,10 @@ export async function PUT(
       )
     }
     // Validate — only allow known permission keys
-    const validKeys = PERMISSIONS.map((p) => p.key)
+    const validKeys: string[] = Object.values(PERMISSIONS)
 
     const invalidKeys = permissions.filter(
-      (permission: string) => !validKeys.includes(permission as never)
+      (permission: string) => !validKeys.includes(permission)
     )
 
     if (invalidKeys.length > 0) {
@@ -195,6 +196,9 @@ export async function PUT(
         permissions: true,
       },
     })
+
+    
+    await revokeAllUserSessions(updated.id)
 
     return NextResponse.json({
       success: true,

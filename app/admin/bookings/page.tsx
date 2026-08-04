@@ -129,7 +129,7 @@ export default function AdminBookingsPage() {
       return
     }
 
-    const isAdmin = user?.role === 'SUPERADMIN' || user?.role === 'ADMIN'
+    const isAdmin = user?.role === 'SUPERADMIN' || user?.role === 'ADMIN'|| user?.role === 'STAFF'
 
     if (!authLoading && user && !isAdmin) {
       router.push('/admin')

@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       userId: user.id,
       email: user.email,
       role: user.role,
-      permissions: userPermissions, // 👈 CRITICAL FIX HERE
+      permissions: userPermissions, 
       tokenVersion: user.tokenVersion,
       ipAddress,
       userAgent,

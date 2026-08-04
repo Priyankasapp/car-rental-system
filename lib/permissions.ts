@@ -48,10 +48,7 @@ export const PERMISSIONS = {
   USERS_EDIT: "users:edit",
   USERS_DELETE: "users:delete",
 
-
-  // ==========================================================
   // STAFF MANAGEMENT
-  // ==========================================================
   STAFF_VIEW: "staff:view",
   STAFF_CREATE: "staff:create",
   STAFF_EDIT: "staff:edit",
@@ -68,8 +65,10 @@ export const PERMISSIONS = {
   PERMISSIONS_MANAGE: "permissions:manage",
 } as const;
 
-export type PermissionKey =
-  (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+// Valid permission keys set for validation
+export const VALID_PERMISSIONS = new Set(Object.values(PERMISSIONS));
 
 export interface PermissionItem {
   key: PermissionKey;
@@ -81,6 +80,51 @@ export interface PermissionGroup {
   category: string;
   permissions: PermissionItem[];
 }
+
+/**
+ * ==========================================================
+ * PERMISSION DEPENDENCIES
+ * Some permissions require other permissions to be useful
+ * ==========================================================
+ */
+export const PERMISSION_DEPENDENCIES: Partial<Record<PermissionKey, PermissionKey[]>> = {
+  [PERMISSIONS.CARS_CREATE]: [PERMISSIONS.CARS_VIEW],
+  [PERMISSIONS.CARS_EDIT]: [PERMISSIONS.CARS_VIEW],
+  [PERMISSIONS.CARS_DELETE]: [PERMISSIONS.CARS_VIEW],
+  
+  [PERMISSIONS.CATEGORIES_CREATE]: [PERMISSIONS.CATEGORIES_VIEW],
+  [PERMISSIONS.CATEGORIES_EDIT]: [PERMISSIONS.CATEGORIES_VIEW],
+  [PERMISSIONS.CATEGORIES_DELETE]: [PERMISSIONS.CATEGORIES_VIEW],
+  
+  [PERMISSIONS.TRANSMISSIONS_CREATE]: [PERMISSIONS.TRANSMISSIONS_VIEW],
+  [PERMISSIONS.TRANSMISSIONS_EDIT]: [PERMISSIONS.TRANSMISSIONS_VIEW],
+  [PERMISSIONS.TRANSMISSIONS_DELETE]: [PERMISSIONS.TRANSMISSIONS_VIEW],
+  
+  [PERMISSIONS.FUELS_CREATE]: [PERMISSIONS.FUELS_VIEW],
+  [PERMISSIONS.FUELS_EDIT]: [PERMISSIONS.FUELS_VIEW],
+  [PERMISSIONS.FUELS_DELETE]: [PERMISSIONS.FUELS_VIEW],
+  
+  [PERMISSIONS.FEATURES_CREATE]: [PERMISSIONS.FEATURES_VIEW],
+  [PERMISSIONS.FEATURES_EDIT]: [PERMISSIONS.FEATURES_VIEW],
+  [PERMISSIONS.FEATURES_DELETE]: [PERMISSIONS.FEATURES_VIEW],
+  
+  [PERMISSIONS.RESERVATIONS_EDIT]: [PERMISSIONS.RESERVATIONS_VIEW],
+  [PERMISSIONS.RESERVATIONS_CANCEL]: [PERMISSIONS.RESERVATIONS_VIEW],
+  
+  [PERMISSIONS.USERS_EDIT]: [PERMISSIONS.USERS_VIEW],
+  [PERMISSIONS.USERS_DELETE]: [PERMISSIONS.USERS_VIEW],
+  [PERMISSIONS.USERS_CREATE]: [PERMISSIONS.USERS_VIEW],
+  
+  [PERMISSIONS.STAFF_EDIT]: [PERMISSIONS.STAFF_VIEW],
+  [PERMISSIONS.STAFF_DELETE]: [PERMISSIONS.STAFF_VIEW],
+  [PERMISSIONS.STAFF_CREATE]: [PERMISSIONS.STAFF_VIEW],
+  
+  [PERMISSIONS.STAFF_MASTER_EDIT]: [PERMISSIONS.STAFF_MASTER_VIEW],
+  [PERMISSIONS.STAFF_MASTER_DELETE]: [PERMISSIONS.STAFF_MASTER_VIEW],
+  [PERMISSIONS.STAFF_MASTER_CREATE]: [PERMISSIONS.STAFF_MASTER_VIEW],
+  
+  [PERMISSIONS.PERMISSIONS_MANAGE]: [PERMISSIONS.PERMISSIONS_VIEW],
+};
 
 /**
  * ==========================================================
@@ -149,10 +193,6 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
       { key: PERMISSIONS.RESERVATIONS_CANCEL, label: "Cancel Reservations", description: "Can cancel customer reservations" },
     ],
   },
-  
-  
- 
-  
   {
     category: "User Management",
     permissions: [
@@ -191,6 +231,49 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
 
 /**
  * ==========================================================
+ * DEFAULT PERMISSIONS FOR ROLES
+ * ==========================================================
+ */
+export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
+  SUPERADMIN: Object.values(PERMISSIONS) as PermissionKey[],
+  ADMIN: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    PERMISSIONS.CARS_VIEW,
+    PERMISSIONS.CARS_CREATE,
+    PERMISSIONS.CARS_EDIT,
+    PERMISSIONS.CATEGORIES_VIEW,
+    PERMISSIONS.CATEGORIES_CREATE,
+    PERMISSIONS.CATEGORIES_EDIT,
+    PERMISSIONS.TRANSMISSIONS_VIEW,
+    PERMISSIONS.TRANSMISSIONS_CREATE,
+    PERMISSIONS.TRANSMISSIONS_EDIT,
+    PERMISSIONS.FUELS_VIEW,
+    PERMISSIONS.FUELS_CREATE,
+    PERMISSIONS.FUELS_EDIT,
+    PERMISSIONS.FEATURES_VIEW,
+    PERMISSIONS.FEATURES_CREATE,
+    PERMISSIONS.FEATURES_EDIT,
+    PERMISSIONS.RESERVATIONS_VIEW,
+    PERMISSIONS.RESERVATIONS_CREATE,
+    PERMISSIONS.RESERVATIONS_EDIT,
+    PERMISSIONS.RESERVATIONS_CANCEL,
+    PERMISSIONS.USERS_VIEW,
+    PERMISSIONS.STAFF_VIEW,
+    PERMISSIONS.STAFF_MASTER_VIEW,
+    PERMISSIONS.PERMISSIONS_VIEW,
+  ],
+  STAFF: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    PERMISSIONS.CARS_VIEW,
+    PERMISSIONS.RESERVATIONS_VIEW,
+    PERMISSIONS.RESERVATIONS_CREATE,
+    PERMISSIONS.RESERVATIONS_EDIT,
+    PERMISSIONS.USERS_VIEW,
+  ],
+};
+
+/**
+ * ==========================================================
  * CHECK USER PERMISSION
  * ==========================================================
  */
@@ -220,4 +303,43 @@ export function hasPermission(
     userPermissions.includes(wildcard) ||
     userPermissions.includes(requiredPermission)
   );
+}
+
+/**
+ * ==========================================================
+ * VALIDATE PERMISSIONS
+ * ==========================================================
+ */
+export function validatePermissions(permissions: string[]): {
+  valid: boolean;
+  invalidPermissions: string[];
+  missingDependencies: { permission: string; dependencies: string[] }[];
+} {
+  const invalidPermissions: string[] = [];
+  const missingDependencies: { permission: string; dependencies: string[] }[] = [];
+
+  // Check for invalid permissions
+  for (const perm of permissions) {
+    if (!VALID_PERMISSIONS.has(perm as PermissionKey)) {
+      invalidPermissions.push(perm);
+    }
+  }
+
+  // Check for missing dependencies
+  for (const perm of permissions) {
+    const deps = PERMISSION_DEPENDENCIES[perm as PermissionKey] || [];
+    const missing = deps.filter(dep => !permissions.includes(dep));
+    if (missing.length > 0) {
+      missingDependencies.push({
+        permission: perm,
+        dependencies: missing,
+      });
+    }
+  }
+
+  return {
+    valid: invalidPermissions.length === 0 && missingDependencies.length === 0,
+    invalidPermissions,
+    missingDependencies,
+  };
 }

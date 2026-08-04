@@ -59,14 +59,15 @@ export async function POST() {
     }
 
     // 4. Generate New Access Token
-    const newAccessToken = await signAccessToken({
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        sessionId: session.id,
-        tokenVersion: user.tokenVersion,
-        sub: undefined
-    });
+   const newAccessToken = await signAccessToken({
+  userId: user.id,
+  email: user.email,
+  role: user.role,
+  permissions: Array.isArray(user.permissions) ? user.permissions : [],
+  sessionId: session.id,
+  tokenVersion: user.tokenVersion,
+  sub: undefined,
+})
 
     // 5. Update Access Token Cookie
     cookieStore.set("accessToken", newAccessToken, {
