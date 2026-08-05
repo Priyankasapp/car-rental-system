@@ -1,8 +1,11 @@
+/* eslint-disable react-hooks/immutability */
+/* eslint-disable react-hooks/preserve-manual-memoization */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Users,
   Plus,
@@ -19,6 +22,15 @@ import {
   List as ListIcon,
   RotateCw,
 } from 'lucide-react'
+
+//  Permission helper
+function hasPermission(user: any, permission: string): boolean {
+  if (!user) return false
+  const role = user.role?.toUpperCase()
+  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
+  const permissions = user.permissions || []
+  return permissions.includes(permission)
+}
 
 interface StaffRole {
   id: string
@@ -38,11 +50,15 @@ interface StaffMember {
 }
 
 export default function StaffPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [userLoading, setUserLoading] = useState<boolean>(true)
   const [staffList, setStaffList] = useState<StaffMember[]>([])
   const [roles, setRoles] = useState<StaffRole[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [hasAccess, setHasAccess] = useState<boolean>(false)
 
   // View Mode: 'grid' or 'list'
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -58,6 +74,39 @@ export default function StaffPage() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [staffMasterId, setStaffMasterId] = useState('')
+
+  //  Load current user
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        if (data.success) {
+          setUser(data.data.user)
+        }
+      } catch (error) {
+        console.error('Failed to load user:', error)
+      } finally {
+        setUserLoading(false)
+      }
+    }
+    loadUser()
+  }, [])
+
+  //  Permission check
+  useEffect(() => {
+    if (!userLoading && user) {
+      const canView = hasPermission(user, 'staff:view')
+      
+      if (!canView) {
+        router.push('/admin')
+        return
+      }
+      
+      setHasAccess(true)
+      fetchData()
+    }
+  }, [user, userLoading])
 
   // Fetch Staff List & Staff Roles
   const fetchData = useCallback(async () => {
@@ -83,12 +132,14 @@ export default function StaffPage() {
     }
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
-
   // Open Add Modal
   const openAddModal = () => {
+    //  Permission check for create
+    if (!hasPermission(user, 'staff:create')) {
+      alert('You do not have permission to create staff members')
+      return
+    }
+    
     setFormError(null)
     setFirstName('')
     setLastName('')
@@ -101,6 +152,13 @@ export default function StaffPage() {
   // Handle Create Staff
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    //  Permission check for create
+    if (!hasPermission(user, 'staff:create')) {
+      setFormError('You do not have permission to create staff members')
+      return
+    }
+    
     if (!firstName || !lastName || !email || !staffMasterId) {
       setFormError('Please fill in all required fields.')
       return
@@ -155,11 +213,27 @@ export default function StaffPage() {
     )
   })
 
-  if (loading) {
+  //  Loading state
+  if (userLoading || loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-4">
         <div className="h-8 bg-gray-200 rounded w-1/4 animate-pulse" />
         <div className="h-64 bg-white border border-gray-200 rounded-2xl animate-pulse" />
+      </div>
+    )
+  }
+
+  //  Access denied state
+  if (!hasAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔒</div>
+          <h2 className="text-lg font-semibold text-gray-900">Access Denied</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            You do not have permission to view staff members.
+          </p>
+        </div>
       </div>
     )
   }

@@ -8,6 +8,7 @@ import { Calendar, AlertCircle } from 'lucide-react'
 import BookingTable from '@/components/admin/BookingTable'
 import BookingFilters from '@/components/admin/BookingFilters'
 
+//  EXPORT - Types ko export karo
 export interface Booking {
   id: string
   reservationRef: string
@@ -69,12 +70,35 @@ export default function AdminBookingsPage() {
 
   const hasInitialized = useRef(false)
 
+  //  Permission helper with useCallback
+  const hasPermission = useCallback((permission: string): boolean => {
+    console.log(' hasPermission called:', {
+      permission,
+      userExists: !!user,
+      userRole: user?.role,
+      userPermissions: user?.permissions,
+      isArray: Array.isArray(user?.permissions),
+      includes: user?.permissions?.includes(permission)
+    })
+    
+    if (!user) return false
+    const role = user.role?.toUpperCase()
+    if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
+    const permissions = user.permissions || []
+    return permissions.includes(permission)
+  }, [user])
+
   useEffect(() => {
     getCurrentUser().then(setUser).finally(() => setAuthLoading(false))
   }, [])
 
   // API Call to fetch bookings
   const fetchBookings = useCallback(async (activeFilters: BookingFiltersState = filters) => {
+    if (!hasPermission('reservations:view')) {
+      setError('You do not have permission to view bookings')
+      return
+    }
+
     try {
       setIsLoading(true)
       setError(null)
@@ -104,10 +128,14 @@ export default function AdminBookingsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [filters])
+  }, [filters, hasPermission])
 
   // API Call to fetch stats summary
   const fetchStats = useCallback(async () => {
+    if (!hasPermission('reservations:view')) {
+      return
+    }
+
     try {
       const res = await fetch(`/api/admin/reservations/stats`, {
         credentials: 'include',
@@ -121,34 +149,40 @@ export default function AdminBookingsPage() {
     } catch {
       setStats(null)
     }
-  }, [])
+  }, [hasPermission])
 
   useEffect(() => {
+    console.log(' Auth Effect:', { authLoading, userExists: !!user })
+    
     if (!authLoading && !user) {
       router.push('/login')
       return
     }
 
-    const isAdmin = user?.role === 'SUPERADMIN' || user?.role === 'ADMIN'|| user?.role === 'STAFF'
+    if (!authLoading && user) {
+      const canViewBookings = hasPermission('reservations:view')
+      console.log(' Can view bookings:', canViewBookings)
 
-    if (!authLoading && user && !isAdmin) {
-      router.push('/admin')
-      return
-    }
+      if (!canViewBookings) {
+        router.push('/admin')
+        return
+      }
 
-    if (user && isAdmin && !hasInitialized.current) {
-      hasInitialized.current = true
-      fetchBookings()
-      fetchStats()
+      if (!hasInitialized.current) {
+        hasInitialized.current = true
+        fetchBookings()
+        fetchStats()
+      }
     }
-  }, [user, authLoading, router, fetchBookings, fetchStats])
+  }, [user, authLoading, router, fetchBookings, fetchStats, hasPermission])
 
   const handleFilterChange = (newFilters: BookingFiltersState) => {
     setFiltersState(newFilters)
     fetchBookings(newFilters)
   }
 
-  if (authLoading || (isLoading && bookings.length === 0)) {
+  //  1. Auth Loading Check
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
@@ -156,12 +190,43 @@ export default function AdminBookingsPage() {
     )
   }
 
-  const isAdmin = user?.role === 'SUPERADMIN' || user?.role === 'ADMIN'
-
-  if (!user || !isAdmin) {
-    return null
+  //  2. User Check
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
+      </div>
+    )
   }
 
+  //  3. Permission Check
+  const canViewBookings = hasPermission('reservations:view')
+  console.log('📊 Render - canViewBookings:', canViewBookings)
+
+  if (!canViewBookings) {
+    return (
+      <div className="flex items-center justify-center min-h-100">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔒</div>
+          <h2 className="text-lg font-semibold text-gray-900">Access Denied</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            You do not have permission to view bookings.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  //  4. Bookings Loading Check
+  if (isLoading && bookings.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
+      </div>
+    )
+  }
+
+  //  5. Main Render
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">

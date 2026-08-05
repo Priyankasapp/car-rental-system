@@ -519,12 +519,12 @@ export default function AdminLayout({
                     Profile
                   </Link>
 
-                  <Link
+                  {/* <Link
                     href="/admin/settings"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Settings
-                  </Link>
+                  </Link> */}
 
                   <hr className="my-1 border-gray-100" />
 

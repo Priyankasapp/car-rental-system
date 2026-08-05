@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     const staffMasters = await prisma.staffMaster.findMany({
-      where: { isActive: true }, // ✅ Fixed: returns active roles
+      where: { isActive: true },
       include: {
         _count: { select: { staffMembers: true } },
       },
@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
 
     // Reuse the same permission keys the Permissions page already validates against
     const permissions = Array.isArray(defaultPermissions) ? defaultPermissions : []
-    const validKeys = PERMISSIONS.map((p) => p.key)
+    const validKeys = PERMISSIONS.map((p: { key: any }) => p.key)
 
-    // ✅ TypeScript Fix: Cast validKeys to string[] for strict include checks
+    //  TypeScript Fix: Cast validKeys to string[] for strict include checks
     const invalidKeys = permissions.filter(
       (p: string) => !(validKeys as string[]).includes(p)
     )

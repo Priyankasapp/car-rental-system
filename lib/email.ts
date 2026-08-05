@@ -15,6 +15,13 @@ import {
   generateOtpText,
   OtpEmailProps,
 } from '@/email/VerificationOtpEmail'
+import {
+  generateContactAdminHTML,
+  generateContactAdminText,
+  generateContactUserHTML,
+  generateContactUserText,
+  ContactAdminEmailProps,
+} from '@/email/ContactEmail'
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -58,6 +65,7 @@ const BOOKING_SUBJECTS: Record<BookingEmailProps['status'], string> = {
   CONFIRMED: 'Booking Confirmed! - UrbanDrive',
   CANCELLED: 'Booking Cancelled - UrbanDrive',
 }
+
 export async function sendBookingEmail({
   to,
   ...props
@@ -94,4 +102,40 @@ export async function sendPasswordResetEmail({
     html: generatePasswordResetHTML(props),
     text: generatePasswordResetText(props),
   })
+}
+
+export async function sendContactEmails(
+  contactData: ContactAdminEmailProps,
+  adminEmails: string[]
+) {
+  // Notify admin staff members
+  const adminPromises = adminEmails.map((adminEmail) =>
+    sendEmail({
+      to: adminEmail,
+      subject: `New Contact Inquiry: ${contactData.service} - ${contactData.firstName} ${contactData.lastName}`,
+      html: generateContactAdminHTML(contactData),
+      text: generateContactAdminText(contactData),
+    })
+  )
+
+  // Send receipt/confirmation to customer
+  const userPromise = sendEmail({
+    to: contactData.email,
+    subject: 'We Received Your Inquiry - UrbanDrive',
+    html: generateContactUserHTML({
+      firstName: contactData.firstName,
+      lastName: contactData.lastName,
+      service: contactData.service,
+      message: contactData.message,
+    }),
+    text: generateContactUserText({
+      firstName: contactData.firstName,
+      lastName: contactData.lastName,
+      service: contactData.service,
+      message: contactData.message,
+    }),
+  })
+
+  // Send all emails concurrently
+  await Promise.all([...adminPromises, userPromise])
 }

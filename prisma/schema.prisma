@@ -484,7 +484,7 @@ model Payment {
   @@map("payments")
 }
 
-// ============== BOOKING AUDIT LOG MODEL (FIXED) ==============
+// ============== BOOKING AUDIT LOG MODEL ==============
 
 model BookingAuditLog {
   id        String      @id @default(auto()) @map("_id") @db.ObjectId
@@ -494,7 +494,7 @@ model BookingAuditLog {
   action          String
   previousStatus  String?
   newStatus       String?
-  performedBy     String? @db.ObjectId // ✅ Made optional
+  performedBy     String? @db.ObjectId 
   performedByName String?
   notes           String?
 
@@ -503,7 +503,7 @@ model BookingAuditLog {
 
   createdAt DateTime @default(now())
 
-  // ✅ FIXED: performer is optional
+ 
   performer User? @relation(fields: [performedBy], references: [id], onDelete: SetNull)
 
   @@index([bookingId])

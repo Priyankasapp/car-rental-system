@@ -41,6 +41,17 @@ export async function POST() {
     // 3. Validate User Account Status & Token Version
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        permissions: true,
+        staffMaster: {
+          select: {
+            defaultPermissions: true,
+          },
+        },
+      },
     });
 
     if (!user || !user.isActive) {
@@ -58,16 +69,24 @@ export async function POST() {
       );
     }
 
+    const staffMasterPermissions = Array.isArray(user.staffMaster?.defaultPermissions)
+      ? user.staffMaster.defaultPermissions
+      : [];
+
+    const effectivePermissions = Array.from(
+      new Set([...(Array.isArray(user.permissions) ? user.permissions : []), ...staffMasterPermissions])
+    );
+
     // 4. Generate New Access Token
-   const newAccessToken = await signAccessToken({
-  userId: user.id,
-  email: user.email,
-  role: user.role,
-  permissions: Array.isArray(user.permissions) ? user.permissions : [],
-  sessionId: session.id,
-  tokenVersion: user.tokenVersion,
-  sub: undefined,
-})
+    const newAccessToken = await signAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      permissions: effectivePermissions,
+      sessionId: session.id,
+      tokenVersion: user.tokenVersion,
+      sub: undefined,
+    });
 
     // 5. Update Access Token Cookie
     cookieStore.set("accessToken", newAccessToken, {

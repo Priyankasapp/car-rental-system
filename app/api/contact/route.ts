@@ -1,8 +1,8 @@
 // app/api/contact/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendContactEmails } from '@/lib/email/emailService';
 import { ContactService, ContactStatus } from '@prisma/client';
+import { sendContactEmails } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
                      'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    //  Create contact in database
+    // Create contact in database
     const contact = await prisma.contact.create({
       data: {
         firstName: firstName.trim(),
@@ -92,30 +92,29 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Prepare contact data for email
+    // Prepare contact data for email template
     const contactData = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone?.trim(),
-      service: service,
-      message: message.trim(),
-      ipAddress,
+      firstName: contact.firstName,
+      lastName: contact.lastName,
+      email: contact.email,
+      phone: contact.phone,
+      service: contact.service,
+      message: contact.message,
+      ipAddress: contact.ipAddress || 'unknown',
+      source: contact.source || 'website',
       createdAt: contact.createdAt,
     };
 
-    // Send emails (fire and forget - don't block response)
-    try {
-      const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || ['admin@urbandrive.com'];
-      await sendContactEmails(contactData, adminEmails);
-    } catch (emailError) {
-      console.error('Failed to send contact emails:', emailError);
-      // Don't fail the request if email fails
-    }
+    // Send emails (fire-and-forget without blocking user HTTP response)
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || ['admin@urbandrive.com'];
+    
+    sendContactEmails(contactData, adminEmails).catch((emailError) => {
+      console.error('Failed to send contact emails asynchronously:', emailError);
+    });
 
     return NextResponse.json({
       success: true,
-      message: 'Thank you for contacting us! We\'ll get back to you shortly.',
+      message: "Thank you for contacting us! We'll get back to you shortly.",
       data: {
         id: contact.id,
         firstName: contact.firstName,

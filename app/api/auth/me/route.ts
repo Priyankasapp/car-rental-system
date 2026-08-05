@@ -50,7 +50,12 @@ export async function GET() {
         lastName: true,
         email: true,
         role: true,
-         permissions: true,
+        permissions: true,
+        staffMaster: {
+          select: {
+            defaultPermissions: true,
+          },
+        },
         isEmailVerified: true,
         createdAt: true,
       },
@@ -64,10 +69,23 @@ export async function GET() {
     }
 
     // 4. Return user data
+    const staffMasterPermissions = Array.isArray(user?.staffMaster?.defaultPermissions)
+      ? user.staffMaster.defaultPermissions
+      : [];
+
+    const effectivePermissions = Array.from(
+      new Set([...(Array.isArray(user?.permissions) ? user.permissions : []), ...staffMasterPermissions])
+    );
+
     return NextResponse.json(
       {
         success: true,
-        data: { user },
+        data: {
+          user: {
+            ...user,
+            permissions: effectivePermissions,
+          },
+        },
       },
       { status: 200 }
     );

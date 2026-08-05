@@ -24,6 +24,24 @@ export async function POST(req: Request) {
     // 1. Find user in DB
     const user = await prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        password: true,
+        role: true,
+        permissions: true,
+        tokenVersion: true,
+        isActive: true,
+        isEmailVerified: true,
+        mustChangePassword: true,
+        staffMaster: {
+          select: {
+            defaultPermissions: true,
+          },
+        },
+      },
     });
 
     if (!user || !user.password) {
@@ -71,17 +89,35 @@ export async function POST(req: Request) {
       ? (user as any).permissions
       : [];
 
+    // Merge inherited staff master permissions when available
+    const staffMasterPermissions = Array.isArray((user as any).staffMaster?.defaultPermissions)
+      ? (user as any).staffMaster.defaultPermissions
+      : [];
+
+    const effectivePermissions = Array.from(
+      new Set([...(userPermissions || []), ...(staffMasterPermissions || [])])
+    );
+
+    console.log('🔐 ===== LOGIN DEBUG =====')
+    console.log('📧 Email:', email)
+    console.log('👤 User Role:', user.role)
+    console.log('📋 User Permissions (DB):', user.permissions)
+    console.log('📋 StaffMaster Permissions:', staffMasterPermissions)
+    console.log('📋 Effective Permissions:', effectivePermissions)
+    console.log('========================')
     // 5. Create Session & Tokens (PASSING PERMISSIONS HERE)
     const { accessToken, refreshToken } = await createSession({
       userId: user.id,
       email: user.email,
       role: user.role,
-      permissions: userPermissions, 
+      permissions: effectivePermissions,
       tokenVersion: user.tokenVersion,
       ipAddress,
       userAgent,
     });
 
+      console.log('✅ Session Created!')
+    console.log('📦 Access Token (first 50 chars):', accessToken.substring(0, 50) + '...')
     // 6. Set HTTP-Only Cookies
     const cookieStore = await cookies();
 
@@ -111,7 +147,7 @@ export async function POST(req: Request) {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
-          permissions: userPermissions,
+          permissions: effectivePermissions,
           mustChangePassword: user.mustChangePassword,
         },
       },
