@@ -4,7 +4,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAdmin } from '@/context/AdminContext'
 import {
   User,
   Plus,
@@ -32,7 +31,6 @@ interface AddStaffFormData {
 
 export default function AddStaffPage() {
   const router = useRouter()
-  const { addStaff } = useAdmin()
 
   const [formData, setFormData] = useState<AddStaffFormData>({
     firstName: '',
@@ -94,14 +92,31 @@ export default function AddStaffPage() {
     try {
       setIsSubmitting(true)
 
-      await addStaff({
+      // Direct API Call without Context
+      const payload = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         role: formData.role === 'SUPERADMIN' ? 'STAFF' : formData.role,
         isActive: formData.isActive,
+        licenseNumber: formData.licenseNumber.trim(),
+        issuingCountry: formData.issuingCountry.trim(),
+      }
+
+      const response = await fetch('/api/admin/staff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to onboard new staff member.')
+      }
 
       router.push('/admin/staff?created=1')
     } catch (err: any) {
@@ -365,7 +380,7 @@ export default function AddStaffPage() {
                       </p>
                     )}
                     <p className="text-xs text-text-secondary opacity-60">
-                      High-resolution JPG, PNG or PDF 
+                      High-resolution JPG, PNG or PDF
                     </p>
                   </div>
                 </div>

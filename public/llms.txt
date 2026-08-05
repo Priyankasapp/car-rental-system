@@ -1,0 +1,7 @@
+# LLMs.txt
+# This file is intentionally left simple for local or project-specific LLM usage.
+# Add any relevant metadata or instructions for LLM consumers as needed.
+
+# Example content:
+# model: gpt-4o
+# description: UrbanDrive car rental knowledge base for search and AI tooling

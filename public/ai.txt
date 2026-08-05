@@ -1,0 +1,10 @@
+# AI.txt
+# This file provides metadata for artificial intelligence agents and services.
+# You can expand it with details relevant to your AI integration.
+
+# Example fields:
+# name: UrbanDrive AI Helper
+# version: 1.0
+# description: Knowledge base and result guidance for the UrbanDrive car rental application.
+# contact: support@your-domain.com
+# license: CC-BY-4.0
