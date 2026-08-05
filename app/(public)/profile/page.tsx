@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '@/context/AuthContext'
 import { Loader2, User, Mail, Phone, Calendar, Save, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { ImageUploader } from '@/components/ui/ImageUploader'
 
@@ -23,7 +22,6 @@ interface ProfileUser {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user: authUser, updateUser, isLoading: authLoading } = useAuth()
   const [profile, setProfile] = useState<ProfileUser | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -46,16 +44,16 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (authLoading) return
-    if (!authUser) {
-      router.push('/login?redirect=/profile')
-      return
-    }
-
     fetch('/api/profile', { credentials: 'include' })
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (res.status === 401) {
+          router.push('/login?redirect=/profile')
+          return null
+        }
+        return res.json()
+      })
       .then((data) => {
-        if (data.success && data.data?.user) {
+        if (data?.success && data.data?.user) {
           const u = data.data.user as ProfileUser
           setProfile(u)
           setFirstName(u.firstName)
@@ -66,7 +64,7 @@ export default function ProfilePage() {
       })
       .catch(() => setError('Failed to load profile'))
       .finally(() => setLoading(false))
-  }, [authUser, authLoading, router])
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,7 +94,6 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(data.message || 'Update failed')
 
       setProfile(data.data.user)
-      updateUser(data.data.user)
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
@@ -108,7 +105,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />

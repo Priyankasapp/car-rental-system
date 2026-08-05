@@ -2,12 +2,9 @@
 // app/(admin)/page.tsx
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
-import { useAdmin } from '@/context/AdminContext'
-import { useAuth } from '@/context/AuthContext'
 
 import { 
   Users, 
@@ -20,10 +17,39 @@ import {
   XCircle,
   ArrowRight,
   BarChart3,
- 
+  AlertCircle,
 } from 'lucide-react'
 
-//  Stats Card Component
+// Types
+interface AuthUser {
+  id: string
+  firstName?: string
+  lastName?: string
+  email: string
+  role: string
+}
+
+interface AdminStats {
+  totalUsers?: number
+  totalCars?: number
+  totalBookings?: number
+  revenue?: number
+}
+
+interface RecentBooking {
+  id: string
+  customerName: string
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | string
+  pickupDate: string
+  dropoffDate: string
+  total: number
+  car: {
+    manufacturer: string
+    model: string
+  }
+}
+
+// Stats Card Component
 const StatsCard = ({ 
   title, 
   value, 
@@ -55,7 +81,7 @@ const StatsCard = ({
   )
 }
 
-//  Booking Status Card
+// Booking Status Card
 const BookingStatusCard = ({ 
   title, 
   value, 
@@ -83,7 +109,7 @@ const BookingStatusCard = ({
   )
 }
 
-//  Quick Action Card
+// Quick Action Card
 const QuickActionCard = ({ 
   title, 
   description, 
@@ -119,46 +145,109 @@ const QuickActionCard = ({
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const { user, isLoading: authLoading } = useAuth()
-  const { stats, isLoading, fetchStats, bookings } = useAdmin()
+
+  // Local State (Replacing Auth & Admin Contexts)
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [bookings, setBookings] = useState<RecentBooking[]>([])
+  const [authLoading, setAuthLoading] = useState<boolean>(true)
+  const [dataLoading, setDataLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
   const hasInitialized = useRef(false)
 
-  //  Fetch stats on mount
+  // API Call: Fetch Dashboard Stats & Recent Bookings
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setDataLoading(true)
+      setError(null)
+
+      // Fetch stats and recent bookings concurrently
+      const [statsRes, bookingsRes] = await Promise.all([
+        fetch('/api/admin/stats', { credentials: 'include' }),
+        fetch('/api/admin/reservations?limit=10', { credentials: 'include' })
+      ])
+
+      const statsData = await statsRes.json()
+      const bookingsData = await bookingsRes.json()
+
+      if (statsRes.ok && statsData.success) {
+        setStats(statsData.data)
+      }
+
+      if (bookingsRes.ok && bookingsData.success) {
+        const list = bookingsData.data?.bookings || bookingsData.data?.reservations || []
+        setBookings(list)
+      }
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
+    } finally {
+      setDataLoading(false)
+    }
+  }, [])
+
+  // Initial Load: Authenticate and Fetch Data
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-      return
+    if (hasInitialized.current) return
+    hasInitialized.current = true
+
+    const initDashboard = async () => {
+      try {
+        setAuthLoading(true)
+
+        // 1. Verify User Session
+        const authRes = await fetch('/api/auth/me', { credentials: 'include' })
+        const authData = await authRes.json()
+
+        if (!authRes.ok || !authData.success || !authData.data) {
+          router.push('/login')
+          return
+        }
+
+        const currentUser: AuthUser = authData.data?.user || authData.data
+        const role = currentUser.role?.toUpperCase()
+
+        // 2. Check Role Access
+        if (role !== 'SUPERADMIN' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+          router.push('/admin')
+          return
+        }
+
+        setUser(currentUser)
+
+        // 3. Load Dashboard Content
+        await fetchDashboardData()
+      } catch (err) {
+        console.error('Authentication check failed:', err)
+        router.push('/login')
+      } finally {
+        setAuthLoading(false)
+      }
     }
 
-    if (!authLoading && user && user.role !== 'SUPERADMIN' && user.role !== 'ADMIN') {
-      router.push('/admin')
-      return
-    }
+    initDashboard()
+  }, [router, fetchDashboardData])
 
-    if (user && (user.role === 'SUPERADMIN' || user.role === 'ADMIN') && !hasInitialized.current) {
-      hasInitialized.current = true
-      fetchStats()
-    }
-  }, [user, authLoading, router, fetchStats])
-
-  //  Loading state
-  if (authLoading || isLoading) {
+  // Loading state
+  if (authLoading || (dataLoading && !user)) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
       </div>
     )
   }
 
-  //  Check admin access
-  if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN')) {
+  // Check admin access fallback
+  const role = user?.role?.toUpperCase()
+  if (!user || (role !== 'SUPERADMIN' && role !== 'ADMIN' && role !== 'SUPER_ADMIN')) {
     return null
   }
 
-  //  Recent bookings (last 5)
+  // Recent bookings (last 5)
   const recentBookings = bookings?.slice(0, 5) || []
 
-  //  Get status counts
+  // Get status counts
   const statusCounts = {
     pending: bookings?.filter(b => b.status === 'PENDING').length || 0,
     confirmed: bookings?.filter(b => b.status === 'CONFIRMED').length || 0,
@@ -171,12 +260,20 @@ export default function AdminDashboard() {
       {/* ===== WELCOME SECTION ===== */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {user.firstName}! 
+          Welcome back, {user.firstName || 'Admin'}! 
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           Here is what is happening with your platform today.
         </p>
       </div>
+
+      {/* ===== ERROR DISPLAY ===== */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
 
       {/* ===== MAIN STATS ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -306,7 +403,7 @@ export default function AdminDashboard() {
                           {booking.customerName}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {booking.car.manufacturer} {booking.car.model}
+                          {booking.car?.manufacturer} {booking.car?.model}
                         </p>
                         <p className="text-xs text-gray-400">
                           {new Date(booking.pickupDate).toLocaleDateString()} → {new Date(booking.dropoffDate).toLocaleDateString()}

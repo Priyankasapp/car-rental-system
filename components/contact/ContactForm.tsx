@@ -6,8 +6,26 @@ import { ArrowRight, CheckCircle, XCircle } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { contactForm } from "@/data/contact";
-import { useContact } from "@/context/ContactContext";
 
+type ContactFormData = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  service: string;
+  message: string;
+  source: string;
+};
+
+const initialFormData: ContactFormData = {
+  firstName: '', 
+  lastName: '', 
+  email: '', 
+  phone: '', 
+  service: '', 
+  message: '', 
+  source: 'website',
+};
 
 // Register ScrollTrigger
 if (typeof window !== 'undefined') {
@@ -20,48 +38,55 @@ export default function ContactForm() {
   const imageRef = useRef<HTMLDivElement>(null);
   const floatingCardRef = useRef<HTMLDivElement>(null);
   
-  //  Use Contact Context
-  const { 
-    formData, 
-    setFormData, 
-    submitContact, 
-    loading, 
-    error, 
-    success,
-    clearError,
-    resetForm
-  } = useContact();
+  const [formData, setFormData] = useState<ContactFormData>(initialFormData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  //  Handle form field changes
+  // Clear error handler
+  const clearError = () => {
+    setError(null);
+  };
+
+  // Handle form field changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData({ [name]: value });
+    setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  //  Handle field blur for validation
+  // Handle field blur for validation
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
-  //  Handle form submission
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
+    setError(null);
+    setLoading(true);
     
     try {
-      await submitContact(formData);
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Failed to submit contact form');
+      setSuccess(true);
     } catch (err) {
-      // Error is already handled in context
-      console.error('Form submission error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to submit contact form');
+    } finally {
+      setLoading(false);
     }
   };
 
-  //  Validation helper
+  // Validation helper
   const getFieldError = (fieldName: string) => {
     if (!touched[fieldName]) return null;
     
@@ -215,7 +240,7 @@ export default function ContactForm() {
     return () => ctx.revert();
   }, []);
 
-  //  Success Message View
+  // Success Message View
   if (success) {
     return (
       <section ref={sectionRef} className="bg-gray-50 py-24 lg:py-32 overflow-hidden">
@@ -235,7 +260,12 @@ export default function ContactForm() {
               Please check your email for confirmation.
             </p>
             <button
-              onClick={resetForm}
+              onClick={() => {
+                setFormData(initialFormData);
+                setTouched({});
+                setSuccess(false);
+                setError(null);
+              }}
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-black px-8 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
               Send Another Message
@@ -264,7 +294,7 @@ export default function ContactForm() {
             {contactForm.subtitle}
           </p>
 
-          {/*  Error Message */}
+          {/* Error Message */}
           {error && (
             <div className="mt-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
               <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
@@ -358,41 +388,40 @@ export default function ContactForm() {
             </div>
 
             <div className="relative w-full">
-  <select
-    name="service"
-    value={formData.service}
-    onChange={handleChange}
-    onBlur={handleBlur}
-    disabled={loading}
-    className={`form-field block w-full min-w-0 appearance-none rounded-2xl border bg-white px-4 py-3.5 pr-10 text-sm outline-none transition sm:px-5 sm:py-4 sm:text-base ${
-      getFieldError("service")
-        ? "border-red-500 focus:border-red-500"
-        : "border-gray-300 focus:border-black"
-    }`}
-  >
-    <option value="">Select Service</option>
+              <select
+                name="service"
+                value={formData.service}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                disabled={loading}
+                className={`form-field block w-full min-w-0 appearance-none rounded-2xl border bg-white px-4 py-3.5 pr-10 text-sm outline-none transition sm:px-5 sm:py-4 sm:text-base ${
+                  getFieldError("service")
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:border-black"
+                }`}
+              >
+                <option value="">Select Service</option>
+                {contactForm.services.map((service) => (
+                  <option
+                    key={service}
+                    value={service.toUpperCase().replace(/ /g, "_")}
+                  >
+                    {service}
+                  </option>
+                ))}
+              </select>
 
-    {contactForm.services.map((service) => (
-      <option
-        key={service}
-        value={service.toUpperCase().replace(/ /g, "_")}
-      >
-        {service}
-      </option>
-    ))}
-  </select>
+              {/* Custom dropdown arrow */}
+              <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
+                ▼
+              </div>
 
-  {/* Custom dropdown arrow */}
-  <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
-    ▼
-  </div>
-
-  {getFieldError("service") && (
-    <p className="mt-1 text-xs text-red-500">
-      {getFieldError("service")}
-    </p>
-  )}
-</div>
+              {getFieldError("service") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getFieldError("service")}
+                </p>
+              )}
+            </div>
 
             <div className="relative">  
               <textarea

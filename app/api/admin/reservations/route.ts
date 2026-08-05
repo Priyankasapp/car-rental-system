@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const where: Prisma.ReservationWhereInput = {}
 
     if (status && Object.values(ReservationStatus).includes(status as ReservationStatus)) {
-      where.status = status as ReservationStatus
+      where.status = status as ReservationStatus 
     }
 
     if (search?.trim()) {

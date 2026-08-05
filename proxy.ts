@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
@@ -12,7 +13,7 @@ const alwaysPublicRoutes = [
   '/api/auth/logout',
   '/api/health',
   '/api/contact',
-  '/api/cron/expire-reservations'
+  '/api/cron/expire-reservations',
 ]
 
 const publicApiGetRoutes = [
@@ -58,6 +59,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
   const method = request.method
 
+  // Static assets bypass
   if (
     path.startsWith('/_next') ||
     path.startsWith('/favicon.ico') ||
@@ -89,9 +91,9 @@ export async function middleware(request: NextRequest) {
     role === 'SUPERADMIN' ||
     role === 'SUPER_ADMIN'
 
+  // Standardized Permission Checker
   const hasPermission = (requiredPermission: string) => {
-    if (isSuperAdmin) return true
-    if (role === 'ADMIN') return true
+    if (isSuperAdmin || role === 'ADMIN') return true
     if (role !== 'STAFF' || !payload) return false
 
     const userPermissions = payload.permissions
@@ -107,6 +109,7 @@ export async function middleware(request: NextRequest) {
     )
   }
 
+  // Redirect authenticated dashboard users trying to hit guest pages
   if (
     isDashboardUser &&
     (
@@ -117,6 +120,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin', request.url))
   }
 
+  // =========================================================
+  // FRONTEND ROUTE GUARDS (/admin/*)
+  // =========================================================
   if (path.startsWith('/admin')) {
     if (!payload) {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -126,36 +132,55 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/', request.url))
     }
 
+    // Permissions module (Superadmin strictly)
     if (path.startsWith('/admin/permissions') && !isSuperAdmin) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
 
-    if (
-      (path.startsWith('/admin/staff-master') || path.startsWith('/admin/settings')) &&
-      !isStrictAdmin
-    ) {
+    // Staff Master module
+    if (path.startsWith('/admin/staff-master') && !hasPermission('staff-master:view')) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
 
-    if (path === '/admin/users' || path.startsWith('/admin/users/')) {
-      if (!hasPermission('users:view')) {
-        return NextResponse.redirect(new URL('/admin', request.url))
-      }
+    // Settings Sub-Routes Granular Checks
+    if (path.startsWith('/admin/settings/categories') && !hasPermission('categories:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    if (path.startsWith('/admin/settings/transmission-types') && !hasPermission('transmissions:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    if (path.startsWith('/admin/settings/fuel-types') && !hasPermission('fuels:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    if (path.startsWith('/admin/settings/car-features') && !hasPermission('features:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
     }
 
-    if (path === '/admin/cars' || path.startsWith('/admin/cars/')) {
-      if (!hasPermission('cars:view')) {
-        return NextResponse.redirect(new URL('/admin', request.url))
-      }
+    // Main & Management Routes
+    if ((path === '/admin/users' || path.startsWith('/admin/users/')) && !hasPermission('users:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
     }
-
-    if (path === '/admin/bookings' || path.startsWith('/admin/bookings/')) {
-      if (!hasPermission('reservations:view')) {
-        return NextResponse.redirect(new URL('/admin', request.url))
-      }
+    if ((path === '/admin/cars' || path.startsWith('/admin/cars/')) && !hasPermission('cars:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    if ((path === '/admin/bookings' || path.startsWith('/admin/bookings/')) && !hasPermission('reservations:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    if ((path === '/admin/maintenance' || path.startsWith('/admin/maintenance/')) && !hasPermission('maintenance:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    if ((path === '/admin/promotions' || path.startsWith('/admin/promotions/')) && !hasPermission('promotions:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    if ((path === '/admin/reports' || path.startsWith('/admin/reports/')) && !hasPermission('reports:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    if ((path === '/admin/staff' || path.startsWith('/admin/staff/')) && !hasPermission('staff:view')) {
+      return NextResponse.redirect(new URL('/admin', request.url))
     }
   }
 
+  // Guest page redirects for non-dashboard logged in users
   if (
     payload &&
     !isDashboardUser &&
@@ -168,6 +193,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // =========================================================
+  // BACKEND API ROUTE GUARDS (/api/*)
+  // =========================================================
   if (
     alwaysPublicRoutes.some((route) => path === route || path.startsWith(`${route}/`))
   ) {
@@ -202,106 +230,74 @@ export async function middleware(request: NextRequest) {
     )
   }
 
-  const masterSettingsRoutes = [
-    '/api/settings',
-    '/api/admin/settings',
-    '/api/admin/staff-master',
-    '/api/admin/transmission-types',
-    '/api/admin/fuel-types',
-    '/api/admin/categories',
-    '/api/admin/car-features',
-  ]
-
-  const isMasterSettingsEndpoint = masterSettingsRoutes.some(
-    (route) => path === route || path.startsWith(`${route}/`)
-  )
-
-  if (isMasterSettingsEndpoint && !isStrictAdmin) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Admin access required for settings management',
-      },
-      { status: 403 }
-    )
-  }
-
   if (path.startsWith('/api/admin')) {
     if (path.includes('/permissions') && !isSuperAdmin) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Superadmin access required for permissions management',
-        },
+        { success: false, message: 'Superadmin access required' },
         { status: 403 }
       )
     }
 
-    const isUsersEndpoint =
-      path === '/api/admin/users' || path.startsWith('/api/admin/users/')
-
+    const isUsersEndpoint = path.startsWith('/api/admin/users')
     if (isUsersEndpoint && !hasPermission('users:view')) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'You do not have permission to access users',
-        },
+        { success: false, message: 'Permission denied: users:view' },
         { status: 403 }
       )
     }
 
-    const isCarsEndpoint =
-      path === '/api/admin/cars' || path.startsWith('/api/admin/cars/')
-
+    const isCarsEndpoint = path.startsWith('/api/admin/cars')
     if (isCarsEndpoint && !hasPermission('cars:view')) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'You do not have permission to access cars',
-        },
+        { success: false, message: 'Permission denied: cars:view' },
         { status: 403 }
       )
     }
 
     const isReservationsEndpoint =
-      path === '/api/admin/reservations' ||
-      path.startsWith('/api/admin/reservations/') ||
-      path === '/api/admin/bookings' ||
-      path.startsWith('/api/admin/bookings/')
-
+      path.startsWith('/api/admin/reservations') || path.startsWith('/api/admin/bookings')
     if (isReservationsEndpoint && !hasPermission('reservations:view')) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'You do not have permission to access reservations',
-        },
+        { success: false, message: 'Permission denied: reservations:view' },
         { status: 403 }
       )
     }
 
-    const isStaffEndpoint =
-      path === '/api/admin/staff' || path.startsWith('/api/admin/staff/')
-
-    if (isStaffEndpoint && !isStrictAdmin) {
+    const isStaffEndpoint = path.startsWith('/api/admin/staff')
+    if (isStaffEndpoint && !hasPermission('staff:view')) {
       return NextResponse.json(
-        { success: false, message: 'Admin access required' },
+        { success: false, message: 'Permission denied: staff:view' },
         { status: 403 }
       )
     }
 
-    const knownAdminEndpoint =
-      isUsersEndpoint || isCarsEndpoint || isReservationsEndpoint || isStaffEndpoint
-
-    if (!knownAdminEndpoint && !isStrictAdmin) {
+    const isMaintenanceEndpoint = path.startsWith('/api/admin/maintenance')
+    if (isMaintenanceEndpoint && !hasPermission('maintenance:view')) {
       return NextResponse.json(
-        { success: false, message: 'Admin access required' },
+        { success: false, message: 'Permission denied: maintenance:view' },
+        { status: 403 }
+      )
+    }
+
+    const isPromotionsEndpoint = path.startsWith('/api/admin/promotions')
+    if (isPromotionsEndpoint && !hasPermission('promotions:view')) {
+      return NextResponse.json(
+        { success: false, message: 'Permission denied: promotions:view' },
+        { status: 403 }
+      )
+    }
+
+    const isReportsEndpoint = path.startsWith('/api/admin/reports')
+    if (isReportsEndpoint && !hasPermission('reports:view')) {
+      return NextResponse.json(
+        { success: false, message: 'Permission denied: reports:view' },
         { status: 403 }
       )
     }
   }
 
+  // Pass authenticated metadata in request headers down to Next.js API route handlers
   const requestHeaders = new Headers(request.headers)
-
   requestHeaders.set('x-user-id', userId || '')
   requestHeaders.set('x-user-role', role || '')
   requestHeaders.set('x-user-email', payload.email || '')

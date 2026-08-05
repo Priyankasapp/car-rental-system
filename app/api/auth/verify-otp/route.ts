@@ -23,13 +23,13 @@ export async function POST(request: Request) {
 
     const { email, otp, purpose } = validation.data;
 
-    // 2. Find matching active OTP record using exact schema property names
+    //  Find matching active OTP record using exact schema property names
     const otpRecord = await prisma.oTP.findFirst({
       where: {
         email,
-        otp, // <--- Corrected: property is 'otp', not 'code'
-        purpose, // <--- Corrected: property is 'purpose', not 'scope'
-        isUsed: false, // <--- Corrected: property is 'isUsed', not 'used'
+        otp, 
+        purpose, 
+        isUsed: false,
         expiresAt: {
           gt: new Date(),
         },

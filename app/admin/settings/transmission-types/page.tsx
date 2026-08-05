@@ -1,16 +1,65 @@
+/* eslint-disable react-hooks/immutability */
+/* eslint-disable react-hooks/preserve-manual-memoization */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
 import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 
+//  Permission helper function
+function hasPermission(user: any, permission: string): boolean {
+  if (!user) return false
+  const role = user.role?.toUpperCase()
+  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
+  const permissions = user.permissions || []
+  return permissions.includes(permission)
+}
+
 export default function TransmissionTypesPage() {
+  const router = useRouter()
   const [items, setItems] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [userLoading, setUserLoading] = useState<boolean>(true)
+  const [hasAccess, setHasAccess] = useState<boolean>(false)
+
+  //  Load current user
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        if (data.success) {
+          setUser(data.data.user)
+        }
+      } catch (error) {
+        console.error('Failed to load user:', error)
+      } finally {
+        setUserLoading(false)
+      }
+    }
+    loadUser()
+  }, [])
+
+  //  Permission check
+  useEffect(() => {
+    if (!userLoading && user) {
+      const canView = hasPermission(user, 'transmissions:view')
+      
+      if (!canView) {
+        router.push('/admin')
+        return
+      }
+      
+      setHasAccess(true)
+      fetchTransmissions(true)
+    }
+  }, [user, userLoading])
 
   // Fetch transmission types (silentRefetch prevents layout flickering during save/delete)
   const fetchTransmissions = useCallback(async (isInitialLoad = false) => {
@@ -46,12 +95,14 @@ export default function TransmissionTypesPage() {
     }
   }, [])
 
-  useEffect(() => {
-    fetchTransmissions(true)
-  }, [fetchTransmissions])
-
   // Handle Save (Create or Update)
   const handleSave = async (data: Partial<EntityItem>) => {
+    //  Permission check for create/edit
+    if (!hasPermission(user, 'transmissions:create')) {
+      alert('You do not have permission to create/edit transmission types')
+      return
+    }
+
     if (!data.name?.trim()) {
       alert('Transmission type name is required.')
       return
@@ -87,6 +138,12 @@ export default function TransmissionTypesPage() {
 
   // Handle Delete
   const handleDelete = async (id: string) => {
+    //  Permission check for delete
+    if (!hasPermission(user, 'transmissions:delete')) {
+      alert('You do not have permission to delete transmission types')
+      return
+    }
+
     if (!confirm('Are you sure you want to delete this transmission type?')) {
       return
     }
@@ -110,13 +167,29 @@ export default function TransmissionTypesPage() {
     }
   }
 
-  if (loading) {
+  //  Loading state
+  if (userLoading || loading) {
     return (
       <EntityGridSkeleton
-        title="Fuel Types"
-        description="Manage  transmission configurations supported in UrbanDrive."
+        title="Transmission Types"
+        description="Manage transmission configurations supported in UrbanDrive."
         cardCount={6}
       />
+    )
+  }
+
+  //  Access denied state
+  if (!hasAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-100">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔒</div>
+          <h2 className="text-lg font-semibold text-gray-900">Access Denied</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            You do not have permission to view transmission types.
+          </p>
+        </div>
+      </div>
     )
   }
 

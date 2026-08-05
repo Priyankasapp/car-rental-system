@@ -1,19 +1,68 @@
+/* eslint-disable react-hooks/immutability */
+/* eslint-disable react-hooks/preserve-manual-memoization */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import {  FuelIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { FuelIcon } from 'lucide-react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
 import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 
+// Permission helper function
+function hasPermission(user: any, permission: string): boolean {
+  if (!user) return false
+  const role = user.role?.toUpperCase()
+  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
+  const permissions = user.permissions || []
+  return permissions.includes(permission)
+}
+
 export default function FuelTypesPage() {
+  const router = useRouter()
   const [items, setItems] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [userLoading, setUserLoading] = useState<boolean>(true)
+  const [hasAccess, setHasAccess] = useState<boolean>(false)
 
-  // 1. Fetch Fuel Types from backend API
+  //  Load current user
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        if (data.success) {
+          setUser(data.data.user)
+        }
+      } catch (error) {
+        console.error('Failed to load user:', error)
+      } finally {
+        setUserLoading(false)
+      }
+    }
+    loadUser()
+  }, [])
+
+  //  Permission check
+  useEffect(() => {
+    if (!userLoading && user) {
+      const canView = hasPermission(user, 'fuels:view')
+      
+      if (!canView) {
+        router.push('/admin')
+        return
+      }
+      
+      setHasAccess(true)
+      fetchFuelTypes()
+    }
+  }, [user, userLoading])
+
+  //  Fetch Fuel Types from backend API
   const fetchFuelTypes = useCallback(async () => {
     try {
       setLoading(true)
@@ -35,12 +84,13 @@ export default function FuelTypesPage() {
     }
   }, [])
 
-  useEffect(() => {
-    fetchFuelTypes()
-  }, [fetchFuelTypes])
-
-  //  Handle Add / Edit submit
+  // 2. Handle Add / Edit submit
   const handleSaveItem = async (itemData: Partial<EntityItem>) => {
+    //  Permission check for create/edit
+    if (!hasPermission(user, 'fuels:create')) {
+      throw new Error('You do not have permission to create/edit fuel types')
+    }
+    
     const isEdit = Boolean(itemData.id)
     const url = isEdit
       ? `/api/admin/fuel-types/${itemData.id}`
@@ -55,7 +105,7 @@ export default function FuelTypesPage() {
 
     const json = await res.json()
 
-    if (!res.ok ) {
+    if (!res.ok) {
       throw new Error(json.message || `Failed to ${isEdit ? 'update' : 'create'} fuel type`)
     }
 
@@ -64,6 +114,11 @@ export default function FuelTypesPage() {
 
   // 3. Handle Delete
   const handleDeleteItem = async (id: string | number) => {
+    //  Permission check for delete
+    if (!hasPermission(user, 'fuels:delete')) {
+      throw new Error('You do not have permission to delete fuel types')
+    }
+    
     const res = await fetch(`/api/admin/fuel-types/${id}`, {
       method: 'DELETE',
     })
@@ -77,7 +132,8 @@ export default function FuelTypesPage() {
     await fetchFuelTypes()
   }
 
-  if (loading) {
+  //  Loading state
+  if (userLoading || loading) {
     return (
       <EntityGridSkeleton
         title="Fuel Types"
@@ -87,6 +143,22 @@ export default function FuelTypesPage() {
       />
     )
   }
+
+  //  Access denied state
+  if (!hasAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-100">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔒</div>
+          <h2 className="text-lg font-semibold text-gray-900">Access Denied</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            You do not have permission to view fuel types.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (error) {
     return (
       <div className="p-6 rounded-xl bg-red-50 text-red-600 border border-red-200 text-center my-8">

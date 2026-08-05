@@ -1,18 +1,12 @@
 // app/auth-test/page.tsx
 'use client'
 
-import { useState } from 'react'
-import { useAuth } from '@/context/AuthContext'
+import { useEffect, useState } from 'react'
+import { getCurrentUser, logoutCurrentUser, type CurrentUser } from '@/lib/client-auth'
 
 export default function AuthTestPage() {
-  const {
-    user,
-    isLoading,
-    isAuthenticated,
-    login,
-    verifyOTP,
-    logout,
-  } = useAuth()
+  const [user, setUser] = useState<CurrentUser | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,6 +17,10 @@ export default function AuthTestPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    getCurrentUser().then(setUser).finally(() => setIsLoading(false))
+  }, [])
+
   // Step 1: Login and send OTP
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,8 +30,15 @@ export default function AuthTestPage() {
     setLoading(true)
 
     try {
-      // login requires email and password
-      await login(email, password)
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Failed to log in')
+      setUser(data.data?.user ?? await getCurrentUser())
 
       setMessage('OTP sent! Check your email.')
       setStep('otp')
@@ -57,7 +62,15 @@ export default function AuthTestPage() {
     setLoading(true)
 
     try {
-      await verifyOTP(email, otp, 'LOGIN')
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, otp, purpose: 'LOGIN' }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Invalid OTP')
+      setUser(data.data?.user ?? await getCurrentUser())
 
       setMessage('Login successful!')
     } catch (err: unknown) {
@@ -91,7 +104,7 @@ export default function AuthTestPage() {
         <div className="bg-gray-50 p-4 rounded-lg mb-6">
           <p>
             <strong>Status:</strong>{' '}
-            {isAuthenticated
+            {user
               ? 'Logged In'
               : 'Not Logged In'}
           </p>
@@ -116,11 +129,14 @@ export default function AuthTestPage() {
           )}
         </div>
 
-        {isAuthenticated ? (
+        {user ? (
 
           // Logged-in state
           <button
-            onClick={logout}
+            onClick={async () => {
+              await logoutCurrentUser()
+              setUser(null)
+            }}
             className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
           >
             Logout

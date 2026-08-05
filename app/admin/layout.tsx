@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -21,10 +21,11 @@ import {
   Crown,
   X,
   Menu,
+ 
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/context/AuthContext";
+import { getCurrentUser, logoutCurrentUser, type CurrentUser } from "@/lib/client-auth";
 import {
   hasPermission,
   PermissionKey,
@@ -71,50 +72,70 @@ const sidebarLinks: {
 // SETTINGS LINKS
 // ============================================================
 
-const settingsLinks = [
+const settingsLinks: {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  permission?: PermissionKey;
+}[] = [
   {
     href: "/admin/settings/categories",
     label: "Categories",
     icon: Tags,
+    permission: PERMISSIONS.CATEGORIES_VIEW,
   },
   {
     href: "/admin/settings/transmission-types",
     label: "Transmission Types",
     icon: Settings2,
+    permission: PERMISSIONS.TRANSMISSIONS_VIEW,
   },
   {
     href: "/admin/settings/fuel-types",
     label: "Fuel Types",
     icon: Fuel,
+    permission: PERMISSIONS.FUELS_VIEW,
   },
   {
     href: "/admin/settings/car-features",
     label: "Car Features",
     icon: Sparkles,
+    permission: PERMISSIONS.FEATURES_VIEW,
   },
 ];
 
 // ============================================================
-// MANAGEMENT LINKS
+// MANAGEMENT LINKS (Unified Definition)
 // ============================================================
 
-const managementLinks = [
+const managementLinks: {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  permission: PermissionKey;
+}[] = [
+  
+  
+ 
   {
     href: "/admin/staff",
     label: "Staff",
     icon: UserCog,
+    permission: PERMISSIONS.STAFF_VIEW,
   },
   {
     href: "/admin/staff-master",
     label: "Staff Master",
     icon: Briefcase,
-  },
-  {
-    href: "/admin/permissions",
-    label: "Permissions",
-    icon: ShieldCheck,
+    permission: PERMISSIONS.STAFF_MASTER_VIEW,
   },
 ];
+
+const permissionsLink = {
+  href: "/admin/permissions",
+  label: "Permissions",
+  icon: ShieldCheck,
+};
 
 // ============================================================
 // ADMIN LAYOUT
@@ -132,7 +153,11 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  const { user, logout } = useAuth();
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   // ==========================================================
   // USER INITIALS
@@ -156,10 +181,10 @@ export default function AdminLayout({
   // PERMISSION CHECK
   // ==========================================================
 
-  const canSee = (permission: PermissionKey) => {
+  const canSee = (permission?: PermissionKey) => {
+    if (!permission) return true;
     if (!user) return false;
 
-    // Super Admin has access to everything
     if (isSuperAdmin) return true;
 
     return hasPermission(
@@ -169,12 +194,25 @@ export default function AdminLayout({
     );
   };
 
+  const visibleSettingsLinks = settingsLinks.filter((link) =>
+    canSee(link.permission)
+  );
+
+  const visibleManagementLinks = managementLinks.filter((link) =>
+    canSee(link.permission)
+  );
+
+  const showPermissionsLink = isSuperAdmin;
+
+  const hasAnyManagementLink =
+    visibleManagementLinks.length > 0 || showPermissionsLink;
+
   // ==========================================================
   // LOGOUT
   // ==========================================================
 
   const handleLogout = async () => {
-    await logout();
+    await logoutCurrentUser();
     router.push("/login");
   };
 
@@ -207,12 +245,8 @@ export default function AdminLayout({
         )}
       >
 
-        {/* ===================================================
-            LOGO
-        ==================================================== */}
-
+        {/* LOGO */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-
           <Link
             href="/admin"
             className="flex items-center gap-2"
@@ -239,19 +273,12 @@ export default function AdminLayout({
           >
             <X className="h-5 w-5 text-gray-600" />
           </button>
-
         </div>
 
-        {/* ===================================================
-            NAVIGATION
-        ==================================================== */}
-
+        {/* NAVIGATION */}
         <nav className="p-4 space-y-1">
 
-          {/* =================================================
-              MAIN NAVIGATION
-          ================================================== */}
-
+          {/* MAIN NAVIGATION */}
           {sidebarLinks
             .filter((link) => canSee(link.permission))
             .map((link) => {
@@ -270,7 +297,6 @@ export default function AdminLayout({
                   )}
                 >
                   <Icon className="h-5 w-5" />
-
                   <span className="font-medium">
                     {link.label}
                   </span>
@@ -278,141 +304,138 @@ export default function AdminLayout({
               );
             })}
 
-          {/* =================================================
-              SETTINGS
-          ================================================== */}
+          {/* SETTINGS */}
+          {visibleSettingsLinks.length > 0 && (
+            <div className="pt-4 mt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between px-4 py-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Settings
+                </span>
 
-          <div className="pt-4 mt-4 border-t border-gray-200">
-
-            <div className="flex items-center justify-between px-4 py-2">
-
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Settings
-              </span>
-
-              <button
-                onClick={() =>
-                  setSettingsOpen(!settingsOpen)
-                }
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
-              >
-                {settingsOpen ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                )}
-              </button>
-
-            </div>
-
-            {settingsOpen && (
-              <div className="space-y-1 mt-1">
-
-                {settingsLinks.map((link) => {
-                  const Icon = link.icon;
-                  const active = isActive(link.href);
-
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={cn(
-                        "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
-                        active
-                          ? "bg-gray-900 text-white"
-                          : "text-gray-600 hover:bg-gray-100"
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-
-                      <span className="font-medium text-sm">
-                        {link.label}
-                      </span>
-                    </Link>
-                  );
-                })}
-
+                <button
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                >
+                  {settingsOpen ? (
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
               </div>
-            )}
 
-          </div>
+              {settingsOpen && (
+                <div className="space-y-1 mt-1">
+                  {visibleSettingsLinks.map((link) => {
+                    const Icon = link.icon;
+                    const active = isActive(link.href);
 
-          {/* =================================================
-              MANAGEMENT
-          ================================================== */}
-
-          <div className="pt-4 mt-4 border-t border-gray-200">
-
-            <div className="flex items-center justify-between px-4 py-2">
-
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Management
-              </span>
-
-              <button
-                onClick={() =>
-                  setManagementOpen(!managementOpen)
-                }
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
-              >
-                {managementOpen ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                )}
-              </button>
-
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
+                          active
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="font-medium text-sm">
+                          {link.label}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+          )}
 
-            {managementOpen && (
-              <div className="space-y-1 mt-1">
+          {/* MANAGEMENT */}
+          {hasAnyManagementLink && (
+            <div className="pt-4 mt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between px-4 py-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Management
+                </span>
 
-                {managementLinks.map((link) => {
-                  const Icon = link.icon;
-                  const active = isActive(link.href);
-
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={cn(
-                        "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
-                        active
-                          ? "bg-gray-900 text-white"
-                          : "text-gray-600 hover:bg-gray-100"
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-
-                      <span className="font-medium text-sm">
-                        {link.label}
-                      </span>
-                    </Link>
-                  );
-                })}
-
+                <button
+                  onClick={() => setManagementOpen(!managementOpen)}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                >
+                  {managementOpen ? (
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
               </div>
-            )}
 
-          </div>
+              {managementOpen && (
+                <div className="space-y-1 mt-1">
+                  {visibleManagementLinks.map((link) => {
+                    const Icon = link.icon;
+                    const active = isActive(link.href);
 
-          {/* =================================================
-              LOGOUT
-          ================================================== */}
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
+                          active
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="font-medium text-sm">
+                          {link.label}
+                        </span>
+                      </Link>
+                    );
+                  })}
 
+                  {showPermissionsLink && (() => {
+                    const Icon = permissionsLink.icon;
+                    const active = isActive(permissionsLink.href);
+
+                    return (
+                      <Link
+                        key={permissionsLink.href}
+                        href={permissionsLink.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
+                          active
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="font-medium text-sm">
+                          {permissionsLink.label}
+                        </span>
+                      </Link>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* LOGOUT */}
           <div className="pt-4 mt-4 border-t border-gray-200">
-
             <button
               onClick={handleLogout}
               className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
             >
               <LogOut className="h-5 w-5" />
-
               <span className="font-medium">
                 Logout
               </span>
             </button>
-
           </div>
 
         </nav>
@@ -429,25 +452,16 @@ export default function AdminLayout({
         )}
       >
 
-        {/* ===================================================
-            HEADER
-        ==================================================== */}
-
+        {/* HEADER */}
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-6 h-16 flex items-center justify-between">
-
           <button
-            onClick={() =>
-              setSidebarOpen(!sidebarOpen)
-            }
+            onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <Menu className="h-5 w-5 text-gray-600" />
           </button>
 
           <div className="flex items-center space-x-4">
-
-            {/* ROLE BADGE */}
-
             {isSuperAdmin ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full shadow-xs">
                 <Crown className="w-3.5 h-3.5 text-amber-600" />
@@ -462,9 +476,7 @@ export default function AdminLayout({
             )}
 
             {/* AVATAR */}
-
             <div className="relative group">
-
               <div
                 className={cn(
                   "w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm cursor-pointer transition-all ring-2 ring-offset-1",
@@ -477,21 +489,15 @@ export default function AdminLayout({
               </div>
 
               {/* DROPDOWN */}
-
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-
                 <div className="p-3 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
-
                   <p className="text-sm font-semibold text-gray-900">
                     {user?.firstName} {user?.lastName}
                   </p>
-
                   <p className="text-xs text-gray-500 truncate">
                     {user?.email}
                   </p>
-
                   <div className="mt-2">
-
                     <span
                       className={cn(
                         "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
@@ -502,13 +508,10 @@ export default function AdminLayout({
                     >
                       Role: {user?.role || "USER"}
                     </span>
-
                   </div>
-
                 </div>
 
                 <div className="py-1">
-
                   <Link
                     href="/admin/profile"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
@@ -516,12 +519,12 @@ export default function AdminLayout({
                     Profile
                   </Link>
 
-                  <Link
+                  {/* <Link
                     href="/admin/settings"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Settings
-                  </Link>
+                  </Link> */}
 
                   <hr className="my-1 border-gray-100" />
 
@@ -532,20 +535,13 @@ export default function AdminLayout({
                     <LogOut className="w-4 h-4" />
                     Logout
                   </button>
-
                 </div>
-
               </div>
-
             </div>
-
           </div>
         </header>
 
-        {/* ===================================================
-            PAGE CONTENT
-        ==================================================== */}
-
+        {/* PAGE CONTENT */}
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
           {children}
         </main>
@@ -554,4 +550,3 @@ export default function AdminLayout({
     </div>
   );
 }
-

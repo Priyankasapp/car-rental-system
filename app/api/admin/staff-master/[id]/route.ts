@@ -94,7 +94,7 @@ export async function PUT(
       }
       const validKeys = PERMISSIONS.map((p) => p.key)
       
-      // ✅ TypeScript Fix: Cast validKeys to string[] for strict includes check
+      //  TypeScript Fix: Cast validKeys to string[] for strict includes check
       const invalidKeys = defaultPermissions.filter(
         (p: string) => !(validKeys as string[]).includes(p)
       )
