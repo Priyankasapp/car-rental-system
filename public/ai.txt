@@ -1,10 +1,16 @@
-# AI.txt
-# This file provides metadata for artificial intelligence agents and services.
-# You can expand it with details relevant to your AI integration.
+# ai.txt for UrbanDrive
+# https://car-rental-system-ivory-three.vercel.app
 
-# Example fields:
-# name: UrbanDrive AI Helper
-# version: 1.0
-# description: Knowledge base and result guidance for the UrbanDrive car rental application.
-# contact: support@your-domain.com
-# license: CC-BY-4.0
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /api
+Disallow: /auth-test
+Disallow: /test-upload
+
+# Training and content use
+Content-Usage: allow
+Training-Usage: allow

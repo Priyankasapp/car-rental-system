@@ -1,5 +1,22 @@
-User-agent: *
-Allow: /
+// app/robots.ts
+import { MetadataRoute } from 'next'
 
-Sitemap: https://car-rental-system-ivory-three.vercel.app/sitemap.xml
-Host: https://car-rental-system-ivory-three.vercel.app
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      disallow: [
+        '/admin',
+        '/admin/*',   // covers bookings, cars, dashboard, permissions, profile, settings, staff, staff-master, users
+        '/login',
+        '/register',
+        '/profile',
+        '/api',
+      
+        
+      ],
+    },
+    sitemap: 'https://car-rental-system-ivory-three.vercel.app/sitemap.xml',
+  }
+}

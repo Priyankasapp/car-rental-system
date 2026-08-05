@@ -1,7 +1,17 @@
-# LLMs.txt
-# This file is intentionally left simple for local or project-specific LLM usage.
-# Add any relevant metadata or instructions for LLM consumers as needed.
+# UrbanDrive
 
-# Example content:
-# model: gpt-4o
-# description: UrbanDrive car rental knowledge base for search and AI tooling
+> Premium and luxury car rental platform offering executive and high-performance vehicles for on-demand rental across multiple cities.
+
+UrbanDrive is a full-stack car rental management platform providing curated luxury and executive vehicle rentals with white-glove service, instant approval, and 24/7 concierge support.
+
+## Pages
+
+- [Home](https://car-rental-system-ivory-three.vercel.app/): Overview of UrbanDrive's luxury fleet and service offering
+- [Fleet](https://car-rental-system-ivory-three.vercel.app/fleet): Browse available vehicles for rental
+- [About](https://car-rental-system-ivory-three.vercel.app/about): UrbanDrive's brand philosophy and heritage
+- [Contact](https://car-rental-system-ivory-three.vercel.app/contact): Get in touch with the UrbanDrive concierge team
+
+## Notes
+
+- Car availability and pricing are dynamic and fetched in real time; this file describes site structure, not live inventory.
+- Admin, authentication, and account pages are excluded as they are not part of the public content surface.
