@@ -226,7 +226,7 @@ export default function StaffPage() {
   //  Access denied state
   if (!hasAccess) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-100">
         <div className="text-center">
           <div className="text-4xl mb-4">🔒</div>
           <h2 className="text-lg font-semibold text-gray-900">Access Denied</h2>
