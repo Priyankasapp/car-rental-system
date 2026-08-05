@@ -1,9 +1,7 @@
 // components/layout/Footer.tsx
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { Send } from "lucide-react";
 
 const fleetLinks = [
   { label: "Exotic Sports", href: "/fleets?category=sports" },
@@ -16,21 +14,12 @@ const companyLinks = [
   { label: "About Us", href: "/about" },
   { label: "Contact Us", href: "/contact" },
   { label: "Browse Fleet", href: "/fleets" },
-  { label: "My Bookings", href: "/bookings" },
+  { label: "My Bookings", href: "/bookings" },  
 ];
 
 export default function Footer() {
-  const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
+ 
 
-  const handleSubscribe = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (email.trim()) {
-      setSubscribed(true);
-      setEmail("");
-      setTimeout(() => setSubscribed(false), 4000);
-    }
-  };
 
   return (
     <footer className="border-t border-gray-200 bg-white">
@@ -130,47 +119,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Newsletter */}
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-black">
-              Newsletter
-            </h3>
-
-            <p className="mt-6 text-sm leading-6 text-gray-600">
-              Stay updated with our latest fleet arrivals and exclusive offers.
-            </p>
-
-            {subscribed ? (
-              <div className="mt-6 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700 border border-emerald-200">
-                Thanks for subscribing!
-              </div>
-            ) : (
-              <form onSubmit={handleSubscribe} className="mt-6">
-                <div className="flex overflow-hidden rounded-full border border-gray-300 focus-within:border-black transition">
-                  <input
-                    id="newsletter-email"
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email Address"
-                    aria-label="Email Address"
-                    autoComplete="email"
-                    required
-                    className="flex-1 bg-transparent px-5 py-3 text-sm text-black outline-none placeholder:text-gray-400"
-                  />
-
-                  <button
-                    type="submit"
-                    className="m-1 flex items-center gap-2 rounded-full bg-black px-5 text-sm font-medium text-white transition hover:bg-gray-800"
-                  >
-                    Join
-                    <Send size={15} />
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
+          
         </div>
 
         {/* Divider */}

@@ -26,7 +26,7 @@ export async function createSession({
 }) {
   const expiresAt = new Date(Date.now() + SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
-  // 1. Create temporary session record to get ID
+  //  Create temporary session record to get ID
   const session = await prisma.session.create({
     data: {
       userId,
@@ -54,7 +54,7 @@ export async function createSession({
     sessionId: session.id,
   });
 
-  // 3. Update session record with actual tokens
+  //  Update session record with actual tokens
   await prisma.session.update({
     where: { id: session.id },
     data: {

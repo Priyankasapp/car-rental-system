@@ -5,7 +5,7 @@ import { expireStaleReservations } from "@/lib/reservations/expiry";
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Verify Authorization Header / CRON_SECRET to ensure only scheduled tasks trigger this
+    //  Verify Authorization Header / CRON_SECRET to ensure only scheduled tasks trigger this
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2. Execute the expiry logic
+    //  Execute the expiry logic
     const result = await expireStaleReservations({ staleMinutes: 30 });
 
     return NextResponse.json({
