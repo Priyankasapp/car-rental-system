@@ -85,14 +85,25 @@ export function DataExplorer<T>({
         {/* Search */}
         {onSearchChange && (
           <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm border rounded-lg outline-none focus:border-black bg-white"
-            />
+            <div className="relative w-full sm:w-80">
+  <label htmlFor="data-explorer-search" className="sr-only">
+    Search {title}
+  </label>
+
+  <Search
+    className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+    aria-hidden="true"
+  />
+
+  <input
+    id="data-explorer-search"
+    type="text"
+    placeholder={searchPlaceholder}
+    value={searchQuery}
+    onChange={(e) => onSearchChange(e.target.value)}
+    className="w-full pl-9 pr-3 py-1.5 text-sm border rounded-lg outline-none focus:border-black bg-white"
+  />
+</div>
           </div>
         )}
 

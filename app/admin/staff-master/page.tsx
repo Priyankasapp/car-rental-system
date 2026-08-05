@@ -30,13 +30,11 @@ export default function StaffMasterPage() {
         (role: any) => ({
           id: role.id,
           name: role.title,
-          description: role.department
-            ? `Department: ${role.department}${
-                role.description ? ` • ${role.description}` : ''
-              }`
-            : role.description || undefined,
+          description: role.description || undefined,
           count: role._count?.staffMembers || 0,
           createdAt: role.createdAt,
+          isActive: role.isActive ?? true,
+          status: role.isActive ? 'Active' : 'Inactive',
         })
       )
 
@@ -60,12 +58,9 @@ export default function StaffMasterPage() {
       : '/api/admin/staff-master'
     const method = isEdit ? 'PUT' : 'POST'
 
-    // Parse department from description input if entered or split
     const body = {
       title: item.name,
-      department: item.description?.startsWith('Department:')
-        ? item.description.split('Department:')[1].split('•')[0].trim()
-        : 'Operations', // Fallback department if omitted
+      department: item.department || 'Operations', // Default fallback
       description: item.description || null,
       isActive: item.isActive ?? true,
     }
@@ -86,7 +81,7 @@ export default function StaffMasterPage() {
     }
 
     // Refresh list after saving
-    await fetchCategories()
+    await fetchStaffRoles()
   }
 
   // Delete / Deactivate Staff Role Handler
@@ -105,8 +100,6 @@ export default function StaffMasterPage() {
     // Refresh list after deleting
     await fetchStaffRoles()
   }
-
-  const fetchCategories = fetchStaffRoles
 
   if (loading) {
     return (

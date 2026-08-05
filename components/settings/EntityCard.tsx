@@ -4,6 +4,7 @@ import React from 'react'
 import { PencilIcon, TrashIcon } from 'lucide-react'
 
 export interface EntityItem {
+  isActive: boolean
   id: string 
   name: string
   description?: string

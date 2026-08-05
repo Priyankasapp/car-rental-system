@@ -21,16 +21,15 @@ import {
   Crown,
   X,
   Menu,
- 
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { getCurrentUser, logoutCurrentUser, type CurrentUser } from "@/lib/client-auth";
 import {
-  hasPermission,
-  PermissionKey,
-  PERMISSIONS,
-} from "@/lib/permissions";
+  getCurrentUser,
+  logoutCurrentUser,
+  type CurrentUser,
+} from "@/lib/client-auth";
+import { hasPermission, PermissionKey, PERMISSIONS } from "@/lib/permissions";
 
 // ============================================================
 // MAIN SIDEBAR LINKS
@@ -114,9 +113,6 @@ const managementLinks: {
   icon: React.ElementType;
   permission: PermissionKey;
 }[] = [
-  
-  
- 
   {
     href: "/admin/staff",
     label: "Staff",
@@ -173,9 +169,7 @@ export default function AdminLayout({
 
   const role = user?.role?.toUpperCase();
 
-  const isSuperAdmin =
-    role === "SUPERADMIN" ||
-    role === "SUPER_ADMIN";
+  const isSuperAdmin = role === "SUPERADMIN" || role === "SUPER_ADMIN";
 
   // ==========================================================
   // PERMISSION CHECK
@@ -187,19 +181,15 @@ export default function AdminLayout({
 
     if (isSuperAdmin) return true;
 
-    return hasPermission(
-      user.role,
-      user.permissions,
-      permission
-    );
+    return hasPermission(user.role, user.permissions, permission);
   };
 
   const visibleSettingsLinks = settingsLinks.filter((link) =>
-    canSee(link.permission)
+    canSee(link.permission),
   );
 
   const visibleManagementLinks = managementLinks.filter((link) =>
-    canSee(link.permission)
+    canSee(link.permission),
   );
 
   const showPermissionsLink = isSuperAdmin;
@@ -225,15 +215,11 @@ export default function AdminLayout({
       return pathname === "/admin";
     }
 
-    return (
-      pathname === href ||
-      pathname.startsWith(`${href}/`)
-    );
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
     <div className="flex h-screen bg-gray-50">
-
       {/* =====================================================
           SIDEBAR
       ====================================================== */}
@@ -241,19 +227,13 @@ export default function AdminLayout({
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transition-transform duration-300 overflow-y-auto",
-          !sidebarOpen && "-translate-x-full"
+          !sidebarOpen && "-translate-x-full",
         )}
       >
-
         {/* LOGO */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <Link
-            href="/admin"
-            className="flex items-center gap-2"
-          >
-            <span className="text-xl font-bold text-gray-900">
-              UrbanDrive
-            </span>
+          <Link href="/admin" className="flex items-center gap-2">
+            <span className="text-xl font-bold text-gray-900">UrbanDrive</span>
 
             {isSuperAdmin ? (
               <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full">
@@ -268,16 +248,17 @@ export default function AdminLayout({
           </Link>
 
           <button
+            type="button"
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+            aria-label="Close sidebar"
           >
-            <X className="h-5 w-5 text-gray-600" />
+            <X className="h-5 w-5 text-gray-600" aria-hidden="true" />
           </button>
         </div>
 
         {/* NAVIGATION */}
         <nav className="p-4 space-y-1">
-
           {/* MAIN NAVIGATION */}
           {sidebarLinks
             .filter((link) => canSee(link.permission))
@@ -293,13 +274,11 @@ export default function AdminLayout({
                     "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
                     active
                       ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                      : "text-gray-600 hover:bg-gray-100",
                   )}
                 >
                   <Icon className="h-5 w-5" />
-                  <span className="font-medium">
-                    {link.label}
-                  </span>
+                  <span className="font-medium">{link.label}</span>
                 </Link>
               );
             })}
@@ -308,18 +287,29 @@ export default function AdminLayout({
           {visibleSettingsLinks.length > 0 && (
             <div className="pt-4 mt-4 border-t border-gray-200">
               <div className="flex items-center justify-between px-4 py-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
                   Settings
                 </span>
 
                 <button
+                  type="button"
                   onClick={() => setSettingsOpen(!settingsOpen)}
                   className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  aria-label={
+                    settingsOpen ? "Collapse settings" : "Expand settings"
+                  }
+                  aria-expanded={settingsOpen}
                 >
                   {settingsOpen ? (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown
+                      className="h-4 w-4 text-gray-400"
+                      aria-hidden="true"
+                    />
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight
+                      className="h-4 w-4 text-gray-400"
+                      aria-hidden="true"
+                    />
                   )}
                 </button>
               </div>
@@ -338,7 +328,7 @@ export default function AdminLayout({
                           "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
                           active
                             ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100"
+                            : "text-gray-600 hover:bg-gray-100",
                         )}
                       >
                         <Icon className="h-5 w-5" />
@@ -357,18 +347,28 @@ export default function AdminLayout({
           {hasAnyManagementLink && (
             <div className="pt-4 mt-4 border-t border-gray-200">
               <div className="flex items-center justify-between px-4 py-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
                   Management
                 </span>
 
                 <button
                   onClick={() => setManagementOpen(!managementOpen)}
                   className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  aria-label={
+                    managementOpen ? "Collapse management" : "Expand management"
+                  }
+                  aria-expanded={managementOpen}
                 >
                   {managementOpen ? (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown
+                      className="h-4 w-4 text-gray-400"
+                      aria-hidden="true"
+                    />
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight
+                      className="h-4 w-4 text-gray-400"
+                      aria-hidden="true"
+                    />
                   )}
                 </button>
               </div>
@@ -387,7 +387,7 @@ export default function AdminLayout({
                           "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
                           active
                             ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100"
+                            : "text-gray-600 hover:bg-gray-100",
                         )}
                       >
                         <Icon className="h-5 w-5" />
@@ -398,28 +398,29 @@ export default function AdminLayout({
                     );
                   })}
 
-                  {showPermissionsLink && (() => {
-                    const Icon = permissionsLink.icon;
-                    const active = isActive(permissionsLink.href);
+                  {showPermissionsLink &&
+                    (() => {
+                      const Icon = permissionsLink.icon;
+                      const active = isActive(permissionsLink.href);
 
-                    return (
-                      <Link
-                        key={permissionsLink.href}
-                        href={permissionsLink.href}
-                        className={cn(
-                          "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
-                          active
-                            ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100"
-                        )}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span className="font-medium text-sm">
-                          {permissionsLink.label}
-                        </span>
-                      </Link>
-                    );
-                  })()}
+                      return (
+                        <Link
+                          key={permissionsLink.href}
+                          href={permissionsLink.href}
+                          className={cn(
+                            "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ml-4",
+                            active
+                              ? "bg-gray-900 text-white"
+                              : "text-gray-600 hover:bg-gray-100",
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="font-medium text-sm">
+                            {permissionsLink.label}
+                          </span>
+                        </Link>
+                      );
+                    })()}
                 </div>
               )}
             </div>
@@ -432,12 +433,9 @@ export default function AdminLayout({
               className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
             >
               <LogOut className="h-5 w-5" />
-              <span className="font-medium">
-                Logout
-              </span>
+              <span className="font-medium">Logout</span>
             </button>
           </div>
-
         </nav>
       </aside>
 
@@ -448,17 +446,19 @@ export default function AdminLayout({
       <div
         className={cn(
           "flex-1 flex flex-col transition-all duration-300",
-          sidebarOpen ? "lg:ml-64" : "ml-0"
+          sidebarOpen ? "lg:ml-64" : "ml-0",
         )}
       >
-
         {/* HEADER */}
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-6 h-16 flex items-center justify-between">
           <button
+            type="button"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            aria-expanded={sidebarOpen}
           >
-            <Menu className="h-5 w-5 text-gray-600" />
+            <Menu className="h-5 w-5 text-gray-600" aria-hidden="true" />
           </button>
 
           <div className="flex items-center space-x-4">
@@ -469,24 +469,28 @@ export default function AdminLayout({
               </span>
             ) : (
               <span className="text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full">
-                {user?.role
-                  ? `${user.role} Panel`
-                  : "Admin Panel"}
+                {user?.role ? `${user.role} Panel` : "Admin Panel"}
               </span>
             )}
 
             {/* AVATAR */}
             <div className="relative group">
-              <div
-                className={cn(
-                  "w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm cursor-pointer transition-all ring-2 ring-offset-1",
-                  isSuperAdmin
-                    ? "bg-amber-600 text-white ring-amber-400"
-                    : "bg-gray-900 text-white ring-gray-300"
-                )}
-              >
-                {userInitials}
-              </div>
+               <button
+    type="button"
+    className={cn(
+      "w-9 h-9 rounded-full flex items-center justify-center",
+      "font-bold text-sm cursor-pointer transition-all",
+      "ring-2 ring-offset-1",
+      isSuperAdmin
+        ? "bg-amber-600 text-white ring-amber-400"
+        : "bg-gray-900 text-white ring-gray-300"
+    )}
+    aria-label={`Open account menu for ${
+      user?.firstName || "user"
+    }`}
+  >
+    {userInitials}
+  </button>
 
               {/* DROPDOWN */}
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
@@ -503,7 +507,7 @@ export default function AdminLayout({
                         "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
                         isSuperAdmin
                           ? "bg-amber-100 text-amber-800 border border-amber-200"
-                          : "bg-gray-200 text-gray-700"
+                          : "bg-gray-200 text-gray-700",
                       )}
                     >
                       Role: {user?.role || "USER"}
@@ -545,7 +549,6 @@ export default function AdminLayout({
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
           {children}
         </main>
-
       </div>
     </div>
   );

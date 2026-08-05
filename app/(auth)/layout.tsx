@@ -24,7 +24,7 @@ export default function AuthLayout({
       </div>
 
       {/* Footer */}
-      <p className="mt-8 text-xs text-gray-400">
+      <p className="mt-8 text-xs text-gray-600">
         &copy; {new Date().getFullYear()} UrbanDrive. All rights reserved.
       </p>
     </div>

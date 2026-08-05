@@ -56,17 +56,26 @@ export default function BookingFilters({
       <div className="flex flex-col sm:flex-row gap-3">
         
         {/* Search Input */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by name, email or booking ID..."
-            value={filters.search}
-            onChange={(e) => handleChange('search', e.target.value)}
-            disabled={loading}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
-          />
-        </div>
+        <div className="relative">
+  <label htmlFor="booking-search" className="sr-only">
+    Search by name, email or booking ID
+  </label>
+
+  <Search
+    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+    aria-hidden="true"
+  />
+
+  <input
+    id="booking-search"
+    type="text"
+    placeholder="Search by name, email or booking ID..."
+    value={filters.search}
+    onChange={(e) => handleChange('search', e.target.value)}
+    disabled={loading}
+    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+  />
+</div>
 
         {/* Status Filter */}
         <div className="relative min-w-45">

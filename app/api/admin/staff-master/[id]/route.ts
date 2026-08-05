@@ -92,11 +92,12 @@ export async function PUT(
           { status: 400 }
         )
       }
-      const validKeys = PERMISSIONS.map((p) => p.key)
-      
-      //  TypeScript Fix: Cast validKeys to string[] for strict includes check
+
+      // Convert object values into array of valid permission strings
+      const validKeys = Object.values(PERMISSIONS) as string[]
+
       const invalidKeys = defaultPermissions.filter(
-        (p: string) => !(validKeys as string[]).includes(p)
+        (p: string) => !validKeys.includes(p)
       )
 
       if (invalidKeys.length > 0) {

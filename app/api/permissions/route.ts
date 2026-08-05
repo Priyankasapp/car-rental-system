@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
     const staffMasters = await prisma.staffMaster.findMany({
       select: {
         id: true,
+        title: true,
         staffType: true,
         description: true,
         defaultPermissions: true,

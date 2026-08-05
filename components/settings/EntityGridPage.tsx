@@ -7,7 +7,7 @@ import { EntityModal } from './EntityModal'
 
 interface EntityGridPageProps {
   title: string
-  entitySingularName: string // e.g., "Category", "Fuel Type", "Transmission"
+  entitySingularName: string 
   description: string
   icon?: LucideIcon
   addButtonText: string
@@ -62,8 +62,10 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
     setIsModalOpen(false)
   }
 
-  const activeCount = initialItems.filter(item => item.status === 'Active').length
-
+  // Checks both `isActive` (boolean from API) and `status === 'Active'`
+const activeCount = initialItems.filter(
+  item => item.isActive || item.status === 'Active'
+).length
   return (
     <div className="space-y-6">
       {/* Header */}

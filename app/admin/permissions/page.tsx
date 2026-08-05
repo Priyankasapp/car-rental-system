@@ -33,6 +33,7 @@ interface StaffMasterTarget {
   staffType: string
   description: string
   defaultPermissions: string[]
+  title: string
 }
 
 export default function PermissionsManagementPage() {
@@ -273,7 +274,7 @@ export default function PermissionsManagementPage() {
                 }`}
               >
                 <div className="font-semibold text-sm">{staff.staffType}</div>
-                <div className="text-xs text-slate-500">{staff.description || 'Default permissions template'}</div>
+                <div className="text-xs text-slate-500">{staff.title || 'Default permissions template'}</div>
               </button>
             ))
           )}

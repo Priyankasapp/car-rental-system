@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, department, staffType, defaultPermissions, description } = body
+    const { title, department, staffType, defaultPermissions, description, isActive } = body
 
     if (!title || !department) {
       return NextResponse.json(
@@ -68,13 +68,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Reuse the same permission keys the Permissions page already validates against
+    // Convert object values into array of valid permission strings
     const permissions = Array.isArray(defaultPermissions) ? defaultPermissions : []
-    const validKeys = PERMISSIONS.map((p: { key: any }) => p.key)
+    const validKeys = Object.values(PERMISSIONS) as string[]
 
-    //  TypeScript Fix: Cast validKeys to string[] for strict include checks
     const invalidKeys = permissions.filter(
-      (p: string) => !(validKeys as string[]).includes(p)
+      (p: string) => !validKeys.includes(p)
     )
 
     if (invalidKeys.length > 0) {
@@ -91,6 +90,7 @@ export async function POST(request: NextRequest) {
         staffType: staffType || null,
         defaultPermissions: permissions,
         description: description || null,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
       },
     })
 
