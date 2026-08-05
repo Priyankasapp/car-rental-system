@@ -22,7 +22,6 @@ function VerifyOtpContent() {
     setLoading(true);
 
     try {
-      // NOTE: Update this URL string to whatever your actual verification API route is named.
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

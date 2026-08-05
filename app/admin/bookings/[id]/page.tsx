@@ -22,10 +22,6 @@ import {
   Clock as ClockIcon,
   AlertCircle,
   Trash2,
-  Shield,
-  Users,
-  Building2,
-  Award,
   ChevronDown
 } from 'lucide-react'
 

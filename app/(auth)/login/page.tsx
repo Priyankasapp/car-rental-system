@@ -39,31 +39,21 @@ export default function LoginPage() {
         throw new Error(data.message || "Failed to log in.");
       }
 
-      // --------------------------------------------------------
-      // Get logged-in user
-      // --------------------------------------------------------
 
+      // Get logged-in user
       const loggedInUser = data?.data?.user;
 
       if (!loggedInUser) {
         throw new Error("Invalid login response.");
       }
 
-      // --------------------------------------------------------
       // Normalize role
-      // --------------------------------------------------------
-
       const userRole = String(loggedInUser.role || "").toUpperCase();
 
-      // --------------------------------------------------------
       // Refresh AuthContext / Server Components
-      // --------------------------------------------------------
-
       router.refresh();
 
-      // --------------------------------------------------------
       // Role-based initial redirect
-      // --------------------------------------------------------
 
       const adminRoles = [
         "SUPERADMIN",

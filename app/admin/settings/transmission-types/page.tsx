@@ -61,7 +61,7 @@ export default function TransmissionTypesPage() {
     }
   }, [user, userLoading])
 
-  // Fetch transmission types (silentRefetch prevents layout flickering during save/delete)
+  // Fetch transmission types 
   const fetchTransmissions = useCallback(async (isInitialLoad = false) => {
     try {
       if (isInitialLoad) setLoading(true)

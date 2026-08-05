@@ -95,16 +95,16 @@ export default function CarDetailPage({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // ============================================================
+ 
   // AUTH / PERMISSIONS
-  // ============================================================
+ 
 
   const [user, setUser] = useState<AuthUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
-  // ============================================================
+
   // EDIT MODE
-  // ============================================================
+
 
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<Partial<Car>>({})
@@ -114,9 +114,9 @@ export default function CarDetailPage({
     'overview' | 'gallery' | 'pricing'
   >('overview')
 
-  // ============================================================
+
   // FETCH CURRENT USER + PERMISSIONS
-  // ============================================================
+ 
 
   useEffect(() => {
     let isMounted = true
@@ -160,9 +160,9 @@ export default function CarDetailPage({
     }
   }, [])
 
-  // ============================================================
+
   // PERMISSION CHECK
-  // ============================================================
+
 
   const hasPermission = (permission: string) => {
     if (!user) return false
@@ -196,9 +196,8 @@ export default function CarDetailPage({
   const canEditCars = hasPermission('cars:edit')
   const canDeleteCars = hasPermission('cars:delete')
 
-  // ============================================================
   // FETCH CAR DETAILS
-  // ============================================================
+ 
 
   useEffect(() => {
     let isMounted = true
@@ -249,9 +248,9 @@ export default function CarDetailPage({
     }
   }, [carId])
 
-  // ============================================================
+
   // HANDLE INPUT
-  // ============================================================
+
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -268,9 +267,9 @@ export default function CarDetailPage({
     }))
   }
 
-  // ============================================================
+  
   // SAVE CAR
-  // ============================================================
+
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -317,9 +316,8 @@ export default function CarDetailPage({
     }
   }
 
-  // ============================================================
   // DELETE CAR
-  // ============================================================
+
 
   const handleDelete = async () => {
     if (!canDeleteCars) {
@@ -365,9 +363,8 @@ export default function CarDetailPage({
     }
   }
 
-  // ============================================================
   // LOADING
-  // ============================================================
+ 
 
   if (loading || authLoading) {
     return (
@@ -377,9 +374,9 @@ export default function CarDetailPage({
     )
   }
 
-  // ============================================================
+
   // VIEW PERMISSION
-  // ============================================================
+
 
   if (!canViewCars) {
     return (
@@ -404,9 +401,9 @@ export default function CarDetailPage({
     )
   }
 
-  // ============================================================
+
   // ERROR
-  // ============================================================
+
 
   if (error || !car) {
     return (
@@ -434,9 +431,9 @@ export default function CarDetailPage({
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
 
-      {/* ========================================================
-          HEADER
-      ======================================================== */}
+ 
+          {/* HEADER */}
+    
 
       <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
 
@@ -758,9 +755,9 @@ export default function CarDetailPage({
         </form>
       )}
 
-      {/* ========================================================
-          OVERVIEW
-      ======================================================== */}
+
+          {/* OVERVIEW */}
+   
 
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -945,9 +942,9 @@ export default function CarDetailPage({
         </div>
       )}
 
-      {/* ========================================================
-          GALLERY
-      ======================================================== */}
+
+          {/* GALLERY */}
+
 
       {activeTab === 'gallery' && (
         <div className="rounded-xl border bg-white p-6 shadow-sm">
@@ -989,9 +986,8 @@ export default function CarDetailPage({
         </div>
       )}
 
-      {/* ========================================================
-          PRICING
-      ======================================================== */}
+          {/* PRICING */}
+   
 
       {activeTab === 'pricing' && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

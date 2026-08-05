@@ -43,10 +43,6 @@ interface CurrentUser {
 export default function CarsPage() {
   const router = useRouter()
 
-  // ============================================================
-  // DATA
-  // ============================================================
-
   const [cars, setCars] = useState<CarItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
@@ -58,16 +54,10 @@ export default function CarsPage() {
 
   const [categories, setCategories] = useState<MasterItem[]>([])
 
-  // ============================================================
-  // AUTH / PERMISSIONS
-  // ============================================================
-
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
-  // ============================================================
   // GET CURRENT USER
-  // ============================================================
 
   useEffect(() => {
     async function loadCurrentUser() {
@@ -99,9 +89,7 @@ export default function CarsPage() {
     loadCurrentUser()
   }, [])
 
-  // ============================================================
   // PERMISSION HELPER
-  // ============================================================
 
   const hasPermission = useCallback(
     (permission: string) => {
@@ -109,7 +97,7 @@ export default function CarsPage() {
 
       const role = user.role?.toUpperCase()
 
-      // Super Admin gets everything
+  
       if (
         role === 'SUPERADMIN' ||
         role === 'SUPER_ADMIN'
@@ -135,9 +123,8 @@ export default function CarsPage() {
     [user]
   )
 
-  // ============================================================
   // CAR PERMISSIONS
-  // ============================================================
+ 
 
   const canViewCars = hasPermission(
     PERMISSIONS.CARS_VIEW
@@ -155,9 +142,9 @@ export default function CarsPage() {
     PERMISSIONS.CARS_DELETE
   )
 
-  // ============================================================
+
   // SEARCH DEBOUNCE
-  // ============================================================
+
 
   useEffect(() => {
     const handler = setTimeout(
@@ -168,9 +155,9 @@ export default function CarsPage() {
     return () => clearTimeout(handler)
   }, [search])
 
-  // ============================================================
+
   // LOAD CATEGORIES
-  // ============================================================
+
 
   useEffect(() => {
     async function loadCategories() {
@@ -201,9 +188,9 @@ export default function CarsPage() {
     }
   }, [authLoading, canViewCars])
 
-  // ============================================================
+ 
   // FETCH CARS
-  // ============================================================
+ 
 
   const fetchCars = useCallback(async () => {
     // Don't fetch until permissions are known
@@ -283,9 +270,8 @@ export default function CarsPage() {
     fetchCars()
   }, [fetchCars])
 
-  // ============================================================
   // DELETE CAR
-  // ============================================================
+ 
 
   const handleDelete = async (id: string) => {
     // Frontend protection
@@ -333,9 +319,9 @@ export default function CarsPage() {
     }
   }
 
-  // ============================================================
+
   // STATUS BADGE
-  // ============================================================
+
 
   const renderStatusBadge = (
     status: CarItem['status']
@@ -371,9 +357,9 @@ export default function CarsPage() {
     }
   }
 
-  // ============================================================
+
   // CATEGORY
-  // ============================================================
+
 
   const getCategoryName = (
     category?: MasterItem | null
@@ -381,9 +367,9 @@ export default function CarsPage() {
     return category?.name || 'Standard'
   }
 
-  // ============================================================
+
   // COLUMNS
-  // ============================================================
+
 
   const columns: Column<CarItem>[] = [
     {
@@ -447,9 +433,9 @@ export default function CarsPage() {
       ),
     },
 
-    // ==========================================================
+
     // ACTIONS
-    // ==========================================================
+
 
     {
       header: 'Actions',
@@ -509,9 +495,9 @@ export default function CarsPage() {
     },
   ]
 
-  // ============================================================
+
   // LOADING AUTH
-  // ============================================================
+
 
   if (authLoading) {
     return (
@@ -523,9 +509,8 @@ export default function CarsPage() {
     )
   }
 
-  // ============================================================
   // NO CAR PERMISSION
-  // ============================================================
+
 
   if (!canViewCars) {
     return (
@@ -543,9 +528,9 @@ export default function CarsPage() {
     )
   }
 
-  // ============================================================
+
   // PAGE
-  // ============================================================
+
 
   return (
     <DataExplorer<CarItem>
@@ -621,9 +606,8 @@ export default function CarsPage() {
 
       columns={columns}
 
-      // ========================================================
       // GRID CARD
-      // ========================================================
+
 
       renderGridCard={(car) => (
         <div className="border rounded-xl bg-white overflow-hidden shadow-sm hover:shadow transition flex flex-col justify-between">

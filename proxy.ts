@@ -120,9 +120,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin', request.url))
   }
 
-  // =========================================================
+
   // FRONTEND ROUTE GUARDS (/admin/*)
-  // =========================================================
+
   if (path.startsWith('/admin')) {
     if (!payload) {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -193,9 +193,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // =========================================================
   // BACKEND API ROUTE GUARDS (/api/*)
-  // =========================================================
+  
   if (
     alwaysPublicRoutes.some((route) => path === route || path.startsWith(`${route}/`))
   ) {

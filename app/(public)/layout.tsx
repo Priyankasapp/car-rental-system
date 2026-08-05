@@ -13,7 +13,7 @@ export default function PublicLayout({
       <Header />
       <main className="flex-1 w-full">{children}</main>
       <Footer />
-      <BottomNav />
+      {/* <BottomNav /> */}
     </div>
   );
 }

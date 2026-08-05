@@ -31,9 +31,9 @@ import {
 } from "@/lib/client-auth";
 import { hasPermission, PermissionKey, PERMISSIONS } from "@/lib/permissions";
 
-// ============================================================
+
 // MAIN SIDEBAR LINKS
-// ============================================================
+
 
 const sidebarLinks: {
   href: string;
@@ -67,9 +67,9 @@ const sidebarLinks: {
   },
 ];
 
-// ============================================================
+
 // SETTINGS LINKS
-// ============================================================
+
 
 const settingsLinks: {
   href: string;
@@ -103,9 +103,9 @@ const settingsLinks: {
   },
 ];
 
-// ============================================================
-// MANAGEMENT LINKS (Unified Definition)
-// ============================================================
+
+// MANAGEMENT LINKS (
+
 
 const managementLinks: {
   href: string;
@@ -133,9 +133,9 @@ const permissionsLink = {
   icon: ShieldCheck,
 };
 
-// ============================================================
+
 // ADMIN LAYOUT
-// ============================================================
+
 
 export default function AdminLayout({
   children,
@@ -155,25 +155,24 @@ export default function AdminLayout({
     getCurrentUser().then(setUser);
   }, []);
 
-  // ==========================================================
+
   // USER INITIALS
-  // ==========================================================
+
 
   const userInitials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "SA";
 
-  // ==========================================================
+
   // ROLE
-  // ==========================================================
+
 
   const role = user?.role?.toUpperCase();
 
   const isSuperAdmin = role === "SUPERADMIN" || role === "SUPER_ADMIN";
 
-  // ==========================================================
   // PERMISSION CHECK
-  // ==========================================================
+
 
   const canSee = (permission?: PermissionKey) => {
     if (!permission) return true;
@@ -197,18 +196,18 @@ export default function AdminLayout({
   const hasAnyManagementLink =
     visibleManagementLinks.length > 0 || showPermissionsLink;
 
-  // ==========================================================
+
   // LOGOUT
-  // ==========================================================
+
 
   const handleLogout = async () => {
     await logoutCurrentUser();
     router.push("/login");
   };
 
-  // ==========================================================
+
   // ACTIVE LINK
-  // ==========================================================
+
 
   const isActive = (href: string) => {
     if (href === "/admin") {
@@ -220,9 +219,9 @@ export default function AdminLayout({
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* =====================================================
-          SIDEBAR
-      ====================================================== */}
+
+          {/* SIDEBAR */}
+ 
 
       <aside
         className={cn(
@@ -439,9 +438,7 @@ export default function AdminLayout({
         </nav>
       </aside>
 
-      {/* =====================================================
-          MAIN CONTENT
-      ====================================================== */}
+   
 
       <div
         className={cn(

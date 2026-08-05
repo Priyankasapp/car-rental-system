@@ -26,7 +26,7 @@ export default function AddCustomerPage() {
     email: '',
     phone: '',
     isActive: true,
-    isEmailVerified: true, // Default to true since Admin is creating them
+    isEmailVerified: true, 
   })
 
   // Strongly typed change handler for text inputs and checkboxes

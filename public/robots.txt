@@ -1,22 +1,10 @@
-// app/robots.ts
-import { MetadataRoute } from 'next'
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /api/
 
-export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: [
-        '/admin',
-        '/admin/*',   // covers bookings, cars, dashboard, permissions, profile, settings, staff, staff-master, users
-        '/login',
-        '/register',
-        '/profile',
-        '/api',
-      
-        
-      ],
-    },
-    sitemap: 'https://car-rental-system-ivory-three.vercel.app/sitemap.xml',
-  }
-}
+Sitemap: https://car-rental-system-ivory-three.vercel.app/sitemap.xml

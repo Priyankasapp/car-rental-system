@@ -196,7 +196,7 @@ export default function AdminDashboard() {
       try {
         setAuthLoading(true)
 
-        // 1. Verify User Session
+        //  Verify User Session
         const authRes = await fetch('/api/auth/me', { credentials: 'include' })
         const authData = await authRes.json()
 
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
         const currentUser: AuthUser = authData.data?.user || authData.data
         const role = currentUser.role?.toUpperCase()
 
-        // 2. Check Role Access
+        //  Check Role Access
         if (role !== 'SUPERADMIN' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
           router.push('/admin')
           return
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
 
         setUser(currentUser)
 
-        // 3. Load Dashboard Content
+        //  Load Dashboard Content
         await fetchDashboardData()
       } catch (err) {
         console.error('Authentication check failed:', err)

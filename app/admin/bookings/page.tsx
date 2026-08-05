@@ -181,7 +181,7 @@ export default function AdminBookingsPage() {
     fetchBookings(newFilters)
   }
 
-  //  1. Auth Loading Check
+  //   Auth Loading Check
   if (authLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -190,7 +190,7 @@ export default function AdminBookingsPage() {
     )
   }
 
-  //  2. User Check
+  //   User Check
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -199,9 +199,9 @@ export default function AdminBookingsPage() {
     )
   }
 
-  //  3. Permission Check
+  //   Permission Check
   const canViewBookings = hasPermission('reservations:view')
-  console.log('📊 Render - canViewBookings:', canViewBookings)
+  console.log(' Render - canViewBookings:', canViewBookings)
 
   if (!canViewBookings) {
     return (
@@ -217,7 +217,7 @@ export default function AdminBookingsPage() {
     )
   }
 
-  //  4. Bookings Loading Check
+  //   Bookings Loading Check
   if (isLoading && bookings.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -226,7 +226,7 @@ export default function AdminBookingsPage() {
     )
   }
 
-  //  5. Main Render
+  //   Main Render
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">

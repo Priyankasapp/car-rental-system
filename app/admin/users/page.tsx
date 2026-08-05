@@ -25,9 +25,9 @@ import {
   PERMISSIONS,
 } from '@/lib/permissions'
 
-// ============================================================
+
 // TYPES
-// ============================================================
+
 
 interface AuthUser {
   id: string
@@ -54,9 +54,9 @@ interface AdminUser {
   }
 }
 
-// ============================================================
+
 // USER ROLE BADGE
-// ============================================================
+
 
 const UserRoleBadge = ({ role }: { role: string }) => {
   const styles: Record<string, string> = {
@@ -88,9 +88,9 @@ const UserRoleBadge = ({ role }: { role: string }) => {
   )
 }
 
-// ============================================================
+
 // USER STATUS BADGE
-// ============================================================
+
 
 const UserStatusBadge = ({
   isActive,
@@ -116,9 +116,9 @@ const UserStatusBadge = ({
   )
 }
 
-// ============================================================
+
 // ADMIN USERS PAGE (CONTEXT-FREE)
-// ============================================================
+
 
 export default function AdminUsersPage() {
   const router = useRouter()
@@ -134,9 +134,9 @@ export default function AdminUsersPage() {
 
   const hasInitialized = useRef(false)
 
-  // ==========================================================
+ 
   // PERMISSION CHECK
-  // ==========================================================
+
 
   const can = useCallback(
     (permission: keyof typeof PERMISSIONS) => {
@@ -163,9 +163,9 @@ export default function AdminUsersPage() {
   const canEditUsers = can('USERS_EDIT')
   const canDeleteUsers = can('USERS_DELETE')
 
-  // ==========================================================
+
   // API: FETCH USERS
-  // ==========================================================
+
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -191,9 +191,9 @@ export default function AdminUsersPage() {
     }
   }, [])
 
-  // ==========================================================
+
   // INITIAL LOAD: AUTH & USERS FETCH
-  // ==========================================================
+ 
 
   useEffect(() => {
     if (hasInitialized.current) return
@@ -246,9 +246,9 @@ export default function AdminUsersPage() {
     initializePage()
   }, [router, fetchUsers])
 
-  // ==========================================================
-  // API: DELETE USER
-  // ==========================================================
+
+  //  DELETE USER
+
 
   const handleDelete = async (id: string) => {
     if (!canDeleteUsers) return
@@ -285,9 +285,9 @@ export default function AdminUsersPage() {
     }
   }
 
-  // ==========================================================
+ 
   // SEARCH
-  // ==========================================================
+
 
   const filteredUsers = (users || []).filter((u) => {
     const search = searchTerm.toLowerCase().trim()
@@ -305,9 +305,9 @@ export default function AdminUsersPage() {
     )
   })
 
-  // ==========================================================
+ 
   // LOADING STATE
-  // ==========================================================
+ 
 
   if (authLoading || (isLoading && users.length === 0)) {
     return (
@@ -317,17 +317,17 @@ export default function AdminUsersPage() {
     )
   }
 
-  // ==========================================================
+
   // ACCESS DENIED
-  // ==========================================================
+  
 
   if (!user || !canViewUsers) {
     return null
   }
 
-  // ==========================================================
+
   // UI
-  // ==========================================================
+ 
 
   return (
     <div>

@@ -26,7 +26,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Clean payload: send undefined or omit phone if empty
+      //  payload
       const payload = {
         ...formData,
         phone: formData.phone.trim() !== "" ? formData.phone.trim() : undefined,

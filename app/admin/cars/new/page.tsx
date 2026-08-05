@@ -253,7 +253,7 @@ export default function AddCarPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Section 1: Vehicle Details */}
+          {/*  Vehicle Details */}
           <FormSection icon={Car} title="Vehicle Details" description="Basic information about the vehicle">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <InputField
@@ -321,7 +321,7 @@ export default function AddCarPage() {
             </div>
           </FormSection>
 
-          {/* Section 2: Specifications */}
+          {/*  Specifications */}
           <FormSection icon={Settings2} title="Specifications" description="Technical specifications" collapsible>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <InputField label="Category" icon={Tag} isSelect name="categoryId" value={formData.categoryId} onChange={handleChange}>
@@ -341,7 +341,7 @@ export default function AddCarPage() {
             </div>
           </FormSection>
 
-          {/* Section 3: Car Features */}
+          {/*  Car Features */}
           <FormSection icon={CheckSquare} title="Vehicle Features" description="Select all features available on this vehicle">
             {fetchingFeatures ? (
               <div className="flex items-center gap-2 py-4 text-xs text-gray-500">
@@ -374,7 +374,7 @@ export default function AddCarPage() {
             )}
           </FormSection>
 
-          {/* Section 4: Pricing */}
+          {/*  Pricing */}
           <FormSection icon={DollarSign} title="Pricing & Rates" description="Set rental rates and deposit">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <InputField label="Price / Day" icon={DollarSign} type="number" name="pricePerDay" required value={formData.pricePerDay} onChange={handleChange} error={validationErrors.pricePerDay} />
@@ -388,7 +388,7 @@ export default function AddCarPage() {
             </div>
           </FormSection>
 
-          {/* Section 5: Image Gallery */}
+          {/*  Image Gallery */}
           <FormSection icon={ImageIcon} title="Image Gallery" description="Upload vehicle images directly to Cloudinary">
             <ImageUploader
               value={imageUrls}
@@ -431,7 +431,7 @@ export default function AddCarPage() {
             )}
           </FormSection>
 
-          {/* Section 6: Location */}
+          {/*  Location */}
           <FormSection icon={MapPin} title="Location" description="Vehicle pickup location">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputField label="City" icon={MapPin} type="text" name="locationCity" placeholder="e.g. Los Angeles" value={formData.locationCity} onChange={handleChange} />
