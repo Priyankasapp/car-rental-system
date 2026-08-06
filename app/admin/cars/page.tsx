@@ -376,18 +376,18 @@ export default function CarsPage() {
       header: 'Vehicle',
 
       accessor: (car) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-[140px]">
           <img
             src={
               car.imageMain ||
               '/placeholder.png'
             }
             alt="image of the car"
-            className="w-10 h-10 rounded-md object-cover border bg-gray-50"
+            className="w-10 h-10 rounded-md object-cover border bg-gray-50 flex-shrink-0"
           />
 
-          <div>
-            <div className="font-medium text-gray-900">
+          <div className="min-w-0">
+            <div className="font-medium text-gray-900 truncate">
               {car.manufacturer} {car.model}
             </div>
 
@@ -453,7 +453,7 @@ export default function CarsPage() {
                   `/admin/cars/${car.id}`
                 )
               }
-              className="hover:text-black p-1"
+              className="hover:text-black p-1 hover:bg-gray-100 rounded transition-colors"
               title="View Details"
             >
               <Eye className="w-4 h-4" />
@@ -469,7 +469,7 @@ export default function CarsPage() {
                   `/admin/cars/${car.id}/edit`
                 )
               }
-              className="hover:text-blue-600 p-1"
+              className="hover:text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"
               title="Edit Vehicle"
             >
               <Pencil className="w-4 h-4" />
@@ -483,7 +483,7 @@ export default function CarsPage() {
               onClick={() =>
                 handleDelete(car.id)
               }
-              className="hover:text-red-600 p-1"
+              className="hover:text-red-600 p-1 hover:bg-red-50 rounded transition-colors"
               title="Delete Vehicle"
             >
               <Trash2 className="w-4 h-4" />
@@ -501,7 +501,7 @@ export default function CarsPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[400px] px-4">
         <div className="text-sm text-gray-500">
           Loading permissions...
         </div>
@@ -514,8 +514,8 @@ export default function CarsPage() {
 
   if (!canViewCars) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-[400px] px-4">
+        <div className="text-center max-w-sm mx-auto">
           <h2 className="text-lg font-semibold text-gray-900">
             Access Denied
           </h2>
@@ -533,199 +533,202 @@ export default function CarsPage() {
 
 
   return (
-    <DataExplorer<CarItem>
-      title="Vehicles"
-      subtitle="Overview of all active fleet vehicles."
-      data={cars}
-      loading={loading}
-      keyExtractor={(car) => car.id}
-      searchQuery={search}
-      onSearchChange={setSearch}
-      searchPlaceholder="Filter by make, model, plate..."
+    <div className="w-full px-4 sm:px-6 lg:px-8">
+      <DataExplorer<CarItem>
+        title="Vehicles"
+        subtitle="Overview of all active fleet vehicles."
+        data={cars}
+        loading={loading}
+        keyExtractor={(car) => car.id}
+        searchQuery={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Filter by make, model, plate..."
 
-      // Add vihical 
+        // Add vihical 
 
-      addLabel={
-        canCreateCars
-          ? 'Add Vehicle'
-          : undefined
-      }
+        addLabel={
+          canCreateCars
+            ? 'Add Vehicle'
+            : undefined
+        }
 
-      onAdd={
-        canCreateCars
-          ? () =>
-              router.push(
-                '/admin/cars/new'
-              )
-          : undefined
-      }
+        onAdd={
+          canCreateCars
+            ? () =>
+                router.push(
+                  '/admin/cars/new'
+                )
+            : undefined
+        }
 
-      onRefresh={fetchCars}
+        onRefresh={fetchCars}
 
-      filters={[
-        {
-          key: 'status',
-          label: 'All Statuses',
-          value: statusFilter,
-          onChange: setStatusFilter,
+        filters={[
+          {
+            key: 'status',
+            label: 'All Statuses',
+            value: statusFilter,
+            onChange: setStatusFilter,
 
-          options: [
-            {
-              label: 'Available',
-              value: 'AVAILABLE',
-            },
-            {
-              label: 'Reserved',
-              value: 'RESERVED',
-            },
-            {
-              label: 'Maintenance',
-              value: 'MAINTENANCE',
-            },
-            {
-              label: 'Unavailable',
-              value: 'UNAVAILABLE',
-            },
-          ],
-        },
+            options: [
+              {
+                label: 'Available',
+                value: 'AVAILABLE',
+              },
+              {
+                label: 'Reserved',
+                value: 'RESERVED',
+              },
+              {
+                label: 'Maintenance',
+                value: 'MAINTENANCE',
+              },
+              {
+                label: 'Unavailable',
+                value: 'UNAVAILABLE',
+              },
+            ],
+          },
 
-        {
-          key: 'category',
-          label: 'All Categories',
-          value: categoryFilter,
-          onChange: setCategoryFilter,
+          {
+            key: 'category',
+            label: 'All Categories',
+            value: categoryFilter,
+            onChange: setCategoryFilter,
 
-          options: categories.map(
-            (c) => ({
-              label: c.name,
-              value: c.id,
-            })
-          ),
-        },
-      ]}
+            options: categories.map(
+              (c) => ({
+                label: c.name,
+                value: c.id,
+              })
+            ),
+          },
+        ]}
 
-      columns={columns}
+        columns={columns}
 
-      // GRID CARD
+        // GRID CARD
 
 
-      renderGridCard={(car) => (
-        <div className="border rounded-xl bg-white overflow-hidden shadow-sm hover:shadow transition flex flex-col justify-between">
+        renderGridCard={(car) => (
+          <div className="border rounded-xl bg-white overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full max-w-sm mx-auto w-full">
 
-          <div className="relative h-36 w-full bg-gray-100">
+            <div className="relative h-48 sm:h-40 md:h-44 lg:h-48 w-full bg-gray-100">
 
-            <img
-              src={
-                car.imageMain ||
-                '/placeholder.png'
-              }
-              alt={`${car.manufacturer} ${car.model}`}
-              className="w-full h-full object-cover"
-            />
+              <img
+                src={
+                  car.imageMain ||
+                  '/placeholder.png'
+                }
+                alt={`${car.manufacturer} ${car.model}`}
+                className="w-full h-full object-cover"
+              />
 
-            <div className="absolute top-2.5 left-2.5">
-              {renderStatusBadge(
-                car.status
-              )}
-            </div>
-
-          </div>
-
-          <div className="p-3 flex-1 flex flex-col justify-between space-y-3">
-
-            <div className="flex items-start justify-between gap-2">
-
-              <div>
-                <h3 className="font-medium text-gray-900 text-sm leading-snug">
-                  {car.manufacturer}{' '}
-                  {car.model}
-                </h3>
-
-                <p className="text-xs text-gray-400 font-mono mt-0.5">
-                  {car.licensePlate ||
-                    'N/A'}{' '}
-                  • {car.year}
-                </p>
+              <div className="absolute top-2.5 left-2.5">
+                {renderStatusBadge(
+                  car.status
+                )}
               </div>
 
-              <div className="text-right whitespace-nowrap">
+            </div>
 
-                <span className="text-sm font-bold text-gray-900">
-                  ₹
-                  {car.pricePerDay?.toLocaleString() ??
-                    0}
+            <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
+
+              <div className="flex items-start justify-between gap-2">
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-medium text-gray-900 text-sm sm:text-base leading-snug truncate">
+                    {car.manufacturer}{' '}
+                    {car.model}
+                  </h3>
+
+                  <p className="text-xs text-gray-400 font-mono mt-0.5 truncate">
+                    {car.licensePlate ||
+                      'N/A'}{' '}
+                    • {car.year}
+                  </p>
+                </div>
+
+                <div className="text-right whitespace-nowrap flex-shrink-0">
+
+                  <span className="text-sm sm:text-base font-bold text-gray-900">
+                    ₹
+                    {car.pricePerDay?.toLocaleString() ??
+                      0}
+                  </span>
+
+                  <span className="text-[10px] text-gray-400 block">
+                    /day
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="pt-2 border-t flex items-center justify-between text-xs text-gray-400 gap-2 flex-wrap">
+
+                <span className="text-[11px] text-gray-500 truncate">
+                  {getCategoryName(
+                    car.category
+                  )}
                 </span>
 
-                <span className="text-[10px] text-gray-400 block">
-                  /day
-                </span>
+                <div className="flex items-center gap-1 flex-shrink-0">
 
-              </div>
+                  {/* VIEW */}
 
-            </div>
+                  {canViewCars && (
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/admin/cars/${car.id}`
+                        )
+                      }
+                      className="p-1.5 hover:text-black hover:bg-gray-100 rounded transition-colors"
+                      title="View"
+                    >
+                      <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                  )}
 
-            <div className="pt-2 border-t flex items-center justify-between text-xs text-gray-400">
+                  {/* EDIT */}
 
-              <span className="text-[11px] text-gray-500">
-                {getCategoryName(
-                  car.category
-                )}
-              </span>
+                  {canEditCars && (
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/admin/cars/${car.id}/edit`
+                        )
+                      }
+                      className="p-1.5 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                  )}
 
-              <div className="flex items-center gap-1">
+                  {/* DELETE */}
 
-                {/* VIEW */}
+                  {canDeleteCars && (
+                    <button
+                      onClick={() =>
+                        handleDelete(car.id)
+                      }
+                      className="p-1.5 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                  )}
 
-                {canViewCars && (
-                  <button
-                    onClick={() =>
-                      router.push(
-                        `/admin/cars/${car.id}`
-                      )
-                    }
-                    className="p-1 hover:text-black rounded"
-                    title="View"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-                )}
-
-                {/* EDIT */}
-
-                {canEditCars && (
-                  <button
-                    onClick={() =>
-                      router.push(
-                        `/admin/cars/${car.id}/edit`
-                      )
-                    }
-                    className="p-1 hover:text-blue-600 rounded"
-                    title="Edit"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                )}
-
-                {/* DELETE */}
-
-                {canDeleteCars && (
-                  <button
-                    onClick={() =>
-                      handleDelete(car.id)
-                    }
-                    className="p-1 hover:text-red-600 rounded"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                </div>
 
               </div>
 
             </div>
           </div>
-        </div>
-      )}
-    />
+        )}
+      />
+    </div>
   )
 }

@@ -22,7 +22,7 @@ export async function GET(
       )
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { 
         id, 
         isDeleted: false 
@@ -146,7 +146,7 @@ export async function PUT(
     }
 
     // Confirm target user exists and is not a customer
-    const targetUser = await prisma.user.findUnique({
+    const targetUser = await prisma.user.findFirst({
       where: { 
         id, 
         isDeleted: false 
