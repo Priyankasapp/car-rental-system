@@ -22,10 +22,9 @@ export async function GET(
       )
     }
 
-    const user = await prisma.user.findFirst({
+    const user = await prisma.user.findUnique({
       where: { 
-        id, 
-        isDeleted: false 
+        id
       },
       select: {
         id: true,
@@ -145,21 +144,21 @@ export async function PUT(
       )
     }
 
-    // Confirm target user exists and is not a customer
-    const targetUser = await prisma.user.findFirst({
+    // Confirm target user exists, is active, and is not a customer
+    const targetUser = await prisma.user.findUnique({
       where: { 
-        id, 
-        isDeleted: false 
+        id
       },
       select: { 
         id: true, 
         role: true, 
         firstName: true, 
-        lastName: true 
+        lastName: true,
+        isActive: true,
       },
     })
 
-    if (!targetUser) {
+    if (!targetUser || !targetUser.isActive) {
       return NextResponse.json(
         { 
           success: false, 
