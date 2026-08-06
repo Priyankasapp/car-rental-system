@@ -80,16 +80,27 @@ enum OTPScope {
   BOOKING_CANCELLATION
 }
 
-enum ContactService {
-  CAR_RENTAL
-  CHAUFFEUR
-  CONCIERGE
-  CORPORATE
-  WEDDING
-  AIRPORT_TRANSFER
-  TOUR_PACKAGE
-  OTHER
-}
+model ServiceMaster {
+  id            String  @id @default (auto()) @map("_id") @db.ObjectId
+  name          String  @unique
+  description   String?
+  color         String?
+  circleBg      String?
+  textColor     String?
+  borderColor   String?
+  status        String  @default("Active")
+  isActive      Boolean @default(true)
+
+  carIds        String[]  @db.ObjectId
+  cars          Car[]     @relation("Service_Car", fields:[carIds], references:[id])
+
+  contacts      Contact[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive])
+  @@map("service_master")
+  }
 
 enum ContactStatus {
   NEW
@@ -375,6 +386,9 @@ model Car {
   imageMain    String
   imageGallery String[]
 
+  serviceIds   String[]        @db.ObjectId
+  services     ServiceMaster[] @relation("Service_Car", fields: [serviceIds], references: [id])
+
   status      CarStatus @default(AVAILABLE)
   isFeatured  Boolean   @default(false)
   isPublished Boolean   @default(true)
@@ -515,25 +529,28 @@ model BookingAuditLog {
 // ============== CONTACT MODEL ==============
 
 model Contact {
-  id        String         @id @default(auto()) @map("_id") @db.ObjectId
-  firstName String
-  lastName  String
-  email     String
-  phone     String?
-  service   ContactService
-  message   String
-  status    ContactStatus  @default(NEW)
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  serviceId   String         @db.ObjectId
+  service     ServiceMaster  @relation(fields: [serviceId], references:[id], onDelete:Restrict)
 
-  adminNotes String?
-  assignedTo String?
-  resolvedAt DateTime?
 
-  ipAddress String?
-  userAgent String?
-  source    String?
+  message     String
+  status      ContactStatus  @default(NEW)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  adminNotes  String?
+  assignedTo  String?
+  resolvedAt  DateTime?
+
+  ipAddress   String?
+  userAgent   String?
+  source      String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([email])
   @@index([status])

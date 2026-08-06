@@ -22,6 +22,7 @@ const publicApiGetRoutes = [
   "/api/admin/categories",
   "/api/admin/fuel-types",
   "/api/admin/transmission-types",
+  "/api/admin/services"
 ];
 
 const publicApiWriteRoutes = ["/api/reservations"];
@@ -170,6 +171,12 @@ export async function middleware(request: NextRequest) {
     }
     if (
       path.startsWith("/admin/settings/car-features") &&
+      !hasPermission("features:view")
+    ) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+     if (
+      path.startsWith("/admin/settings/services") &&
       !hasPermission("features:view")
     ) {
       return NextResponse.redirect(new URL("/admin", request.url));

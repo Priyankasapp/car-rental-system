@@ -21,8 +21,9 @@ import {
   Crown,
   X,
   Menu,
+  MessageCircle,
+ Wrench
 } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import {
   getCurrentUser,
@@ -31,10 +32,7 @@ import {
 } from "@/lib/client-auth";
 import { hasPermission, PermissionKey, PERMISSIONS } from "@/lib/permissions";
 
-
 // MAIN SIDEBAR LINKS
-
-
 const sidebarLinks: {
   href: string;
   label: string;
@@ -65,11 +63,16 @@ const sidebarLinks: {
     icon: Users,
     permission: PERMISSIONS.USERS_VIEW,
   },
+  {
+    href: "/admin/messages",
+    label:"Messages",
+    icon:MessageCircle,
+    permission:PERMISSIONS.USERS_CREATE
+  }
+  
 ];
 
-
 // SETTINGS LINKS
-
 
 const settingsLinks: {
   href: string;
@@ -101,11 +104,15 @@ const settingsLinks: {
     icon: Sparkles,
     permission: PERMISSIONS.FEATURES_VIEW,
   },
+  {
+    href: "/admin/settings/services",
+    label: "Services",
+    icon: Wrench,
+    permission: PERMISSIONS.FEATURES_VIEW,
+  },
 ];
 
-
 // MANAGEMENT LINKS (
-
 
 const managementLinks: {
   href: string;
@@ -133,9 +140,7 @@ const permissionsLink = {
   icon: ShieldCheck,
 };
 
-
 // ADMIN LAYOUT
-
 
 export default function AdminLayout({
   children,
@@ -155,24 +160,19 @@ export default function AdminLayout({
     getCurrentUser().then(setUser);
   }, []);
 
-
   // USER INITIALS
-
 
   const userInitials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "SA";
 
-
   // ROLE
-
 
   const role = user?.role?.toUpperCase();
 
   const isSuperAdmin = role === "SUPERADMIN" || role === "SUPER_ADMIN";
 
   // PERMISSION CHECK
-
 
   const canSee = (permission?: PermissionKey) => {
     if (!permission) return true;
@@ -196,18 +196,14 @@ export default function AdminLayout({
   const hasAnyManagementLink =
     visibleManagementLinks.length > 0 || showPermissionsLink;
 
-
   // LOGOUT
-
 
   const handleLogout = async () => {
     await logoutCurrentUser();
     router.push("/login");
   };
 
-
   // ACTIVE LINK
-
 
   const isActive = (href: string) => {
     if (href === "/admin") {
@@ -219,9 +215,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex h-screen bg-gray-50">
-
-          {/* SIDEBAR */}
- 
+      {/* SIDEBAR */}
 
       <aside
         className={cn(
@@ -438,8 +432,6 @@ export default function AdminLayout({
         </nav>
       </aside>
 
-   
-
       <div
         className={cn(
           "flex-1 flex flex-col transition-all duration-300",
@@ -472,22 +464,22 @@ export default function AdminLayout({
 
             {/* AVATAR */}
             <div className="relative group">
-               <button
-    type="button"
-    className={cn(
-      "w-9 h-9 rounded-full flex items-center justify-center",
-      "font-bold text-sm cursor-pointer transition-all",
-      "ring-2 ring-offset-1",
-      isSuperAdmin
-        ? "bg-amber-600 text-white ring-amber-400"
-        : "bg-gray-900 text-white ring-gray-300"
-    )}
-    aria-label={`Open account menu for ${
-      user?.firstName || "user"
-    }`}
-  >
-    {userInitials}
-  </button>
+              <button
+                type="button"
+                className={cn(
+                  "w-9 h-9 rounded-full flex items-center justify-center",
+                  "font-bold text-sm cursor-pointer transition-all",
+                  "ring-2 ring-offset-1",
+                  isSuperAdmin
+                    ? "bg-amber-600 text-white ring-amber-400"
+                    : "bg-gray-900 text-white ring-gray-300",
+                )}
+                aria-label={`Open account menu for ${
+                  user?.firstName || "user"
+                }`}
+              >
+                {userInitials}
+              </button>
 
               {/* DROPDOWN */}
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">

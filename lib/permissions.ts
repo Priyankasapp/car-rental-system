@@ -36,6 +36,12 @@ export const PERMISSIONS = {
   FEATURES_EDIT: "features:edit",
   FEATURES_DELETE: "features:delete",
 
+  //SERVICES
+  SERVICES_VIEW: "services:view",
+  SERVICES_CREATE: "services:create",
+  SERVICES_EDIT: "services:edit",
+  SERVICES_DELETE: "services:delete",
+
   // RESERVATIONS / BOOKINGS
   RESERVATIONS_VIEW: "reservations:view",
   RESERVATIONS_CREATE: "reservations:create",
@@ -183,6 +189,16 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
       { key: PERMISSIONS.FEATURES_EDIT, label: "Edit Car Features", description: "Can edit car features" },
       { key: PERMISSIONS.FEATURES_DELETE, label: "Delete Car Features", description: "Can remove car features" },
     ],
+  },
+  {
+    category:"Services",
+    permissions:[
+      {key: PERMISSIONS.SERVICES_VIEW, label:"View Contact Services", description:"Can view services lists"},
+      {key: PERMISSIONS.SERVICES_CREATE, label:"Create Service",description:"Can add new service"},
+      {key: PERMISSIONS.SERVICES_EDIT, label:"Edit Service",description:"Can edit service"},
+      {key: PERMISSIONS.SERVICES_CREATE, label:"Delete Service",description:"Can remove service"},
+
+    ]
   },
   {
     category: "Reservations",
