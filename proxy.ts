@@ -12,6 +12,7 @@ const alwaysPublicRoutes = [
   "/api/auth/logout",
   "/api/health",
   "/api/contact",
+  "/api/services",
   "/api/cron/expire-reservations",
 ];
 

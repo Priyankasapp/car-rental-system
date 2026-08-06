@@ -12,19 +12,31 @@ type ContactFormData = {
   lastName: string;
   email: string;
   phone: string;
-  service: string;
+  serviceId: string;
   message: string;
   source: string;
 };
 
+type Service = {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  circleBg?: string;
+  textColor?: string;
+  borderColor?: string;
+  status: string;
+  isActive: boolean;
+};
+
 const initialFormData: ContactFormData = {
-  firstName: '', 
-  lastName: '', 
-  email: '', 
-  phone: '', 
-  service: '', 
-  message: '', 
-  source: 'website',
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  serviceId: "",
+  message: "",
+  source: "website",
 };
 
 // Register ScrollTrigger
@@ -32,7 +44,8 @@ if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-export default function ContactForm() {
+// Make sure this is the default export
+const ContactForm = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
@@ -42,8 +55,41 @@ export default function ContactForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  
+  // Services state
+  const [services, setServices] = useState<Service[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [servicesError, setServicesError] = useState<string | null>(null);
+
+  // Fetch services on component mount
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setServicesLoading(true);
+        const response = await fetch('/api/services?includeInactive=false');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch services');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setServices(result.data);
+        } else {
+          throw new Error(result.message || 'Failed to fetch services');
+        }
+      } catch (err) {
+        setServicesError(err instanceof Error ? err.message : 'Failed to load services');
+        console.error('Error fetching services:', err);
+      } finally {
+        setServicesLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   // Clear error handler
   const clearError = () => {
@@ -106,8 +152,8 @@ export default function ContactForm() {
           return 'Valid email is required';
         }
         break;
-      case 'service':
-        if (!formData.service) {
+      case 'serviceId':
+        if (!formData.serviceId) {
           return 'Please select a service';
         }
         break;
@@ -125,11 +171,12 @@ export default function ContactForm() {
       formData.firstName.length >= 2 &&
       formData.lastName.length >= 2 &&
       formData.email.includes('@') &&
-      formData.service &&
+      formData.serviceId &&
       formData.message.length >= 10
     );
   };
 
+  // Animation effect
   useEffect(() => {
     const ctx = gsap.context(() => {
       
@@ -294,6 +341,20 @@ export default function ContactForm() {
             {contactForm.subtitle}
           </p>
 
+          {/* Services Loading/Error State */}
+          {servicesLoading && (
+            <div className="mt-4 flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+              <p className="text-sm text-blue-700">Loading services...</p>
+            </div>
+          )}
+
+          {servicesError && !servicesLoading && (
+            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
+              <p className="text-sm text-yellow-700">{servicesError}</p>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="mt-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
@@ -389,26 +450,43 @@ export default function ContactForm() {
 
             <div className="relative w-full">
               <select
-                name="service"
-                value={formData.service}
+                name="serviceId"
+                value={formData.serviceId}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                disabled={loading}
+                disabled={loading || servicesLoading}
                 className={`form-field block w-full min-w-0 appearance-none rounded-2xl border bg-white px-4 py-3.5 pr-10 text-sm outline-none transition sm:px-5 sm:py-4 sm:text-base ${
-                  getFieldError("service")
+                  getFieldError("serviceId")
                     ? "border-red-500 focus:border-red-500"
                     : "border-gray-300 focus:border-black"
+                } ${
+                  servicesLoading ? 'cursor-not-allowed opacity-50' : ''
                 }`}
               >
-                <option value="">Select Service</option>
-                {contactForm.services.map((service) => (
+                <option value="">
+                  {servicesLoading ? 'Loading services...' : 'Select Service'}
+                </option>
+                {services.map((service) => (
                   <option
-                    key={service}
-                    value={service.toUpperCase().replace(/ /g, "_")}
+                    key={service.id}
+                    value={service.id}
                   >
-                    {service}
+                    {service.name}
                   </option>
                 ))}
+                {/* Fallback services from contactForm if API fails */}
+                {services.length === 0 && !servicesLoading && !servicesError && (
+                  <>
+                    {contactForm.services.map((service) => (
+                      <option
+                        key={service}
+                        value={service.toUpperCase().replace(/ /g, "_")}
+                      >
+                        {service}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
 
               {/* Custom dropdown arrow */}
@@ -416,9 +494,9 @@ export default function ContactForm() {
                 ▼
               </div>
 
-              {getFieldError("service") && (
+              {getFieldError("serviceId") && (
                 <p className="mt-1 text-xs text-red-500">
-                  {getFieldError("service")}
+                  {getFieldError("serviceId")}
                 </p>
               )}
             </div>
@@ -445,7 +523,7 @@ export default function ContactForm() {
 
             <button
               type="submit"
-              disabled={loading || !isFormValid()}
+              disabled={loading || !isFormValid() || servicesLoading}
               className="form-submit group inline-flex items-center justify-center gap-3 rounded-full bg-black px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
@@ -492,4 +570,7 @@ export default function ContactForm() {
       </div>
     </section>
   );
-}
+};
+
+// Make sure to export default
+export default ContactForm;

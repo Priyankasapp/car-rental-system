@@ -1,5 +1,7 @@
-// app/admin/messages/[id]/page.tsx
+"use client";
 
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,29 +13,199 @@ import {
   Reply,
   CheckCircle,
   Trash2,
+  Save,
+  Send,
+  X,
 } from "lucide-react";
 
-export default function MessageDetailsPage() {
-  // Replace with API data later
-  const message = {
-    id: "1",
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
-    phone: "+91 98765 43210",
-    subject: "Luxury Car Booking Inquiry",
-    status: "New",
-    createdAt: "06 Aug 2026 • 10:30 AM",
-    message: `Hello UrbanDrive Team,
+interface ServiceInfo {
+  id: string;
+  name: string;
+}
 
-I would like to rent a Mercedes S-Class from August 12 to August 15.
+interface ContactDetail {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  message: string;
+  status: "NEW" | "IN_PROGRESS" | "RESOLVED" | "SPAM" | "ARCHIVED";
+  adminNotes?: string | null;
+  createdAt: string;
+  service?: ServiceInfo | null;
+}
 
-Could you please let me know if it is available? Also, what documents are required to complete the booking?
+export default function MessageDetailsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = use(params);
+  const id = resolvedParams?.id;
+  const router = useRouter();
 
-Looking forward to your response.
+  const [message, setMessage] = useState<ContactDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-Thank you,
-Sarah Johnson`,
+  // Notes state
+  const [adminNotes, setAdminNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  // Reply Modal states
+  const [isReplyOpen, setIsReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+
+  // Fetch inquiry data from API
+  useEffect(() => {
+    async function fetchMessage() {
+      if (!id) {
+        setError("Invalid message ID");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/contacts/${id}`);
+        const data = await res.json();
+        if (res.ok && data.contact) {
+          setMessage(data.contact);
+          setAdminNotes(data.contact.adminNotes || "");
+        } else {
+          const msg = data?.error || data?.message || "Failed to load message details";
+          setError(msg);
+        }
+      } catch (err) {
+        console.error("Failed to load message:", err);
+        setError("Failed to load message details");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMessage();
+  }, [id]);
+
+  // Update Status Handler
+  const handleUpdateStatus = async (newStatus: ContactDetail["status"]) => {
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/admin/contacts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setMessage(data.contact);
+      }
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
   };
+
+  // Save Internal Notes Handler
+  const handleSaveNotes = async () => {
+    if (!id) return;
+    setSavingNotes(true);
+    try {
+      const res = await fetch(`/api/admin/contacts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminNotes }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setMessage(data.contact);
+      }
+    } catch (err) {
+      console.error("Failed to save notes:", err);
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  // Delete Inquiry Handler
+  const handleDelete = async () => {
+    if (!id) return;
+    if (!confirm("Are you sure you want to delete this message?")) return;
+
+    try {
+      const res = await fetch(`/api/admin/contacts/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        router.push("/admin/messages");
+      }
+    } catch (err) {
+      console.error("Failed to delete message:", err);
+    }
+  };
+
+  // Send Reply Email Handler
+  const handleSendReply = async () => {
+    if (!id || !replyText.trim() || !message) return;
+
+    setSendingReply(true);
+    try {
+      const res = await fetch(`/api/admin/contacts/${id}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: message.email,
+          firstName: message.firstName,
+          replyMessage: replyText,
+          subject: `Re: ${message.service?.name || "Rental Inquiry"} - UrbanDrive`,
+        }),
+      });
+
+      if (res.ok) {
+        setIsReplyOpen(false);
+        setReplyText("");
+        handleUpdateStatus("RESOLVED");
+        alert("Reply sent successfully!");
+      }
+    } catch (err) {
+      console.error("Failed to send reply:", err);
+      alert("Failed to send reply.");
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-500">
+        Loading message details...
+      </div>
+    );
+  }
+
+  if (!message) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 text-gray-500">
+        <p className="mb-4 text-lg">{error || "Message not found."}</p>
+        <Link href="/admin/messages" className="font-semibold text-black underline">
+          Back to Messages
+        </Link>
+      </div>
+    );
+  }
+
+  const fullName = `${message.firstName} ${message.lastName}`.trim();
+  const formattedDate = new Date(message.createdAt).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -58,8 +230,18 @@ Sarah Johnson`,
             </p>
           </div>
 
-          <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
-            {message.status}
+          <span
+            className={`rounded-full px-4 py-2 text-sm font-semibold capitalize ${
+              message.status === "RESOLVED"
+                ? "bg-blue-100 text-blue-700"
+                : message.status === "IN_PROGRESS"
+                ? "bg-amber-100 text-amber-700"
+                : message.status === "SPAM"
+                ? "bg-red-100 text-red-700"
+                : "bg-green-100 text-green-700"
+            }`}
+          >
+            {message.status.replace("_", " ").toLowerCase()}
           </span>
         </div>
 
@@ -75,7 +257,7 @@ Sarah Johnson`,
 
               <div>
                 <p className="text-sm text-gray-500">Customer</p>
-                <p className="font-semibold">{message.name}</p>
+                <p className="font-semibold text-gray-900">{fullName}</p>
               </div>
             </div>
 
@@ -86,7 +268,7 @@ Sarah Johnson`,
 
               <div>
                 <p className="text-sm text-gray-500">Email</p>
-                <p>{message.email}</p>
+                <p className="text-gray-900">{message.email}</p>
               </div>
             </div>
 
@@ -97,7 +279,7 @@ Sarah Johnson`,
 
               <div>
                 <p className="text-sm text-gray-500">Phone</p>
-                <p>{message.phone}</p>
+                <p className="text-gray-900">{message.phone || "N/A"}</p>
               </div>
             </div>
 
@@ -108,7 +290,7 @@ Sarah Johnson`,
 
               <div>
                 <p className="text-sm text-gray-500">Received</p>
-                <p>{message.createdAt}</p>
+                <p className="text-gray-900">{formattedDate}</p>
               </div>
             </div>
           </div>
@@ -118,11 +300,11 @@ Sarah Johnson`,
         <div className="mb-6 rounded-2xl border bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-gray-700" />
-            <h2 className="text-lg font-semibold">Subject</h2>
+            <h2 className="text-lg font-semibold">Subject / Service</h2>
           </div>
 
           <h3 className="text-xl font-bold text-gray-900">
-            {message.subject}
+            {message.service?.name || "General Rental Inquiry"}
           </h3>
         </div>
 
@@ -137,10 +319,22 @@ Sarah Johnson`,
 
         {/* Internal Notes */}
         <div className="mb-6 rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold">Internal Notes</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Internal Notes</h2>
+            <button
+              onClick={handleSaveNotes}
+              disabled={savingNotes}
+              className="inline-flex items-center gap-2 rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
+            >
+              <Save className="h-3.5 w-3.5" />
+              {savingNotes ? "Saving..." : "Save Notes"}
+            </button>
+          </div>
 
           <textarea
             rows={5}
+            value={adminNotes}
+            onChange={(e) => setAdminNotes(e.target.value)}
             placeholder="Add internal notes..."
             className="w-full rounded-xl border border-gray-300 p-4 outline-none transition focus:border-black"
           />
@@ -148,22 +342,100 @@ Sarah Johnson`,
 
         {/* Actions */}
         <div className="flex flex-wrap justify-end gap-3">
-          <button className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-5 py-3 font-medium hover:bg-gray-100">
-            <CheckCircle className="h-5 w-5" />
-            Mark as Read
+          <button
+            onClick={() =>
+              handleUpdateStatus(
+                message.status === "RESOLVED" ? "IN_PROGRESS" : "RESOLVED"
+              )
+            }
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-5 py-3 font-medium hover:bg-gray-100"
+          >
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            {message.status === "RESOLVED"
+              ? "Mark as Pending"
+              : "Mark as Resolved"}
           </button>
 
-          <button className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-3 font-medium text-white hover:bg-gray-800">
+          <button
+            onClick={() => setIsReplyOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-3 font-medium text-white hover:bg-gray-800"
+          >
             <Reply className="h-5 w-5" />
             Reply
           </button>
 
-          <button className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-medium text-white hover:bg-red-700">
+          <button
+            onClick={handleDelete}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-medium text-white hover:bg-red-700"
+          >
             <Trash2 className="h-5 w-5" />
             Delete
           </button>
         </div>
       </div>
+
+      {/* Reply Modal */}
+      {isReplyOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between border-b pb-3">
+              <h3 className="text-lg font-bold text-gray-900">
+                Reply to {fullName}
+              </h3>
+              <button
+                onClick={() => setIsReplyOpen(false)}
+                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-black"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500">
+                  TO
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={`${fullName} <${message.email}>`}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2 text-sm font-medium text-gray-700"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-500">
+                  REPLY MESSAGE
+                </label>
+                <textarea
+                  rows={6}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Type your response here..."
+                  className="w-full rounded-xl border border-gray-300 p-3 text-sm outline-none focus:border-black"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t pt-4">
+              <button
+                onClick={() => setIsReplyOpen(false)}
+                className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendReply}
+                disabled={sendingReply || !replyText.trim()}
+                className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+                {sendingReply ? "Sending..." : "Send Email"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

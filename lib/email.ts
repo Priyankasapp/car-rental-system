@@ -22,6 +22,14 @@ import {
   generateContactUserText,
   ContactAdminEmailProps,
 } from '@/email/ContactEmail'
+import {
+  generateInquiryHTML,
+  generateInquiryText,
+  generateReplyHTML,
+  generateReplyText,
+  InquiryEmailProps,
+  ReplyEmailProps,
+} from '@/email/inquiryTemplate'
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -101,6 +109,31 @@ export async function sendPasswordResetEmail({
     subject: 'Reset Your UrbanDrive Password',
     html: generatePasswordResetHTML(props),
     text: generatePasswordResetText(props),
+  })
+}
+
+export async function sendInquiryEmail({
+  to,
+  ...props
+}: InquiryEmailProps & { to: string }) {
+  return sendEmail({
+    to,
+    subject: "We've Received Your Inquiry – UrbanDrive",
+    html: generateInquiryHTML(props),
+    text: generateInquiryText(props),
+  })
+}
+
+export async function sendInquiryReplyEmail({
+  to,
+  subject,
+  ...props
+}: ReplyEmailProps & { to: string; subject?: string }) {
+  return sendEmail({
+    to,
+    subject: subject || `Re: ${props.serviceName || 'Your Inquiry'} - UrbanDrive`,
+    html: generateReplyHTML(props),
+    text: generateReplyText(props),
   })
 }
 

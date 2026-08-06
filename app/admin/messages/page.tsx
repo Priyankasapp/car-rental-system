@@ -1,40 +1,62 @@
-import { MessageSquare, Clock } from "lucide-react";
+"use client";
 
-export default function MessageCard() {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-            <MessageSquare className="h-6 w-6 text-gray-700" />
-          </div>
+import { useEffect, useState } from "react";
+import MessageCard, { ContactItem } from "@/components/admin/MessageCard";
+import { useRouter } from "next/navigation";
 
-          <div>
-            <h3 className="font-semibold text-gray-900">
-              Sarah Johnson
-            </h3>
+export default function AdminMessagesPage() {
+  const router = useRouter();
+  const [contacts, setContacts] = useState<ContactItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-            <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-              Hi, I would like to know if the Mercedes S-Class is
-              available for next weekend. Please let me know the pricing.
-            </p>
-          </div>
-        </div>
+  useEffect(() => {
+    async function fetchContacts() {
+      try {
+        const response = await fetch("/api/admin/contacts");
+        const data = await response.json();
+        if (response.ok) {
+          setContacts(data.contacts);
+        }
+      } catch (error) {
+        console.error("Failed to load messages:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-        <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-          New
-        </span>
+    fetchContacts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        Loading messages...
       </div>
+    );
+  }
 
-      <div className="mt-5 flex items-center justify-between border-t pt-4">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Clock className="h-4 w-4" />
-          5 minutes ago
-        </div>
+  if (contacts.length === 0) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        No inquiries found.
+      </div>
+    );
+  }
 
-        <button className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800">
-          View Message
-        </button>
+  return (
+    <div className="p-6 space-y-4 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Customer Inquiries
+      </h1>
+
+      <div className="grid gap-4">
+        {contacts.map((contact) => (
+          <MessageCard
+            key={contact.id}
+            contact={contact}
+            onViewClick={(id) => router.push(`/admin/messages/${id}`)}
+          />
+        ))}
       </div>
     </div>
   );
