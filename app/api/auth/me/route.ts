@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
+import { normalizePermissions } from '@/lib/permissions'
 
 export async function GET() {
   try {
@@ -77,13 +78,15 @@ export async function GET() {
       new Set([...(Array.isArray(user?.permissions) ? user.permissions : []), ...staffMasterPermissions])
     );
 
+    const normalized = normalizePermissions(effectivePermissions)
+
     return NextResponse.json(
       {
         success: true,
         data: {
           user: {
             ...user,
-            permissions: effectivePermissions,
+            permissions: normalized,
           },
         },
       },

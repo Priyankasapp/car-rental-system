@@ -113,8 +113,8 @@ export default function StaffPage() {
     try {
       setError(null)
       const [staffRes, rolesRes] = await Promise.all([
-        fetch('/api/admin/staff', { headers: { 'x-user-role': 'SUPERADMIN' } }),
-        fetch('/api/admin/staff-master', { headers: { 'x-user-role': 'SUPERADMIN' } }),
+        fetch('/api/admin/staff', { credentials: 'include' }),
+        fetch('/api/admin/staff-master', { credentials: 'include' }),
       ])
 
       const staffData = await staffRes.json()
@@ -179,9 +179,9 @@ export default function StaffPage() {
 
       const res = await fetch('/api/admin/staff', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-role': 'SUPERADMIN',
         },
         body: JSON.stringify(body),
       })

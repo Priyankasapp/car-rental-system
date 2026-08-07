@@ -1,45 +1,65 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // hooks/usePermissions.ts
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { UserSession } from "@/types/auth";
 
-//  Permission helper function
-function checkPermission(user: any, permission: string): boolean {
+// Internal permission checker
+function checkPermission(
+  user: UserSession | null,
+  permission: string
+): boolean {
   if (!user) return false;
-  
-  // SuperAdmin bypass
+
   const role = user.role?.toUpperCase();
-  if (role === "SUPERADMIN" || role === "SUPER_ADMIN") {
+
+  // SuperAdmin & Admin → full access
+  if (["SUPERADMIN", "SUPER_ADMIN", "ADMIN"].includes(role)) {
     return true;
   }
-  
-  // Check permissions array
-  const permissions = user.permissions || [];
-  return permissions.includes(permission);
+
+  // STAFF → check permissions array
+  if (role !== "STAFF") return false;
+
+  const userPermissions = user.permissions ?? [];
+  if (userPermissions.length === 0) return false;
+
+  const domain = permission.split(":")[0];
+  const wildcard = `${domain}:*`;
+
+  return (
+    userPermissions.includes("*") ||
+    userPermissions.includes(wildcard) ||
+    userPermissions.includes(permission)
+  );
 }
 
-//  Main Hook
-export function usePagePermission(requiredPermission: string, redirectTo: string = "/admin") {
+
+// usePagePermission
+
+export function usePagePermission(
+  requiredPermission: string,
+  redirectTo: string = "/admin"
+) {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [hasAccess, setHasAccess] = useState<boolean>(false);
 
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
         const data = await res.json();
-        
-        if (data.success) {
-          setUser(data.data.user);
-          
-          // Check permission
-          const canAccess = checkPermission(data.data.user, requiredPermission);
+
+        if (data.success && data.data?.user) {
+          const currentUser: UserSession = data.data.user;
+          setUser(currentUser);
+
+          const canAccess = checkPermission(currentUser, requiredPermission);
           setHasAccess(canAccess);
-          
+
           if (!canAccess) {
             router.push(redirectTo);
           }
@@ -53,9 +73,13 @@ export function usePagePermission(requiredPermission: string, redirectTo: string
         setLoading(false);
       }
     }
-    
+
     loadUser();
   }, [requiredPermission, redirectTo, router]);
 
-  return { user, loading, hasAccess };
+  //  Expose checkPermission bound to current user
+  const hasPermission = (permission: string): boolean =>
+    checkPermission(user, permission);
+
+  return { user, loading, hasAccess, hasPermission };
 }

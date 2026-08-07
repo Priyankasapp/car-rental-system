@@ -2,17 +2,15 @@
 // app/api/admin/staff/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { authorizeUser } from '@/lib/auth-guard'
+import { PERMISSIONS } from '@/lib/permissions'
 
 // GET — List all staff members
 export async function GET(request: NextRequest) {
   try {
-    const requestingRole = request.headers.get('x-user-role')
-
-    if (requestingRole !== 'SUPERADMIN' && requestingRole !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, message: 'Access denied' },
-        { status: 403 }
-      )
+    const authResult = await authorizeUser(request, PERMISSIONS.STAFF_VIEW);
+    if (!authResult.isAuth) {
+      return authResult.response;
     }
 
     const staffMembers = await prisma.user.findMany({
@@ -41,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: { staffMembers } })
   } catch (error: any) {
-    // 💡 Print exact server error in terminal for debugging
+    //  Print exact server error in terminal for debugging
     console.error('Get staff members error details:', error)
     return NextResponse.json(
       { success: false, message: error?.message || 'Failed to fetch staff members' },
@@ -53,13 +51,9 @@ export async function GET(request: NextRequest) {
 // POST — Create a new staff member
 export async function POST(request: NextRequest) {
   try {
-    const requestingRole = request.headers.get('x-user-role')
-
-    if (requestingRole !== 'SUPERADMIN' && requestingRole !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, message: 'Access denied' },
-        { status: 403 }
-      )
+    const authResult = await authorizeUser(request, PERMISSIONS.STAFF_CREATE)
+    if (!authResult.isAuth) {
+      return authResult.response
     }
 
     const body = await request.json()

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyToken, signAccessToken } from "@/lib/auth/jwt";
+import { normalizePermissions } from '@/lib/permissions'
 
 export async function POST() {
   try {
@@ -77,12 +78,14 @@ export async function POST() {
       new Set([...(Array.isArray(user.permissions) ? user.permissions : []), ...staffMasterPermissions])
     );
 
+    const normalizedPermissions = normalizePermissions(effectivePermissions)
+
     // 4. Generate New Access Token
     const newAccessToken = await signAccessToken({
       userId: user.id,
       email: user.email,
       role: user.role,
-      permissions: effectivePermissions,
+      permissions: normalizedPermissions,
       sessionId: session.id,
       tokenVersion: user.tokenVersion,
       sub: undefined,

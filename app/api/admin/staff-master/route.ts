@@ -2,19 +2,16 @@
 // app/api/admin/staff-master/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
 import { StaffType } from '@prisma/client'
 
 // GET — list all active staff master roles
 export async function GET(request: NextRequest) {
   try {
-    const requestingRole = request.headers.get('x-user-role')
-
-    if (requestingRole !== 'SUPERADMIN' && requestingRole !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, message: 'Access denied' },
-        { status: 403 }
-      )
+    const authResult = await authorizeUser(request, PERMISSIONS.STAFF_MASTER_VIEW)
+    if (!authResult.isAuth) {
+      return authResult.response
     }
 
     const staffMasters = await prisma.staffMaster.findMany({
@@ -38,13 +35,9 @@ export async function GET(request: NextRequest) {
 // POST — create a new staff master role
 export async function POST(request: NextRequest) {
   try {
-    const requestingRole = request.headers.get('x-user-role')
-
-    if (requestingRole !== 'SUPERADMIN' && requestingRole !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, message: 'Access denied' },
-        { status: 403 }
-      )
+    const authResult = await authorizeUser(request, PERMISSIONS.STAFF_MASTER_CREATE)
+    if (!authResult.isAuth) {
+      return authResult.response
     }
 
     const body = await request.json()

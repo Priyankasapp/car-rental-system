@@ -18,7 +18,12 @@ import {
   X,
   Check,
 } from "lucide-react";
+import { usePagePermission } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
 
+// ─────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────
 interface ServiceInfo {
   id: string;
   name: string;
@@ -37,6 +42,32 @@ interface ContactDetail {
   service?: ServiceInfo | null;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Status Badge
+// ─────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: ContactDetail["status"] }) {
+  const map: Record<ContactDetail["status"], string> = {
+    RESOLVED: "bg-blue-100 text-blue-700",
+    IN_PROGRESS: "bg-amber-100 text-amber-700",
+    SPAM: "bg-red-100 text-red-700",
+    NEW: "bg-green-100 text-green-700",
+    ARCHIVED: "bg-gray-100 text-gray-700",
+  };
+
+  return (
+    <span
+      className={`rounded-full px-4 py-2 text-sm font-semibold capitalize ${
+        map[status] ?? map.NEW
+      }`}
+    >
+      {status.replace("_", " ").toLowerCase()}
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Page
+// ─────────────────────────────────────────────────────────────
 export default function MessageDetailsPage({
   params,
 }: {
@@ -46,22 +77,32 @@ export default function MessageDetailsPage({
   const id = resolvedParams?.id;
   const router = useRouter();
 
+  // ── Permissions ──────────────────────────────────────────
+  const { loading: authLoading, hasAccess, hasPermission } =
+    usePagePermission(PERMISSIONS.MESSAGES_VIEW, "/admin");
+
+  const canReply = hasPermission(PERMISSIONS.MESSAGES_REPLY);
+  const canDelete = hasPermission(PERMISSIONS.MESSAGES_DELETE);
+  const canUpdateStatus = hasPermission(PERMISSIONS.MESSAGES_EDIT);
+  const canSaveNotes = hasPermission(PERMISSIONS.MESSAGES_EDIT);
+
+  // ── State ────────────────────────────────────────────────
   const [message, setMessage] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Notes state
   const [adminNotes, setAdminNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSavedSuccess, setNotesSavedSuccess] = useState(false);
 
-  // Reply Modal states
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
 
-  // Fetch inquiry data from API
+  // ── Fetch message ────────────────────────────────────────
   useEffect(() => {
+    if (authLoading || !hasAccess) return;
+
     async function fetchMessage() {
       if (!id) {
         setError("Invalid message ID");
@@ -72,11 +113,14 @@ export default function MessageDetailsPage({
       try {
         const res = await fetch(`/api/admin/contacts/${id}`);
         const data = await res.json();
+
         if (res.ok && data.contact) {
           setMessage(data.contact);
-          setAdminNotes(data.contact.adminNotes || "");
+          setAdminNotes(data.contact.adminNotes ?? "");
         } else {
-          setError(data?.error || data?.message || "Failed to load message details");
+          setError(
+            data?.error ?? data?.message ?? "Failed to load message details"
+          );
         }
       } catch (err) {
         console.error("Failed to load message:", err);
@@ -87,11 +131,12 @@ export default function MessageDetailsPage({
     }
 
     fetchMessage();
-  }, [id]);
+  }, [id, authLoading, hasAccess]);
 
-  // Update Status Handler
+  // ── Update status ────────────────────────────────────────
   const handleUpdateStatus = async (newStatus: ContactDetail["status"]) => {
-    if (!id) return;
+    if (!id || !canUpdateStatus) return;
+
     try {
       const res = await fetch(`/api/admin/contacts/${id}`, {
         method: "PATCH",
@@ -111,9 +156,10 @@ export default function MessageDetailsPage({
     }
   };
 
-  // Save Internal Notes Handler
+  // ── Save notes ───────────────────────────────────────────
   const handleSaveNotes = async () => {
-    if (!id) return;
+    if (!id || !canSaveNotes) return;
+
     setSavingNotes(true);
     setNotesSavedSuccess(false);
 
@@ -140,9 +186,9 @@ export default function MessageDetailsPage({
     }
   };
 
-  // Delete Inquiry Handler
+  // ── Delete ───────────────────────────────────────────────
   const handleDelete = async () => {
-    if (!id) return;
+    if (!id || !canDelete) return;
     if (!confirm("Are you sure you want to delete this message?")) return;
 
     try {
@@ -161,11 +207,12 @@ export default function MessageDetailsPage({
     }
   };
 
-  // Send Reply Email Handler
+  // ── Send reply ───────────────────────────────────────────
   const handleSendReply = async () => {
-    if (!id || !replyText.trim() || !message) return;
+    if (!id || !replyText.trim() || !message || !canReply) return;
 
     setSendingReply(true);
+
     try {
       const res = await fetch(`/api/admin/contacts/${id}/reply`, {
         method: "POST",
@@ -174,7 +221,7 @@ export default function MessageDetailsPage({
           to: message.email,
           firstName: message.firstName,
           replyMessage: replyText,
-          subject: `Re: ${message.service?.name || "Rental Inquiry"} - UrbanDrive`,
+          subject: `Re: ${message.service?.name ?? "Rental Inquiry"} - UrbanDrive`,
         }),
       });
 
@@ -185,7 +232,7 @@ export default function MessageDetailsPage({
         alert("Reply sent successfully!");
       } else {
         const data = await res.json();
-        alert(data?.error || "Failed to send reply.");
+        alert(data?.error ?? "Failed to send reply.");
       }
     } catch (err) {
       console.error("Failed to send reply:", err);
@@ -195,9 +242,31 @@ export default function MessageDetailsPage({
     }
   };
 
+  // ── Guards ───────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-gray-500">
+        Loading permissions...
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center text-gray-500">
+        <p className="mb-4 text-lg">
+          You do not have permission to view messages.
+        </p>
+        <Link href="/admin" className="font-semibold text-black underline">
+          Back to Dashboard
+        </Link>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-500">
+      <div className="flex min-h-screen items-center justify-center text-gray-500">
         Loading message details...
       </div>
     );
@@ -205,9 +274,12 @@ export default function MessageDetailsPage({
 
   if (!message) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 text-gray-500">
-        <p className="mb-4 text-lg">{error || "Message not found."}</p>
-        <Link href="/admin/messages" className="font-semibold text-black underline">
+      <div className="flex min-h-screen flex-col items-center justify-center text-gray-500">
+        <p className="mb-4 text-lg">{error ?? "Message not found."}</p>
+        <Link
+          href="/admin/messages"
+          className="font-semibold text-black underline"
+        >
           Back to Messages
         </Link>
       </div>
@@ -224,9 +296,11 @@ export default function MessageDetailsPage({
     hour12: true,
   });
 
+  // ── Render ───────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-5xl">
+
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -237,79 +311,51 @@ export default function MessageDetailsPage({
               <ArrowLeft className="h-4 w-4" />
               Back to Messages
             </Link>
-
             <h1 className="text-3xl font-bold text-gray-900">
               Message Details
             </h1>
-
             <p className="mt-1 text-sm text-gray-500">
               View customer inquiry and respond.
             </p>
           </div>
 
-          <span
-            className={`rounded-full px-4 py-2 text-sm font-semibold capitalize ${
-              message.status === "RESOLVED"
-                ? "bg-blue-100 text-blue-700"
-                : message.status === "IN_PROGRESS"
-                ? "bg-amber-100 text-amber-700"
-                : message.status === "SPAM"
-                ? "bg-red-100 text-red-700"
-                : "bg-green-100 text-green-700"
-            }`}
-          >
-            {message.status.replace("_", " ").toLowerCase()}
-          </span>
+          <StatusBadge status={message.status} />
         </div>
 
         {/* Customer Info */}
         <div className="mb-6 rounded-2xl border bg-white p-6 shadow-sm">
           <h2 className="mb-5 text-lg font-semibold">Customer Information</h2>
-
           <div className="grid gap-5 md:grid-cols-2">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-gray-100 p-3">
-                <User className="h-5 w-5 text-gray-700" />
+            {[
+              {
+                icon: <User className="h-5 w-5 text-gray-700" />,
+                label: "Customer",
+                value: fullName,
+              },
+              {
+                icon: <Mail className="h-5 w-5 text-gray-700" />,
+                label: "Email",
+                value: message.email,
+              },
+              {
+                icon: <Phone className="h-5 w-5 text-gray-700" />,
+                label: "Phone",
+                value: message.phone ?? "N/A",
+              },
+              {
+                icon: <Calendar className="h-5 w-5 text-gray-700" />,
+                label: "Received",
+                value: formattedDate,
+              },
+            ].map(({ icon, label, value }) => (
+              <div key={label} className="flex items-center gap-3">
+                <div className="rounded-full bg-gray-100 p-3">{icon}</div>
+                <div>
+                  <p className="text-sm text-gray-500">{label}</p>
+                  <p className="font-semibold text-gray-900">{value}</p>
+                </div>
               </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Customer</p>
-                <p className="font-semibold text-gray-900">{fullName}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-gray-100 p-3">
-                <Mail className="h-5 w-5 text-gray-700" />
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="text-gray-900">{message.email}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-gray-100 p-3">
-                <Phone className="h-5 w-5 text-gray-700" />
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="text-gray-900">{message.phone || "N/A"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-gray-100 p-3">
-                <Calendar className="h-5 w-5 text-gray-700" />
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Received</p>
-                <p className="text-gray-900">{formattedDate}</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
@@ -319,89 +365,97 @@ export default function MessageDetailsPage({
             <MessageSquare className="h-5 w-5 text-gray-700" />
             <h2 className="text-lg font-semibold">Subject / Service</h2>
           </div>
-
           <h3 className="text-xl font-bold text-gray-900">
-            {message.service?.name || "General Rental Inquiry"}
+            {message.service?.name ?? "General Rental Inquiry"}
           </h3>
         </div>
 
         {/* Message */}
         <div className="mb-6 rounded-2xl border bg-white p-6 shadow-sm">
           <h2 className="mb-5 text-lg font-semibold">Message</h2>
-
           <div className="whitespace-pre-line rounded-xl bg-gray-50 p-5 leading-7 text-gray-700">
             {message.message}
           </div>
         </div>
 
-        {/* Internal Notes */}
-        <div className="mb-6 rounded-2xl border bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Internal Notes</h2>
-            <button
-              onClick={handleSaveNotes}
-              disabled={savingNotes}
-              className="inline-flex items-center gap-2 rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
-            >
-              {notesSavedSuccess ? (
-                <>
-                  <Check className="h-3.5 w-3.5 text-green-400" />
-                  Saved!
-                </>
-              ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  {savingNotes ? "Saving..." : "Save Notes"}
-                </>
-              )}
-            </button>
+        {/* Internal Notes — only visible if canSaveNotes */}
+        {canSaveNotes && (
+          <div className="mb-6 rounded-2xl border bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Internal Notes</h2>
+              <button
+                onClick={handleSaveNotes}
+                disabled={savingNotes}
+                className="inline-flex items-center gap-2 rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
+              >
+                {notesSavedSuccess ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-green-400" />
+                    Saved!
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-3.5 w-3.5" />
+                    {savingNotes ? "Saving..." : "Save Notes"}
+                  </>
+                )}
+              </button>
+            </div>
+            <textarea
+              rows={5}
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              placeholder="Add internal notes..."
+              className="w-full rounded-xl border border-gray-300 p-4 outline-none transition focus:border-black"
+            />
           </div>
-
-          <textarea
-            rows={5}
-            value={adminNotes}
-            onChange={(e) => setAdminNotes(e.target.value)}
-            placeholder="Add internal notes..."
-            className="w-full rounded-xl border border-gray-300 p-4 outline-none transition focus:border-black"
-          />
-        </div>
+        )}
 
         {/* Actions */}
         <div className="flex flex-wrap justify-end gap-3">
-          <button
-            onClick={() =>
-              handleUpdateStatus(
-                message.status === "RESOLVED" ? "IN_PROGRESS" : "RESOLVED"
-              )
-            }
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-5 py-3 font-medium hover:bg-gray-100"
-          >
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            {message.status === "RESOLVED"
-              ? "Mark as Pending"
-              : "Mark as Resolved"}
-          </button>
+          {/* Mark Resolved — needs edit permission */}
+          {canUpdateStatus && (
+            <button
+              onClick={() =>
+                handleUpdateStatus(
+                  message.status === "RESOLVED" ? "IN_PROGRESS" : "RESOLVED"
+                )
+              }
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-5 py-3 font-medium hover:bg-gray-100"
+            >
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              {message.status === "RESOLVED"
+                ? "Mark as Pending"
+                : "Mark as Resolved"}
+            </button>
+          )}
 
-          <button
-            onClick={() => setIsReplyOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-3 font-medium text-white hover:bg-gray-800"
-          >
-            <Reply className="h-5 w-5" />
-            Reply
-          </button>
+          {/* Reply — needs reply permission */}
+          {canReply && (
+            <button
+              onClick={() => setIsReplyOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-3 font-medium text-white hover:bg-gray-800"
+            >
+              <Reply className="h-5 w-5" />
+              Reply
+            </button>
+          )}
 
-          <button
-            onClick={handleDelete}
-            className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-medium text-white hover:bg-red-700"
-          >
-            <Trash2 className="h-5 w-5" />
-            Delete
-          </button>
+          {/* Delete — needs delete permission */}
+          {canDelete && (
+            <button
+              onClick={handleDelete}
+              className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-medium text-white hover:bg-red-700"
+            >
+              <Trash2 className="h-5 w-5" />
+              Delete
+            </button>
+          )}
         </div>
       </div>
 
       {/* Reply Modal */}
-      {isReplyOpen && (
+      {isReplyOpen && canReply && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between border-b pb-3">

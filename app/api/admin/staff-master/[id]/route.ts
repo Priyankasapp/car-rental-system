@@ -2,6 +2,7 @@
 // app/api/admin/staff-master/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
 import { StaffType } from '@prisma/client'
 
@@ -12,13 +13,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const requestingRole = request.headers.get('x-user-role')
-
-    if (requestingRole !== 'SUPERADMIN' && requestingRole !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, message: 'Access denied' },
-        { status: 403 }
-      )
+    const authResult = await authorizeUser(request, PERMISSIONS.STAFF_MASTER_VIEW)
+    if (!authResult.isAuth) {
+      return authResult.response
     }
 
     const staffMaster = await prisma.staffMaster.findFirst({
@@ -62,13 +59,9 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const requestingRole = request.headers.get('x-user-role')
-
-    if (requestingRole !== 'SUPERADMIN' && requestingRole !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, message: 'Access denied' },
-        { status: 403 }
-      )
+    const authResult = await authorizeUser(request, PERMISSIONS.STAFF_MASTER_EDIT)
+    if (!authResult.isAuth) {
+      return authResult.response
     }
 
     const body = await request.json()
@@ -154,13 +147,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const requestingRole = request.headers.get('x-user-role')
-
-    if (requestingRole !== 'SUPERADMIN') {
-      return NextResponse.json(
-        { success: false, message: 'Superadmin access required' },
-        { status: 403 }
-      )
+    const authResult = await authorizeUser(request, PERMISSIONS.STAFF_MASTER_DELETE)
+    if (!authResult.isAuth) {
+      return authResult.response
     }
 
     // Check if any active staff members are assigned to this role

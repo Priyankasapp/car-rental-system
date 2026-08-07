@@ -1,5 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// types/auth.ts
 import { Role, StaffType } from "@prisma/client";
+
+
+// User Session — used in client-side hooks & context
 
 export interface UserSession {
   id: string;
@@ -14,8 +17,11 @@ export interface UserSession {
   permissions: string[];
 }
 
+
+// JWT Payload — decoded token shape
+
 export interface JWTPayload {
-  sub?: any;
+  sub?: string;        
   userId: string;
   email: string;
   role: Role;
@@ -26,9 +32,18 @@ export interface JWTPayload {
   exp?: number;
 }
 
+
+// API Response wrapper
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
   error?: string;
 }
+
+
+// Convenience re-exports for common response shapes
+
+export type AuthMeResponse = ApiResponse<{ user: UserSession }>;
+export type EmptyResponse = ApiResponse<never>;

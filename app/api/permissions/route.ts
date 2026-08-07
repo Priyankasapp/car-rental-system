@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizeUser } from '@/lib/auth-guard';
-import { PERMISSION_GROUPS, PERMISSIONS, validatePermissions } from '@/lib/permissions';
+import { PERMISSION_GROUPS, PERMISSIONS, normalizePermissions, validatePermissions } from '@/lib/permissions';
 
 
 export async function GET(request: NextRequest) {
@@ -110,8 +110,11 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Normalize legacy underscore permission keys to the current colon format
+    const normalizedPermissions = normalizePermissions(permissions);
+
     // Validate permissions
-    const validation = validatePermissions(permissions);
+    const validation = validatePermissions(normalizedPermissions);
 
     if (!validation.valid) {
       return NextResponse.json(
@@ -162,7 +165,7 @@ export async function PATCH(request: NextRequest) {
       // Update user permissions
       const updatedUser = await prisma.user.update({
         where: { id: targetId },
-        data: { permissions },
+        data: { permissions: normalizedPermissions },
         select: {
           id: true,
           email: true,
@@ -215,7 +218,7 @@ export async function PATCH(request: NextRequest) {
 
       const updatedStaff = await prisma.staffMaster.update({
         where: { id: targetId },
-        data: { defaultPermissions: permissions },
+        data: { defaultPermissions: normalizedPermissions },
         select: {
           id: true,
           staffType: true,

@@ -1,143 +1,170 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/auth/login/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { LoginSchema } from "@/lib/auth/validation";
 import { comparePassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
+import { withErrorHandler } from "@/lib/api-handler";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const validation = LoginSchema.safeParse(body);
 
-    if (!validation.success) {
-      return NextResponse.json(
-        { success: false, message: validation.error.issues[0].message },
-        { status: 400 }
-      );
-    }
 
-    const { email, password } = validation.data;
+function resolvePermissions(
+  userPermissions: string[],
+  staffMasterPermissions: string[]
+): string[] {
+  // Merge both — deduplicate
+  const merged = Array.from(
+    new Set([...userPermissions, ...staffMasterPermissions])
+  );
 
-    // 1. Find user in DB
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        password: true,
-        role: true,
-        permissions: true,
-        tokenVersion: true,
-        isActive: true,
-        isEmailVerified: true,
-        mustChangePassword: true,
-        staffMaster: {
-          select: {
-            defaultPermissions: true,
-          },
+  // Filter out empty strings
+  return merged.filter((p) => typeof p === "string" && p.trim().length > 0);
+}
+
+
+// POST /api/auth/login
+async function handlePOST(request: NextRequest): Promise<NextResponse> {
+  const body = await request.json();
+
+  // ── Validate input ───────────────────────────────────────
+  const validation = LoginSchema.safeParse(body);
+
+  if (!validation.success) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: validation.error.issues[0].message,
+      },
+      { status: 400 }
+    );
+  }
+
+  const { email, password } = validation.data;
+
+  // ── Find user 
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      password: true,
+      role: true,
+      permissions: true,       // string[] — no cast needed
+      tokenVersion: true,
+      isActive: true,
+      isEmailVerified: true,
+      mustChangePassword: true,
+      staffMaster: {
+        select: {
+          defaultPermissions: true, // string[] — no cast needed
         },
       },
-    });
+    },
+  });
 
-    if (!user || !user.password) {
-      return NextResponse.json(
-        { success: false, message: "Invalid email or password." },
-        { status: 401 }
-      );
-    }
-
-    // 2. Check if account is active
-    if (!user.isActive) {
-      return NextResponse.json(
-        { success: false, message: "Your account has been deactivated or suspended. Please contact support." },
-        { status: 403 }
-      );
-    }
-
-    // 3. Verify password
-    const isPasswordValid = await comparePassword(password, user.password);
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { success: false, message: "Invalid email or password." },
-        { status: 401 }
-      );
-    }
-
-    // 4. Check email verification
-    if (!user.isEmailVerified) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Please verify your email address before logging in.",
-          requiresVerification: true,
-        },
-        { status: 403 }
-      );
-    }
-
-    // Extract headers for session audit
-    const ipAddress = req.headers.get("x-forwarded-for") || undefined;
-    const userAgent = req.headers.get("user-agent") || undefined;
-
-    // Extract user permissions safely
-    const userPermissions = Array.isArray((user as any).permissions)
-      ? (user as any).permissions
-      : [];
-
-    // Merge inherited staff master permissions when available
-    const staffMasterPermissions = Array.isArray((user as any).staffMaster?.defaultPermissions)
-      ? (user as any).staffMaster.defaultPermissions
-      : [];
-
-    const effectivePermissions = Array.from(
-      new Set([...(userPermissions || []), ...(staffMasterPermissions || [])])
+  // ── Guards 
+  if (!user || !user.password) {
+    return NextResponse.json(
+      { success: false, message: "Invalid email or password." },
+      { status: 401 }
     );
+  }
 
-    console.log('🔐 ===== LOGIN DEBUG =====')
-    console.log('📧 Email:', email)
-    console.log('👤 User Role:', user.role)
-    console.log('📋 User Permissions (DB):', user.permissions)
-    console.log('📋 StaffMaster Permissions:', staffMasterPermissions)
-    console.log('📋 Effective Permissions:', effectivePermissions)
-    console.log('========================')
-    // 5. Create Session & Tokens (PASSING PERMISSIONS HERE)
-    const { accessToken, refreshToken } = await createSession({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      permissions: effectivePermissions,
-      tokenVersion: user.tokenVersion,
-      ipAddress,
-      userAgent,
-    });
+  if (!user.isActive) {
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          "Your account has been deactivated. Please contact support.",
+      },
+      { status: 403 }
+    );
+  }
 
-      console.log('✅ Session Created!')
-    console.log('📦 Access Token (first 50 chars):', accessToken.substring(0, 50) + '...')
-    // 6. Set HTTP-Only Cookies
-    const cookieStore = await cookies();
+  const isPasswordValid = await comparePassword(password, user.password);
 
-    cookieStore.set("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60, // 1 day
-      path: "/",
-    });
+  if (!isPasswordValid) {
+    return NextResponse.json(
+      { success: false, message: "Invalid email or password." },
+      { status: 401 }
+    );
+  }
 
-    cookieStore.set("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: "/",
-    });
+  if (!user.isEmailVerified) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Please verify your email address before logging in.",
+        requiresVerification: true,
+      },
+      { status: 403 }
+    );
+  }
 
-    return NextResponse.json({
+  // ── Resolve permissions 
+  const userPermissions = user.permissions ?? [];
+  const staffMasterPermissions = user.staffMaster?.defaultPermissions ?? [];
+
+  const effectivePermissions = resolvePermissions(
+    userPermissions,
+    staffMasterPermissions
+  );
+
+  // ── Debug log (remove in production) 
+  if (process.env.NODE_ENV === "development") {
+    console.log("🔐 ===== LOGIN DEBUG =====");
+    console.log("📧 Email:", email);
+    console.log("👤 Role:", user.role);
+    console.log("📋 User Permissions (DB):", userPermissions);
+    console.log("📋 StaffMaster Permissions:", staffMasterPermissions);
+    console.log("📋 Effective Permissions:", effectivePermissions);
+    console.log("=========================");
+  }
+
+  // ── Create session & tokens 
+  const ipAddress = request.headers.get("x-forwarded-for") ?? undefined;
+  const userAgent = request.headers.get("user-agent") ?? undefined;
+
+  const { accessToken, refreshToken } = await createSession({
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    permissions: effectivePermissions, 
+    tokenVersion: user.tokenVersion,
+    ipAddress,
+    userAgent,
+  });
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(" Session created");
+    console.log(" Permissions in JWT:", effectivePermissions);
+  }
+
+  // ── Set cookies 
+  const cookieStore = await cookies();
+
+  cookieStore.set("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24, // 1 day
+    path: "/",
+  });
+
+  cookieStore.set("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: "/",
+  });
+
+  // ── Response 
+  return NextResponse.json(
+    {
       success: true,
       message: "Login successful.",
       data: {
@@ -151,12 +178,9 @@ export async function POST(req: Request) {
           mustChangePassword: user.mustChangePassword,
         },
       },
-    });
-  } catch (error) {
-    console.error("Login Error:", error);
-    return NextResponse.json(
-      { success: false, message: "Login failed. Please try again." },
-      { status: 500 }
-    );
-  }
+    },
+    { status: 200 }
+  );
 }
+
+export const POST = withErrorHandler(handlePOST);

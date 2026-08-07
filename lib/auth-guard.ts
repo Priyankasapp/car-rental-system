@@ -1,8 +1,7 @@
-// lib/auth-guard.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, JWTPayload } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { hasPermission, PermissionKey } from '@/lib/permissions'
+import { hasPermission, normalizePermissions, PermissionKey } from '@/lib/permissions'
 
 export interface AuthSuccessResult {
   isAuth: true
@@ -88,8 +87,11 @@ export async function authorizeUser(
     }
 
     const inheritedStaffPermissions = user.staffMaster?.defaultPermissions || []
+    const rawPermissions = [...(user.permissions || []), ...inheritedStaffPermissions]
+    
+    // Normalize and deduplicate all permissions
     const combinedPermissions = Array.from(
-      new Set([...(user.permissions || []), ...inheritedStaffPermissions])
+      new Set(normalizePermissions(rawPermissions))
     )
 
     if (requiredPermission) {

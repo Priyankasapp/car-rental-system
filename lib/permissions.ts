@@ -1,5 +1,3 @@
-// constants/permissions.ts
-
 import { Role } from "@prisma/client";
 
 export const PERMISSIONS = {
@@ -13,10 +11,11 @@ export const PERMISSIONS = {
   CARS_DELETE: "cars:delete",
 
   // MESSAGES 
-  MESSAGES_VIEW: 'messages_view',
-  MESSAGES_REPLY: 'messages_reply',
-  MESSAGES_DELETE: 'messages_delete',
-  MESSAGES_EDIT: 'messages_edit',
+  MESSAGES_VIEW: 'messages:view',
+  MESSAGES_REPLY: 'messages:reply',
+  MESSAGES_DELETE: 'messages:delete',
+  MESSAGES_EDIT: 'messages:edit',
+
   // CATEGORIES
   CATEGORIES_VIEW: "categories:view",
   CATEGORIES_CREATE: "categories:create",
@@ -41,12 +40,11 @@ export const PERMISSIONS = {
   FEATURES_EDIT: "features:edit",
   FEATURES_DELETE: "features:delete",
 
-  //SERVICES
+  // SERVICES
   SERVICES_VIEW: "services:view",
   SERVICES_CREATE: "services:create",
   SERVICES_EDIT: "services:edit",
   SERVICES_DELETE: "services:delete",
-  
 
   // RESERVATIONS / BOOKINGS
   RESERVATIONS_VIEW: "reservations:view",
@@ -82,6 +80,15 @@ export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 // Valid permission keys set for validation
 export const VALID_PERMISSIONS = new Set(Object.values(PERMISSIONS));
 
+export function normalizePermissionKey(permission: string): string {
+  const normalized = permission.replace(/_/g, ':');
+  return VALID_PERMISSIONS.has(normalized as PermissionKey) ? normalized : permission;
+}
+
+export function normalizePermissions(permissions: string[]): string[] {
+  return permissions.map(normalizePermissionKey);
+}
+
 export interface PermissionItem {
   key: PermissionKey;
   label: string;
@@ -96,7 +103,6 @@ export interface PermissionGroup {
 /**
  * ==========================================================
  * PERMISSION DEPENDENCIES
- * Some permissions require other permissions to be useful
  * ==========================================================
  */
 export const PERMISSION_DEPENDENCIES: Partial<Record<PermissionKey, PermissionKey[]>> = {
@@ -104,7 +110,6 @@ export const PERMISSION_DEPENDENCIES: Partial<Record<PermissionKey, PermissionKe
   [PERMISSIONS.CARS_EDIT]: [PERMISSIONS.CARS_VIEW],
   [PERMISSIONS.CARS_DELETE]: [PERMISSIONS.CARS_VIEW],
   
-  [PERMISSIONS.MESSAGES_VIEW]: [PERMISSIONS.MESSAGES_VIEW],
   [PERMISSIONS.MESSAGES_REPLY]: [PERMISSIONS.MESSAGES_VIEW],
   [PERMISSIONS.MESSAGES_DELETE]: [PERMISSIONS.MESSAGES_VIEW],
 
@@ -145,7 +150,6 @@ export const PERMISSION_DEPENDENCIES: Partial<Record<PermissionKey, PermissionKe
 /**
  * ==========================================================
  * PERMISSION GROUPS
- * Used for the permission management UI.
  * ==========================================================
  */
 export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
@@ -167,10 +171,9 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
   {
     category: "Message",
     permissions: [
-      { key: PERMISSIONS.MESSAGES_VIEW, label: "View Message", description: "Can view the messages list and  message details" },
+      { key: PERMISSIONS.MESSAGES_VIEW, label: "View Message", description: "Can view the messages list and message details" },
       { key: PERMISSIONS.MESSAGES_REPLY, label: "Reply Message", description: "Can Reply on message" },
       { key: PERMISSIONS.MESSAGES_DELETE, label: "DELETE Message", description: "Can Delete message" },
-     
     ],
   },
   {
@@ -210,14 +213,13 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
     ],
   },
   {
-    category:"Services",
-    permissions:[
-      {key: PERMISSIONS.SERVICES_VIEW, label:"View Contact Services", description:"Can view services lists"},
-      {key: PERMISSIONS.SERVICES_CREATE, label:"Create Service",description:"Can add new service"},
-      {key: PERMISSIONS.SERVICES_EDIT, label:"Edit Service",description:"Can edit service"},
-      {key: PERMISSIONS.SERVICES_CREATE, label:"Delete Service",description:"Can remove service"},
-
-    ]
+    category: "Services",
+    permissions: [
+      { key: PERMISSIONS.SERVICES_VIEW, label: "View Contact Services", description: "Can view services lists" },
+      { key: PERMISSIONS.SERVICES_CREATE, label: "Create Service", description: "Can add new service" },
+      { key: PERMISSIONS.SERVICES_EDIT, label: "Edit Service", description: "Can edit service" },
+      { key: PERMISSIONS.SERVICES_DELETE, label: "Delete Service", description: "Can remove service" },
+    ],
   },
   {
     category: "Reservations",
@@ -333,13 +335,16 @@ export function hasPermission(
     return false;
   }
 
+  // Normalizing input permissions array handles legacies like "messages_view"
+  const normalizedUserPermissions = normalizePermissions(userPermissions);
+
   const domain = requiredPermission.split(":")[0];
   const wildcard = `${domain}:*`;
 
   return (
-    userPermissions.includes("*") ||
-    userPermissions.includes(wildcard) ||
-    userPermissions.includes(requiredPermission)
+    normalizedUserPermissions.includes("*") ||
+    normalizedUserPermissions.includes(wildcard) ||
+    normalizedUserPermissions.includes(requiredPermission)
   );
 }
 
@@ -355,18 +360,19 @@ export function validatePermissions(permissions: string[]): {
 } {
   const invalidPermissions: string[] = [];
   const missingDependencies: { permission: string; dependencies: string[] }[] = [];
+  const normalizedPermissions = normalizePermissions(permissions);
 
-  // Check for invalid permissions
-  for (const perm of permissions) {
-    if (!VALID_PERMISSIONS.has(perm as PermissionKey)) {
-      invalidPermissions.push(perm);
+  for (let i = 0; i < permissions.length; i++) {
+    const original = permissions[i];
+    const normalized = normalizedPermissions[i];
+    if (!VALID_PERMISSIONS.has(normalized as PermissionKey)) {
+      invalidPermissions.push(original);
     }
   }
 
-  // Check for missing dependencies
-  for (const perm of permissions) {
+  for (const perm of normalizedPermissions) {
     const deps = PERMISSION_DEPENDENCIES[perm as PermissionKey] || [];
-    const missing = deps.filter(dep => !permissions.includes(dep));
+    const missing = deps.filter((dep) => !normalizedPermissions.includes(dep));
     if (missing.length > 0) {
       missingDependencies.push({
         permission: perm,
