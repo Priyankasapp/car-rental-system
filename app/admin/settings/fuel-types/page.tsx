@@ -1,72 +1,45 @@
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable react-hooks/preserve-manual-memoization */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { FuelIcon } from 'lucide-react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
 import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
+import { usePagePermission } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/lib/permissions'
 
-// Permission helper function
-function hasPermission(user: any, permission: string): boolean {
-  if (!user) return false
-  const role = user.role?.toUpperCase()
-  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
-  const permissions = user.permissions || []
-  return permissions.includes(permission)
+// ── API item shape 
+interface FuelTypeApiItem {
+  id: string
+  name: string
+  description?: string | null
+  status?: string | null
+  color?: string | null
+  circleBg?: string | null
+  textColor?: string | null
+  borderColor?: string | null
+  isActive?: boolean
 }
 
 export default function FuelTypesPage() {
-  const router = useRouter()
+  // ── Auth & permissions 
+  const { loading: userLoading, hasAccess, hasPermission, isReady } =
+    usePagePermission(PERMISSIONS.FUELS_VIEW, '/admin')
+
+  const canCreate = hasPermission(PERMISSIONS.FUELS_CREATE)
+  const canDelete = hasPermission(PERMISSIONS.FUELS_DELETE)
+
+  // ── State 
   const [items, setItems] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [userLoading, setUserLoading] = useState<boolean>(true)
-  const [hasAccess, setHasAccess] = useState<boolean>(false)
 
-  //  Load current user
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await fetch('/api/auth/me')
-        const data = await res.json()
-        if (data.success) {
-          setUser(data.data.user)
-        }
-      } catch (error) {
-        console.error('Failed to load user:', error)
-      } finally {
-        setUserLoading(false)
-      }
-    }
-    loadUser()
-  }, [])
-
-  //  Permission check
-  useEffect(() => {
-    if (!userLoading && user) {
-      const canView = hasPermission(user, 'fuels:view')
-      
-      if (!canView) {
-        router.push('/admin')
-        return
-      }
-      
-      setHasAccess(true)
-      fetchFuelTypes()
-    }
-  }, [user, userLoading])
-
-  //  Fetch Fuel Types from backend API
+  // ── Fetch fuel types 
   const fetchFuelTypes = useCallback(async () => {
     try {
       setLoading(true)
-      setError(null) 
+      setError(null)
 
       const res = await fetch('/api/admin/fuel-types')
       const json = await res.json()
@@ -75,30 +48,50 @@ export default function FuelTypesPage() {
         throw new Error(json.message || 'Failed to fetch fuel types')
       }
 
-      setItems(json.data)
+      const formattedItems: EntityItem[] = json.data.map(
+        (item: FuelTypeApiItem) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description || '',
+          status: item.status || 'Active',
+          color: item.color || 'bg-sky-400',
+          circleBg: item.circleBg || 'bg-sky-100',
+          textColor: item.textColor || 'text-sky-700',
+          borderColor: item.borderColor || 'border-sky-200',
+          isActive: item.isActive ?? item.status === 'Active',
+        })
+      )
 
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      setItems(formattedItems)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      console.error('Error fetching fuel types:', err)
+      setError(message)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // 2. Handle Add / Edit submit
+  // ── Trigger fetch once auth + permission confirmed ───────
+  useEffect(() => {
+    if (isReady) {
+      fetchFuelTypes()
+    }
+  }, [isReady, fetchFuelTypes])
+
+  // ── Save (Create or Update) 
   const handleSaveItem = async (itemData: Partial<EntityItem>) => {
-    //  Permission check for create/edit
-    if (!hasPermission(user, 'fuels:create')) {
+    if (!canCreate) {
       throw new Error('You do not have permission to create/edit fuel types')
     }
-    
+
     const isEdit = Boolean(itemData.id)
     const url = isEdit
       ? `/api/admin/fuel-types/${itemData.id}`
       : '/api/admin/fuel-types'
-    const method = isEdit ? 'PUT' : 'POST'
 
     const res = await fetch(url, {
-      method,
+      method: isEdit ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(itemData),
     })
@@ -106,19 +99,20 @@ export default function FuelTypesPage() {
     const json = await res.json()
 
     if (!res.ok) {
-      throw new Error(json.message || `Failed to ${isEdit ? 'update' : 'create'} fuel type`)
+      throw new Error(
+        json.message || `Failed to ${isEdit ? 'update' : 'create'} fuel type`
+      )
     }
 
     await fetchFuelTypes()
   }
 
-  // 3. Handle Delete
+  // ── Delete 
   const handleDeleteItem = async (id: string | number) => {
-    //  Permission check for delete
-    if (!hasPermission(user, 'fuels:delete')) {
+    if (!canDelete) {
       throw new Error('You do not have permission to delete fuel types')
     }
-    
+
     const res = await fetch(`/api/admin/fuel-types/${id}`, {
       method: 'DELETE',
     })
@@ -132,7 +126,7 @@ export default function FuelTypesPage() {
     await fetchFuelTypes()
   }
 
-  //  Loading state
+  // ── Guards 
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -144,7 +138,6 @@ export default function FuelTypesPage() {
     )
   }
 
-  //  Access denied state
   if (!hasAccess) {
     return (
       <div className="flex items-center justify-center min-h-100">
@@ -174,15 +167,16 @@ export default function FuelTypesPage() {
     )
   }
 
+  // ── Render ───────────────────────────────────────────────
   return (
     <EntityGridPage
       title="Fuel Types"
       entitySingularName="Fuel Type"
       description="Manage engine fuel configurations supported in UrbanDrive."
-      addButtonText="Add Fuel Type"
+      addButtonText={canCreate ? 'Add Fuel Type' : undefined}
       initialItems={items}
-      onSave={handleSaveItem}
-      onDelete={handleDeleteItem}
+      onSave={canCreate ? handleSaveItem : undefined}
+      onDelete={canDelete ? handleDeleteItem : undefined}
       emptyStateTitle="No fuel types found"
       emptyStateDescription="Create your first fuel option to get started."
     />

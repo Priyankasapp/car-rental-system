@@ -1,71 +1,32 @@
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable react-hooks/preserve-manual-memoization */
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import React, { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useCallback } from 'react'
 import { Sparkles } from 'lucide-react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
 import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
-
-// Permission helper function
-function hasPermission(user: any, permission: string): boolean {
-  if (!user) return false
-  const role = user.role?.toUpperCase()
-  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
-  const permissions = user.permissions || []
-  return permissions.includes(permission)
-}
+import { usePagePermission } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/lib/permissions'
 
 export default function CarFeaturesPage() {
-  const router = useRouter()
+  // ── Auth & permissions ───────────────────────────────────
+  const { loading: userLoading, hasAccess, hasPermission, isReady } =
+    usePagePermission(PERMISSIONS.FEATURES_VIEW, '/admin')
+
+  const canCreate = hasPermission(PERMISSIONS.FEATURES_CREATE)
+  const canDelete = hasPermission(PERMISSIONS.FEATURES_DELETE)
+
+  // ── State ────────────────────────────────────────────────
   const [features, setFeatures] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [userLoading, setUserLoading] = useState<boolean>(true)
-  const [hasAccess, setHasAccess] = useState<boolean>(false)
 
-  //  Load current user
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await fetch('/api/auth/me')
-        const data = await res.json()
-        if (data.success) {
-          setUser(data.data.user)
-        }
-      } catch (error) {
-        console.error('Failed to load user:', error)
-      } finally {
-        setUserLoading(false)
-      }
-    }
-    loadUser()
-  }, [])
-
-  //  Permission check
-  useEffect(() => {
-    if (!userLoading && user) {
-      const canView = hasPermission(user, 'features:view')
-      
-      if (!canView) {
-        router.push('/admin')
-        return
-      }
-      
-      setHasAccess(true)
-      fetchFeatures()
-    }
-  }, [user, userLoading])
-
-  // Fetch features from API
+  // ── Fetch features ───────────────────────────────────────
   const fetchFeatures = useCallback(async () => {
     try {
       setError(null)
+
       const res = await fetch('/api/admin/car-features')
       const result = await res.json()
 
@@ -74,28 +35,35 @@ export default function CarFeaturesPage() {
       }
 
       setFeatures(result.data || result)
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      console.error('Error fetching car features:', err)
+      setError(message)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // Create or Update Feature Handler using PUT for updates
+  // ── Trigger fetch once auth + permission confirmed ───────
+  useEffect(() => {
+    if (isReady) {
+      fetchFeatures()
+    }
+  }, [isReady, fetchFeatures])
+
+  // ── Save (Create or Update) ──────────────────────────────
   const handleSaveFeature = async (item: Partial<EntityItem>) => {
-    //  Permission check for create/edit
-    if (!hasPermission(user, 'features:create')) {
+    if (!canCreate) {
       throw new Error('You do not have permission to create/edit features')
     }
-    
+
     const isEdit = Boolean(item.id)
     const url = isEdit
       ? `/api/admin/car-features/${item.id}`
       : '/api/admin/car-features'
-    const method = isEdit ? 'PUT' : 'POST'
 
     const res = await fetch(url, {
-      method,
+      method: isEdit ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(item),
     })
@@ -109,13 +77,12 @@ export default function CarFeaturesPage() {
     await fetchFeatures()
   }
 
-  // Delete Feature Handler
+  // ── Delete ───────────────────────────────────────────────
   const handleDeleteFeature = async (id: string | number) => {
-    //  Permission check for delete
-    if (!hasPermission(user, 'features:delete')) {
+    if (!canDelete) {
       throw new Error('You do not have permission to delete features')
     }
-    
+
     const res = await fetch(`/api/admin/car-features/${id}`, {
       method: 'DELETE',
     })
@@ -129,7 +96,7 @@ export default function CarFeaturesPage() {
     await fetchFeatures()
   }
 
-  //  Loading state
+  // ── Guards ───────────────────────────────────────────────
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -140,7 +107,6 @@ export default function CarFeaturesPage() {
     )
   }
 
-  //  Access denied state
   if (!hasAccess) {
     return (
       <div className="flex items-center justify-center min-h-100">
@@ -173,18 +139,19 @@ export default function CarFeaturesPage() {
     )
   }
 
+  // ── Render ───────────────────────────────────────────────
   return (
     <EntityGridPage
       title="Car Features & Amenities"
       entitySingularName="Feature"
       description="Manage vehicle amenities available during car registration."
       icon={Sparkles}
-      addButtonText="Add Feature"
+      addButtonText={canCreate ? 'Add Feature' : undefined}       // ✅ fixed label
       initialItems={features}
       emptyStateTitle="No features yet"
       emptyStateDescription="Create your first amenity (e.g., GPS, Bluetooth) to get started."
-      onSave={handleSaveFeature}
-      onDelete={handleDeleteFeature}
+      onSave={canCreate ? handleSaveFeature : undefined}           // ✅ fixed handler name
+      onDelete={canDelete ? handleDeleteFeature : undefined}       // ✅ fixed handler name
     />
   )
 }
