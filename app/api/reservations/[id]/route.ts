@@ -243,7 +243,7 @@ export async function DELETE(
     await prisma.reservation.update({
       where: { id },
       data: {
-        isDeleted: true,
+        
         status: 'CANCELLED',
       },
     })

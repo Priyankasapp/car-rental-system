@@ -208,7 +208,7 @@ export async function DELETE(
     await prisma.user.update({
       where: { id },
       data: {
-        isDeleted: true,
+        
         isActive: false,
       },
     })
