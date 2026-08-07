@@ -16,6 +16,7 @@ import {
   Save,
   Send,
   X,
+  Check,
 } from "lucide-react";
 
 interface ServiceInfo {
@@ -52,6 +53,7 @@ export default function MessageDetailsPage({
   // Notes state
   const [adminNotes, setAdminNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSavedSuccess, setNotesSavedSuccess] = useState(false);
 
   // Reply Modal states
   const [isReplyOpen, setIsReplyOpen] = useState(false);
@@ -74,8 +76,7 @@ export default function MessageDetailsPage({
           setMessage(data.contact);
           setAdminNotes(data.contact.adminNotes || "");
         } else {
-          const msg = data?.error || data?.message || "Failed to load message details";
-          setError(msg);
+          setError(data?.error || data?.message || "Failed to load message details");
         }
       } catch (err) {
         console.error("Failed to load message:", err);
@@ -101,9 +102,12 @@ export default function MessageDetailsPage({
       if (res.ok) {
         const data = await res.json();
         setMessage(data.contact);
+      } else {
+        alert("Failed to update status.");
       }
     } catch (err) {
       console.error("Failed to update status:", err);
+      alert("Failed to update status.");
     }
   };
 
@@ -111,6 +115,8 @@ export default function MessageDetailsPage({
   const handleSaveNotes = async () => {
     if (!id) return;
     setSavingNotes(true);
+    setNotesSavedSuccess(false);
+
     try {
       const res = await fetch(`/api/admin/contacts/${id}`, {
         method: "PATCH",
@@ -121,9 +127,14 @@ export default function MessageDetailsPage({
       if (res.ok) {
         const data = await res.json();
         setMessage(data.contact);
+        setNotesSavedSuccess(true);
+        setTimeout(() => setNotesSavedSuccess(false), 3000);
+      } else {
+        alert("Failed to save notes.");
       }
     } catch (err) {
       console.error("Failed to save notes:", err);
+      alert("Failed to save notes.");
     } finally {
       setSavingNotes(false);
     }
@@ -141,9 +152,12 @@ export default function MessageDetailsPage({
 
       if (res.ok) {
         router.push("/admin/messages");
+      } else {
+        alert("Failed to delete message.");
       }
     } catch (err) {
       console.error("Failed to delete message:", err);
+      alert("Failed to delete message.");
     }
   };
 
@@ -167,8 +181,11 @@ export default function MessageDetailsPage({
       if (res.ok) {
         setIsReplyOpen(false);
         setReplyText("");
-        handleUpdateStatus("RESOLVED");
+        await handleUpdateStatus("RESOLVED");
         alert("Reply sent successfully!");
+      } else {
+        const data = await res.json();
+        alert(data?.error || "Failed to send reply.");
       }
     } catch (err) {
       console.error("Failed to send reply:", err);
@@ -326,8 +343,17 @@ export default function MessageDetailsPage({
               disabled={savingNotes}
               className="inline-flex items-center gap-2 rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
             >
-              <Save className="h-3.5 w-3.5" />
-              {savingNotes ? "Saving..." : "Save Notes"}
+              {notesSavedSuccess ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-green-400" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save className="h-3.5 w-3.5" />
+                  {savingNotes ? "Saving..." : "Save Notes"}
+                </>
+              )}
             </button>
           </div>
 

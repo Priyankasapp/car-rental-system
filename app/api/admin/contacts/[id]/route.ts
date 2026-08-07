@@ -1,14 +1,21 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { withErrorHandler } from "@/lib/api-handler";
+import { authorizeUser } from "@/lib/auth-guard";
+import { PERMISSIONS } from "@/lib/permissions";
+import prisma from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 // GET /api/admin/contacts/[id] - Fetch single message details
-export async function GET(req: Request, { params }: RouteParams) {
-  try {
+export const GET = withErrorHandler(
+  async (req: NextRequest, { params }: RouteParams) => {
+    const authResult = await authorizeUser(req, PERMISSIONS.MESSAGES_VIEW);
+    if (!authResult.isAuth) {
+      return authResult.response;
+    }
+
     const { id } = await params;
 
-    // Validate Mongo ObjectId format (24 hex chars)
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
       return NextResponse.json(
         { error: "Invalid contact ID format." },
@@ -36,18 +43,17 @@ export async function GET(req: Request, { params }: RouteParams) {
     }
 
     return NextResponse.json({ contact });
-  } catch (error) {
-    console.error("Error fetching contact details:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch contact details" },
-      { status: 500 }
-    );
   }
-}
+);
 
 // PATCH /api/admin/contacts/[id] - Update status or internal admin notes
-export async function PATCH(req: Request, { params }: RouteParams) {
-  try {
+export const PATCH = withErrorHandler(
+  async (req: NextRequest, { params }: RouteParams) => {
+    const authResult = await authorizeUser(req, PERMISSIONS.MESSAGES_EDIT);
+    if (!authResult.isAuth) {
+      return authResult.response;
+    }
+
     const { id } = await params;
 
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
@@ -78,18 +84,17 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     });
 
     return NextResponse.json({ contact: updatedContact });
-  } catch (error) {
-    console.error("Error updating contact:", error);
-    return NextResponse.json(
-      { error: "Failed to update contact" },
-      { status: 500 }
-    );
   }
-}
+);
 
 // DELETE /api/admin/contacts/[id] - Remove an inquiry
-export async function DELETE(req: Request, { params }: RouteParams) {
-  try {
+export const DELETE = withErrorHandler(
+  async (req: NextRequest, { params }: RouteParams) => {
+    const authResult = await authorizeUser(req, PERMISSIONS.MESSAGES_DELETE);
+    if (!authResult.isAuth) {
+      return authResult.response;
+    }
+
     const { id } = await params;
 
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
@@ -107,11 +112,5 @@ export async function DELETE(req: Request, { params }: RouteParams) {
       success: true,
       message: "Contact deleted successfully",
     });
-  } catch (error) {
-    console.error("Error deleting contact:", error);
-    return NextResponse.json(
-      { error: "Failed to delete contact" },
-      { status: 500 }
-    );
   }
-}
+);

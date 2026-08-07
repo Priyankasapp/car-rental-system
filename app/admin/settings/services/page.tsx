@@ -9,12 +9,12 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 
 //Permission helper funciton
-function hasPermission(user: any, permission:string):boolean{
-  if(!user) return false
-  const role = user.role?.toUpperCase()
-  if(role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
-  const permissions = user.permissions || []
-  return permissions.include(permission)
+function hasPermission(user: any, permission: string): boolean {
+  if (!user) return false;
+  const role = user.role?.toUpperCase();
+  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true;
+  const permissions = user.permissions || [];
+  return permissions.includes(permission); 
 }
 
 

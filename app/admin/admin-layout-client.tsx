@@ -69,7 +69,7 @@ const sidebarLinks: {
     href: "/admin/messages",
     label:"Messages",
     icon:MessageCircle,
-    permission:PERMISSIONS.USERS_CREATE
+    permission:PERMISSIONS.MESSAGES_VIEW,
   }
   
 ];
@@ -110,7 +110,7 @@ const settingsLinks: {
     href: "/admin/settings/services",
     label: "Services",
     icon: Wrench,
-    permission: PERMISSIONS.FEATURES_VIEW,
+    permission: PERMISSIONS.SERVICES_VIEW,
   },
 ];
 
@@ -273,12 +273,12 @@ export default function AdminLayout({
             </span>
 
             {isSuperAdmin ? (
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex-shrink-0">
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shrink-0">
                 <Crown className="w-3 h-3 text-amber-600" />
                 <span className="hidden sm:inline">Super</span>
               </span>
             ) : (
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0 truncate max-w-[80px]">
+              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full shrink-0 truncate max-w-20">
                 {user?.role || "Admin"}
               </span>
             )}
@@ -287,7 +287,7 @@ export default function AdminLayout({
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5 text-gray-600" aria-hidden="true" />
@@ -315,7 +315,7 @@ export default function AdminLayout({
                     "text-sm sm:text-base"
                   )}
                 >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
+                  <Icon className="h-5 w-5 shrink-0" />
                   <span className="font-medium truncate">{link.label}</span>
                 </Link>
               );
@@ -332,7 +332,7 @@ export default function AdminLayout({
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(!settingsOpen)}
-                  className="p-1 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
+                  className="p-1 rounded hover:bg-gray-100 transition-colors shrink-0"
                   aria-label={
                     settingsOpen ? "Collapse settings" : "Expand settings"
                   }
@@ -370,7 +370,7 @@ export default function AdminLayout({
                           "text-sm sm:text-base"
                         )}
                       >
-                        <Icon className="h-5 w-5 flex-shrink-0" />
+                        <Icon className="h-5 w-5 shrink-0" />
                         <span className="font-medium text-sm truncate">
                           {link.label}
                         </span>
@@ -392,7 +392,7 @@ export default function AdminLayout({
 
                 <button
                   onClick={() => setManagementOpen(!managementOpen)}
-                  className="p-1 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
+                  className="p-1 rounded hover:bg-gray-100 transition-colors shrink-0"
                   aria-label={
                     managementOpen ? "Collapse management" : "Expand management"
                   }
@@ -430,7 +430,7 @@ export default function AdminLayout({
                           "text-sm sm:text-base"
                         )}
                       >
-                        <Icon className="h-5 w-5 flex-shrink-0" />
+                        <Icon className="h-5 w-5 shrink-0" />
                         <span className="font-medium text-sm truncate">
                           {link.label}
                         </span>
@@ -455,7 +455,7 @@ export default function AdminLayout({
                             "text-sm sm:text-base"
                           )}
                         >
-                          <Icon className="h-5 w-5 flex-shrink-0" />
+                          <Icon className="h-5 w-5 shrink-0" />
                           <span className="font-medium text-sm truncate">
                             {permissionsLink.label}
                           </span>
@@ -473,7 +473,7 @@ export default function AdminLayout({
               onClick={handleLogout}
               className="flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 w-full rounded-lg text-gray-600 hover:bg-gray-100 transition-colors text-sm sm:text-base"
             >
-              <LogOut className="h-5 w-5 flex-shrink-0" />
+              <LogOut className="h-5 w-5 shrink-0" />
               <span className="font-medium">Logout</span>
             </button>
           </div>
@@ -492,7 +492,7 @@ export default function AdminLayout({
           <button
             type="button"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+            className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
             aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
             aria-expanded={sidebarOpen}
           >
@@ -501,19 +501,19 @@ export default function AdminLayout({
 
           <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1 justify-end">
             {isSuperAdmin ? (
-              <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-xs flex-shrink-0">
+              <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-xs shrink-0">
                 <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600" />
                 <span className="hidden xs:inline">Super Admin Portal</span>
                 <span className="xs:hidden">Super</span>
               </span>
             ) : (
-              <span className="text-[10px] sm:text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full truncate max-w-[100px] sm:max-w-[150px] flex-shrink-0">
+              <span className="text-[10px] sm:text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full truncate max-w-25 sm:max-w-37.5 shrink-0">
                 {user?.role ? `${user.role} Panel` : "Admin Panel"}
               </span>
             )}
 
             {/* AVATAR */}
-            <div className="relative group flex-shrink-0">
+            <div className="relative group shrink-0">
               <button
                 type="button"
                 className={cn(

@@ -12,6 +12,11 @@ export const PERMISSIONS = {
   CARS_EDIT: "cars:edit",
   CARS_DELETE: "cars:delete",
 
+  // MESSAGES 
+  MESSAGES_VIEW: 'messages_view',
+  MESSAGES_REPLY: 'messages_reply',
+  MESSAGES_DELETE: 'messages_delete',
+  MESSAGES_EDIT: 'messages_edit',
   // CATEGORIES
   CATEGORIES_VIEW: "categories:view",
   CATEGORIES_CREATE: "categories:create",
@@ -41,6 +46,7 @@ export const PERMISSIONS = {
   SERVICES_CREATE: "services:create",
   SERVICES_EDIT: "services:edit",
   SERVICES_DELETE: "services:delete",
+  
 
   // RESERVATIONS / BOOKINGS
   RESERVATIONS_VIEW: "reservations:view",
@@ -98,6 +104,10 @@ export const PERMISSION_DEPENDENCIES: Partial<Record<PermissionKey, PermissionKe
   [PERMISSIONS.CARS_EDIT]: [PERMISSIONS.CARS_VIEW],
   [PERMISSIONS.CARS_DELETE]: [PERMISSIONS.CARS_VIEW],
   
+  [PERMISSIONS.MESSAGES_VIEW]: [PERMISSIONS.MESSAGES_VIEW],
+  [PERMISSIONS.MESSAGES_REPLY]: [PERMISSIONS.MESSAGES_VIEW],
+  [PERMISSIONS.MESSAGES_DELETE]: [PERMISSIONS.MESSAGES_VIEW],
+
   [PERMISSIONS.CATEGORIES_CREATE]: [PERMISSIONS.CATEGORIES_VIEW],
   [PERMISSIONS.CATEGORIES_EDIT]: [PERMISSIONS.CATEGORIES_VIEW],
   [PERMISSIONS.CATEGORIES_DELETE]: [PERMISSIONS.CATEGORIES_VIEW],
@@ -152,6 +162,15 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
       { key: PERMISSIONS.CARS_CREATE, label: "Create Cars", description: "Can add new cars to the inventory" },
       { key: PERMISSIONS.CARS_EDIT, label: "Edit Cars", description: "Can edit general car information" },
       { key: PERMISSIONS.CARS_DELETE, label: "Delete Cars", description: "Can delete cars from the system" },
+    ],
+  },
+  {
+    category: "Message",
+    permissions: [
+      { key: PERMISSIONS.MESSAGES_VIEW, label: "View Message", description: "Can view the messages list and  message details" },
+      { key: PERMISSIONS.MESSAGES_REPLY, label: "Reply Message", description: "Can Reply on message" },
+      { key: PERMISSIONS.MESSAGES_DELETE, label: "DELETE Message", description: "Can Delete message" },
+     
     ],
   },
   {
@@ -257,6 +276,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     PERMISSIONS.CARS_VIEW,
     PERMISSIONS.CARS_CREATE,
     PERMISSIONS.CARS_EDIT,
+    PERMISSIONS.MESSAGES_DELETE,
+    PERMISSIONS.MESSAGES_REPLY,
+    PERMISSIONS.MESSAGES_VIEW,
     PERMISSIONS.CATEGORIES_VIEW,
     PERMISSIONS.CATEGORIES_CREATE,
     PERMISSIONS.CATEGORIES_EDIT,
