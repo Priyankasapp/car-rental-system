@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserSession } from "@/types/auth";
 
-// Internal permission checker
 function checkPermission(
   user: UserSession | null,
   permission: string
@@ -14,12 +13,10 @@ function checkPermission(
 
   const role = user.role?.toUpperCase();
 
-  // SuperAdmin & Admin → full access
   if (["SUPERADMIN", "SUPER_ADMIN", "ADMIN"].includes(role)) {
     return true;
   }
 
-  // STAFF → check permissions array
   if (role !== "STAFF") return false;
 
   const userPermissions = user.permissions ?? [];
@@ -34,9 +31,6 @@ function checkPermission(
     userPermissions.includes(permission)
   );
 }
-
-
-// usePagePermission
 
 export function usePagePermission(
   requiredPermission: string,
@@ -77,9 +71,11 @@ export function usePagePermission(
     loadUser();
   }, [requiredPermission, redirectTo, router]);
 
-  //  Expose checkPermission bound to current user
   const hasPermission = (permission: string): boolean =>
     checkPermission(user, permission);
 
-  return { user, loading, hasAccess, hasPermission };
+  //  isReady = loading done AND user has access
+  const isReady = !loading && hasAccess;
+
+  return { user, loading, hasAccess, hasPermission, isReady };
 }

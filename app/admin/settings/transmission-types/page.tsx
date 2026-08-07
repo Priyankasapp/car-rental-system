@@ -1,67 +1,40 @@
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable react-hooks/preserve-manual-memoization */
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useCallback, useState } from 'react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
 import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
+import { usePagePermission } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/lib/permissions'
 
-//  Permission helper function
-function hasPermission(user: any, permission: string): boolean {
-  if (!user) return false
-  const role = user.role?.toUpperCase()
-  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
-  const permissions = user.permissions || []
-  return permissions.includes(permission)
+// ── API item shape ───────────────────────────────────────────
+interface TransmissionApiItem {
+  id: string
+  name: string
+  description?: string | null
+  status?: string | null
+  color?: string | null
+  circleBg?: string | null
+  textColor?: string | null
+  borderColor?: string | null
+  _count?: { cars: number }
 }
 
 export default function TransmissionTypesPage() {
-  const router = useRouter()
+  // ── Auth & permissions ───────────────────────────────────
+  const { loading: userLoading, hasAccess, hasPermission, isReady } =
+    usePagePermission(PERMISSIONS.TRANSMISSIONS_VIEW, '/admin')
+
+  const canCreate = hasPermission(PERMISSIONS.TRANSMISSIONS_CREATE)
+  const canDelete = hasPermission(PERMISSIONS.TRANSMISSIONS_DELETE)
+
+  // ── State ────────────────────────────────────────────────
   const [items, setItems] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [userLoading, setUserLoading] = useState<boolean>(true)
-  const [hasAccess, setHasAccess] = useState<boolean>(false)
 
-  //  Load current user
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await fetch('/api/auth/me')
-        const data = await res.json()
-        if (data.success) {
-          setUser(data.data.user)
-        }
-      } catch (error) {
-        console.error('Failed to load user:', error)
-      } finally {
-        setUserLoading(false)
-      }
-    }
-    loadUser()
-  }, [])
-
-  //  Permission check
-  useEffect(() => {
-    if (!userLoading && user) {
-      const canView = hasPermission(user, 'transmissions:view')
-      
-      if (!canView) {
-        router.push('/admin')
-        return
-      }
-      
-      setHasAccess(true)
-      fetchTransmissions(true)
-    }
-  }, [user, userLoading])
-
-  // Fetch transmission types 
+  // ── Fetch transmission types ─────────────────────────────
   const fetchTransmissions = useCallback(async (isInitialLoad = false) => {
     try {
       if (isInitialLoad) setLoading(true)
@@ -74,31 +47,40 @@ export default function TransmissionTypesPage() {
         throw new Error(json.message || 'Failed to load transmission types')
       }
 
-      const formattedItems: EntityItem[] = json.data.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || '',
-        status: item.status || 'Active',
-        color: item.color || 'bg-indigo-400',
-        circleBg: item.circleBg || 'bg-indigo-100',
-        textColor: item.textColor || 'text-indigo-700',
-        borderColor: item.borderColor || 'border-indigo-200',
-        count: item._count?.cars ?? 0,
-      }))
+      const formattedItems: EntityItem[] = json.data.map(
+        (item: TransmissionApiItem) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description || '',
+          status: item.status || 'Active',
+          color: item.color || 'bg-indigo-400',
+          circleBg: item.circleBg || 'bg-indigo-100',
+          textColor: item.textColor || 'text-indigo-700',
+          borderColor: item.borderColor || 'border-indigo-200',
+          count: item._count?.cars ?? 0,
+        })
+      )
 
       setItems(formattedItems)
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
       console.error('Error fetching transmission types:', err)
-      setError(err.message || 'Something went wrong')
+      setError(message)
     } finally {
       if (isInitialLoad) setLoading(false)
     }
   }, [])
 
-  // Handle Save (Create or Update)
+  // ── Trigger fetch once auth + permission confirmed ───────
+  useEffect(() => {
+    if (isReady) {
+      fetchTransmissions(true)
+    }
+  }, [isReady, fetchTransmissions])
+
+  // ── Save (Create or Update) ──────────────────────────────
   const handleSave = async (data: Partial<EntityItem>) => {
-    //  Permission check for create/edit
-    if (!hasPermission(user, 'transmissions:create')) {
+    if (!canCreate) {
       alert('You do not have permission to create/edit transmission types')
       return
     }
@@ -113,11 +95,9 @@ export default function TransmissionTypesPage() {
       ? `/api/admin/transmission-types/${data.id}`
       : '/api/admin/transmission-types'
 
-    const method = isEdit ? 'PUT' : 'POST'
-
     try {
       const response = await fetch(endpoint, {
-        method,
+        method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
@@ -128,18 +108,17 @@ export default function TransmissionTypesPage() {
         throw new Error(json.message || 'Failed to save transmission type')
       }
 
-      // Smooth background refresh after saving
       await fetchTransmissions(false)
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save'
       console.error('Error saving transmission type:', err)
-      alert(err.message || 'Failed to save')
+      alert(message)
     }
   }
 
-  // Handle Delete
+  // ── Delete ───────────────────────────────────────────────
   const handleDelete = async (id: string) => {
-    //  Permission check for delete
-    if (!hasPermission(user, 'transmissions:delete')) {
+    if (!canDelete) {
       alert('You do not have permission to delete transmission types')
       return
     }
@@ -159,15 +138,15 @@ export default function TransmissionTypesPage() {
         throw new Error(json.message || 'Failed to delete transmission type')
       }
 
-      // Smooth background refresh after deletion
       await fetchTransmissions(false)
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete'
       console.error('Error deleting transmission type:', err)
-      alert(err.message || 'Failed to delete')
+      alert(message)
     }
   }
 
-  //  Loading state
+  // ── Guards ───────────────────────────────────────────────
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -178,7 +157,6 @@ export default function TransmissionTypesPage() {
     )
   }
 
-  //  Access denied state
   if (!hasAccess) {
     return (
       <div className="flex items-center justify-center min-h-100">
@@ -207,17 +185,18 @@ export default function TransmissionTypesPage() {
     )
   }
 
+  // ── Render ───────────────────────────────────────────────
   return (
     <EntityGridPage
       title="Transmission Types"
       entitySingularName="Transmission"
       description="Manage gearbox and transmission options available for vehicles."
-      addButtonText="Add Transmission"
+       addButtonText={canCreate ? "Add Transmission" : undefined}
       initialItems={items}
       emptyStateTitle="No transmission types found"
       emptyStateDescription="Create your first transmission option to get started."
-      onSave={handleSave}
-      onDelete={handleDelete}
+      onSave={canCreate ? handleSave : undefined}
+      onDelete={canDelete ? handleDelete : undefined}
     />
   )
 }

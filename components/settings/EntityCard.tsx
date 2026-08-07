@@ -5,20 +5,20 @@ import { PencilIcon, TrashIcon } from 'lucide-react'
 
 export interface EntityItem {
   isActive: boolean
-  id: string 
+  id: string
   name: string
   description?: string
   status: 'Active' | 'Inactive'
-  color?: string       
-  circleBg?: string    
-  textColor?: string    
-  borderColor?: string  
+  color?: string
+  circleBg?: string
+  textColor?: string
+  borderColor?: string
 }
 
 interface EntityCardProps {
   item: EntityItem
-  onEdit: (item: EntityItem) => void
-  onDelete: (id: string) => void
+  onEdit?: (item: EntityItem) => void  
+  onDelete?: (id: string) => void        
 }
 
 export const EntityCard: React.FC<EntityCardProps> = ({ item, onEdit, onDelete }) => {
@@ -26,26 +26,32 @@ export const EntityCard: React.FC<EntityCardProps> = ({ item, onEdit, onDelete }
 
   return (
     <div className="group relative rounded-xl border border-gray-200 bg-white p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between overflow-hidden">
-      {/* 1/4 Decorative Circle in Top-Right Corner */}
-      <div 
-        className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${item.color || 'bg-sky-400'} opacity-20 blur-xs pointer-events-none transition-transform duration-500 group-hover:scale-125`} 
+      {/* Decorative Circle */}
+      <div
+        className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${item.color || 'bg-sky-400'} opacity-20 blur-xs pointer-events-none transition-transform duration-500 group-hover:scale-125`}
       />
 
       <div className="relative z-10">
-        {/* Top Bar: Left Avatar + Right Status Badge */}
+        {/* Top Bar: Avatar + Status Badge */}
         <div className="flex items-center justify-between">
-          <div className={`w-12 h-12 rounded-full ${item.circleBg || 'bg-sky-100'} ${item.textColor || 'text-sky-700'} border ${item.borderColor || 'border-sky-200'} flex items-center justify-center text-base font-extrabold shadow-xs tracking-wider transition-transform duration-300 group-hover:scale-105`}>
+          <div
+            className={`w-12 h-12 rounded-full ${item.circleBg || 'bg-sky-100'} ${item.textColor || 'text-sky-700'} border ${item.borderColor || 'border-sky-200'} flex items-center justify-center text-base font-extrabold shadow-xs tracking-wider transition-transform duration-300 group-hover:scale-105`}
+          >
             {avatarText}
           </div>
 
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-            item.status === 'Active' 
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' 
-              : 'bg-gray-100 text-gray-500 border border-gray-200/60'
-          }`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${
-              item.status === 'Active' ? 'bg-emerald-500' : 'bg-gray-400'
-            }`} />
+          <span
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+              item.status === 'Active'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                : 'bg-gray-100 text-gray-500 border border-gray-200/60'
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                item.status === 'Active' ? 'bg-emerald-500' : 'bg-gray-400'
+              }`}
+            />
             {item.status}
           </span>
         </div>
@@ -64,26 +70,35 @@ export const EntityCard: React.FC<EntityCardProps> = ({ item, onEdit, onDelete }
         </p>
       </div>
 
-      {/* Action Buttons */}
-      <div className="relative z-10 mt-6 flex items-center justify-end gap-2.5 pt-4 border-t border-gray-100">
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-2 min-w-24 px-5 py-2 text-xs font-semibold text-gray-900 bg-white border border-gray-300 hover:bg-gray-900 hover:text-white hover:border-gray-900 rounded-md transition-all duration-200 shadow-xs active:scale-95 cursor-pointer"
-          onClick={() => onEdit(item)}
-        >
-          <PencilIcon className="h-3.5 w-3.5" />
-          Edit
-        </button>
+      
+      {(onEdit || onDelete) && (
+        <div className="relative z-10 mt-6 flex items-center justify-end gap-2.5 pt-4 border-t border-gray-100">
+          
+          {/*  Edit — only if onEdit provided */}
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(item)}
+              className="inline-flex items-center justify-center gap-2 min-w-24 px-5 py-2 text-xs font-semibold text-gray-900 bg-white border border-gray-300 hover:bg-gray-900 hover:text-white hover:border-gray-900 rounded-md transition-all duration-200 shadow-xs active:scale-95 cursor-pointer"
+            >
+              <PencilIcon className="h-3.5 w-3.5" />
+              Edit
+            </button>
+          )}
 
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-2 min-w-24 px-5 py-2 text-xs font-semibold text-white bg-gray-900 hover:bg-red-600 rounded-md transition-all duration-200 shadow-xs active:scale-95 cursor-pointer"
-          onClick={() => onDelete(item.id)}
-        >
-          <TrashIcon className="h-3.5 w-3.5" />
-          Delete
-        </button>
-      </div>
+          {/*  Delete — only if onDelete provided */}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(item.id)}
+              className="inline-flex items-center justify-center gap-2 min-w-24 px-5 py-2 text-xs font-semibold text-white bg-gray-900 hover:bg-red-600 rounded-md transition-all duration-200 shadow-xs active:scale-95 cursor-pointer"
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

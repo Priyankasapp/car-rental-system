@@ -10,12 +10,12 @@ interface EntityGridPageProps {
   entitySingularName: string 
   description: string
   icon?: LucideIcon
-  addButtonText: string
+  addButtonText?: string
   initialItems: EntityItem[]
   emptyStateTitle?: string
   emptyStateDescription?: string
-  onSave?: (item: Partial<EntityItem>) => Promise<void>
-  onDelete?: (id: string) => Promise<void>
+  onSave?: (data: Partial<EntityItem>) => Promise<void>   
+  onDelete?: (id: string) => Promise<void>   
 }
 
 export const EntityGridPage: React.FC<EntityGridPageProps> = ({
@@ -97,14 +97,14 @@ const activeCount = initialItems.filter(
             <p className="mt-1 text-sm text-gray-500">Add, edit, or remove available options.</p>
           </div>
 
+          {addButtonText && onSave && (
           <button
-            type="button"
-            onClick={handleOpenAdd}
-            className="rounded-md bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-gray-800 hover:shadow-md flex items-center gap-2 active:scale-95 cursor-pointer"
+            onClick={() => {/* open modal */}}
+            className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
           >
-            <PlusIcon className="h-4 w-4" />
             {addButtonText}
           </button>
+        )}
         </div>
 
         {/* Entity Card Grid */}
@@ -114,8 +114,8 @@ const activeCount = initialItems.filter(
               <EntityCard
                 key={item.id}
                 item={item}
-                onEdit={handleOpenEdit}
-                onDelete={(id) => handleDelete(String(id))}
+                 onEdit={onSave ? () => {/* open edit modal */} : undefined}
+               onDelete={onDelete ? () => onDelete(item.id) : undefined}      
               />
             ))}
           </div>
