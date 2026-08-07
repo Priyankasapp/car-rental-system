@@ -53,7 +53,7 @@ async function handlePUT(
       const staffMaster = await prisma.staffMaster.findFirst({
         where: { 
           id: staffMasterId, 
-          isDeleted: false 
+          isActive: true
         },
       })
 
