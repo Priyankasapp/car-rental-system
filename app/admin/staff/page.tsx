@@ -21,9 +21,8 @@ import {
 import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
-// ─────────────────────────────────────────────────────────────
+
 // Types
-// ─────────────────────────────────────────────────────────────
 interface StaffRole {
   id: string
   title: string
@@ -42,13 +41,13 @@ interface StaffMember {
 }
 
 export default function StaffPage() {
-  // ── Auth & permissions ───────────────────────────────────
+  // ── Auth & permissions 
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.STAFF_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.STAFF_CREATE)
 
-  // ── State ────────────────────────────────────────────────
+  // ── State 
   const [staffList, setStaffList] = useState<StaffMember[]>([])
   const [roles, setRoles] = useState<StaffRole[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -56,19 +55,19 @@ export default function StaffPage() {
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
-  // ── Modal state ──────────────────────────────────────────
+  // ── Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  // ── Form fields ──────────────────────────────────────────
+  // ── Form fields
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [staffMasterId, setStaffMasterId] = useState('')
 
-  // ── Fetch staff + roles ──────────────────────────────────
+  // ── Fetch staff + roles 
   const fetchData = useCallback(async () => {
     try {
       setError(null)
@@ -102,7 +101,7 @@ export default function StaffPage() {
     }
   }, [isReady, fetchData])
 
-  // ── Open add modal ───────────────────────────────────────
+  // ── Open add modal 
   const openAddModal = () => {
     if (!canCreate) {
       alert('You do not have permission to create staff members')
@@ -118,7 +117,7 @@ export default function StaffPage() {
     setIsModalOpen(true)
   }
 
-  // ── Create staff ─────────────────────────────────────────
+  // ── Create staff 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -167,7 +166,7 @@ export default function StaffPage() {
     }
   }
 
-  // ── Filtered list ────────────────────────────────────────
+  // ── Filtered list 
   const filteredStaff = staffList.filter((s) => {
     const fullName = `${s.firstName} ${s.lastName}`.toLowerCase()
     const query = search.toLowerCase()
@@ -179,7 +178,7 @@ export default function StaffPage() {
     )
   })
 
-  // ── Guards ───────────────────────────────────────────────
+  // ── Guards
   if (userLoading || loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-4">
@@ -223,7 +222,7 @@ export default function StaffPage() {
     )
   }
 
-  // ── Render ───────────────────────────────────────────────
+  // ── Render 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -247,7 +246,7 @@ export default function StaffPage() {
             <RotateCw className="w-4 h-4" />
           </button>
 
-          {/* ✅ Only show Add button if canCreate */}
+          {/*  Only show Add button if canCreate */}
           {canCreate && (
             <button
               onClick={openAddModal}

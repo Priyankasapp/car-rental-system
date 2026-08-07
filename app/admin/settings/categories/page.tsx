@@ -9,19 +9,19 @@ import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
 export default function CategoriesPage() {
-  // ── Auth & permissions ───────────────────────────────────
+  // ── Auth & permissions 
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.CATEGORIES_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.CATEGORIES_CREATE)
   const canDelete = hasPermission(PERMISSIONS.CATEGORIES_DELETE)
 
-  // ── State ────────────────────────────────────────────────
+  // ── State 
   const [categories, setCategories] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Fetch categories ─────────────────────────────────────
+  // ── Fetch categories 
   const fetchCategories = useCallback(async () => {
     try {
       setError(null)
@@ -43,14 +43,14 @@ export default function CategoriesPage() {
     }
   }, [])
 
-  // ── Trigger fetch once auth + permission confirmed ───────
+  // ── Trigger fetch once auth + permission confirmed 
   useEffect(() => {
     if (isReady) {
       fetchCategories()
     }
   }, [isReady, fetchCategories])
 
-  // ── Save (Create or Update) ──────────────────────────────
+  // ── Save (Create or Update) 
   const handleSaveCategory = async (item: Partial<EntityItem>) => {
     if (!canCreate) {
       throw new Error('You do not have permission to create/edit categories')
@@ -76,7 +76,7 @@ export default function CategoriesPage() {
     await fetchCategories()
   }
 
-  // ── Delete ───────────────────────────────────────────────
+  // ── Delete 
   const handleDeleteCategory = async (id: string) => {
     if (!canDelete) {
       throw new Error('You do not have permission to delete categories')
@@ -95,7 +95,7 @@ export default function CategoriesPage() {
     await fetchCategories()
   }
 
-  // ── Guards ───────────────────────────────────────────────
+  // ── Guards 
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -138,7 +138,7 @@ export default function CategoriesPage() {
     )
   }
 
-  // ── Render ───────────────────────────────────────────────
+  // ── Render 
   return (
     <EntityGridPage
       title="Categories"
