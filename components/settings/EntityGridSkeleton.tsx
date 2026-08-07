@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+
 import { LucideIcon } from 'lucide-react'
 
 interface EntityGridSkeletonProps {
@@ -8,6 +8,8 @@ interface EntityGridSkeletonProps {
   description: string
   icon?: LucideIcon
   cardCount?: number
+  showAddButton?: boolean 
+  showActions?: boolean 
 }
 
 export function EntityGridSkeleton({
@@ -15,6 +17,8 @@ export function EntityGridSkeleton({
   description,
   icon: Icon,
   cardCount = 6,
+  showAddButton = true,
+  showActions = true,
 }: EntityGridSkeletonProps) {
   return (
     <div className="space-y-6">
@@ -29,7 +33,9 @@ export function EntityGridSkeleton({
         </div>
         
         {/* Add Button Skeleton */}
-        <div className="h-10 w-36 bg-slate-200 rounded-lg animate-pulse" />
+        {showAddButton && (
+          <div className="h-10 w-36 bg-slate-200 rounded-lg animate-pulse" />
+        )}
       </div>
 
       {/* Grid of Skeleton Cards */}
@@ -62,13 +68,12 @@ export function EntityGridSkeleton({
             </div>
 
             {/* Bottom Row: Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-              <div className="h-4 w-20 bg-slate-100 rounded" />
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-slate-100" />
-                <div className="w-8 h-8 rounded-lg bg-slate-100" />
-              </div>
-            </div>
+            {showActions && (
+                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                  <div className="h-8 w-24 bg-slate-100 rounded-md" />
+                  <div className="h-8 w-24 bg-slate-200 rounded-md" />
+                </div>
+              )}
           </div>
         ))}
       </div>

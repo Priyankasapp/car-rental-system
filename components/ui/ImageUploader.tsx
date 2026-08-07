@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { CldUploadWidget, CldImage } from 'next-cloudinary'
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { UploadCloud, X } from 'lucide-react'
 
 type ImageUploaderProps = {
@@ -20,36 +19,44 @@ export function ImageUploader({
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false)
 
-  // Track new uploads during a single widget session
-  const [uploadedQueue, setUploadedQueue] = useState<string[]>([])
 
-  const handleSuccess = (result: any) => {
-    const newUrl = result?.info?.secure_url
-    if (!newUrl) return
+  const sessionQueueRef = useRef<string[]>([])
 
-    if (multiple) {
-      setUploadedQueue((prevQueue) => {
-        const nextQueue = [...prevQueue, newUrl]
-        // Push combined existing values + new session uploads to parent
-        const uniqueCombined = Array.from(new Set([...value, ...nextQueue]))
+  const handleSuccess = useCallback(
+    (result: unknown) => {
+      const info = (result as { info?: { secure_url?: string } })?.info
+      const newUrl = info?.secure_url
+      if (!newUrl) return
+
+      if (multiple) {
+       
+        sessionQueueRef.current = [...sessionQueueRef.current, newUrl]
+
+      
+        const uniqueCombined = Array.from(
+          new Set([...value, ...sessionQueueRef.current])
+        )
         onChange(uniqueCombined)
-        return nextQueue
-      })
-    } else {
-      onChange([newUrl])
-    }
-  }
+      } else {
+        onChange([newUrl])
+      }
+    },
+    [multiple, onChange, value]
+  )
 
-  const handleError = (error: any) => {
-    console.error('Cloudinary Upload error details:', error)
+  const handleError = useCallback((error: unknown) => {
+    console.error('Cloudinary Upload error:', error)
     setUploading(false)
     alert('Failed to upload image. Please check your Cloudinary configuration.')
-  }
+  }, [])
 
-  const handleRemove = (indexToRemove: number) => {
-    const updated = value.filter((_, idx) => idx !== indexToRemove)
-    onChange(updated)
-  }
+  const handleRemove = useCallback(
+    (indexToRemove: number) => {
+      const updated = value.filter((_, idx) => idx !== indexToRemove)
+      onChange(updated)
+    },
+    [value, onChange]
+  )
 
   return (
     <div className="space-y-4">
@@ -65,16 +72,16 @@ export function ImageUploader({
                 src={url}
                 width={300}
                 height={225}
-                alt="Uploaded image"
+                alt="Uploaded vehicle image"
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
-              
-              {/* Image index badge */}
+
+              {/* Index badge */}
               <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-[10px] font-medium rounded-md">
                 #{i + 1}
               </div>
 
-              {/* Delete button */}
+              {/* Remove button */}
               <button
                 type="button"
                 onClick={() => handleRemove(i)}
@@ -86,6 +93,7 @@ export function ImageUploader({
             </div>
           ))}
 
+          {/* Uploading placeholder */}
           {uploading && (
             <div className="aspect-4/3 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center bg-gray-50/50">
               <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mb-2" />
@@ -95,7 +103,7 @@ export function ImageUploader({
         </div>
       )}
 
-      {/* Cloudinary Widget Dropzone Button */}
+      {/* Upload Widget */}
       <CldUploadWidget
         uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
         options={{
@@ -127,7 +135,7 @@ export function ImageUploader({
         onError={handleError}
         onOpen={() => {
           setUploading(true)
-          setUploadedQueue([]) // Reset session queue when opening modal
+          sessionQueueRef.current = [] 
         }}
         onClose={() => setUploading(false)}
       >

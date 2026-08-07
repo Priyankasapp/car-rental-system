@@ -43,7 +43,7 @@ export default function CategoriesPage() {
     }
   }, [])
 
-  // ── Trigger fetch once auth + permission confirmed 
+ 
   useEffect(() => {
     if (isReady) {
       fetchCategories()

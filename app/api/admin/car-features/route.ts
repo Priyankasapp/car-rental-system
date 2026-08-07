@@ -1,62 +1,90 @@
-import { NextResponse } from 'next/server'
+// app/api/admin/car-features/route.ts
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withErrorHandler } from '@/lib/api-handler'
+import { authorizeUser } from '@/lib/auth-guard'
+import { PERMISSIONS } from '@/lib/permissions'
+
 
 // GET /api/admin/car-features
-export async function GET() {
-  try {
-    const features = await prisma.carFeatureMaster.findMany({
-      orderBy: { createdAt: 'desc' },
-    })
+async function handleGET(request: NextRequest): Promise<NextResponse> {
+  const authResult = await authorizeUser(request, PERMISSIONS.FEATURES_VIEW)
+  if (!authResult.isAuth) return authResult.response
 
-    return NextResponse.json(features, { status: 200 })
-  } catch (error) {
-    console.error('Error fetching car features:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch car features' },
-      { status: 500 }
-    )
-  }
+  const features = await prisma.carFeatureMaster.findMany({
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return NextResponse.json(
+    { success: true, data: features },
+    { status: 200 }
+  )
 }
+
 
 // POST /api/admin/car-features
-export async function POST(request: Request) {
-  try {
-    const body = await request.json()
-    const { name, description, status, isActive } = body
+async function handlePOST(request: NextRequest): Promise<NextResponse> {
+  const authResult = await authorizeUser(request, PERMISSIONS.FEATURES_CREATE)
+  if (!authResult.isAuth) return authResult.response
 
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return NextResponse.json(
-        { error: 'Feature name is required' },
-        { status: 400 }
-      )
-    }
+  const body = await request.json()
 
-    const existing = await prisma.carFeatureMaster.findFirst({
-      where: { name: { equals: name.trim(), mode: 'insensitive' } },
-    })
+  const {
+    name,
+    description,
+    status,
+    isActive,
+    color,       
+    circleBg,    
+    textColor,   
+    borderColor, 
+  } = body
 
-    if (existing) {
-      return NextResponse.json(
-        { error: 'A feature with this name already exists' },
-        { status: 409 }
-      )
-    }
-
-    const newFeature = await prisma.carFeatureMaster.create({
-      data: {
-        name: name.trim(),
-        description: description?.trim() || null,
-        status: status || 'Active',
-        isActive: isActive !== undefined ? isActive : true,
-      },
-    })
-
-    return NextResponse.json(newFeature, { status: 201 })
-  } catch (error) {
-    console.error('Error creating car feature:', error)
+  // ── Validate name 
+  if (!name || typeof name !== 'string' || !name.trim()) {
     return NextResponse.json(
-      { error: 'Failed to create car feature' },
-      { status: 500 }
+      { success: false, message: 'Feature name is required.' },
+      { status: 400 }
     )
   }
+
+  // ── Check duplicate 
+  const existing = await prisma.carFeatureMaster.findFirst({
+    where: { name: name.trim().toUpperCase() },
+  })
+
+  if (existing) {
+    return NextResponse.json(
+      { success: false, message: 'A feature with this name already exists.' },
+      { status: 409 }
+    )
+  }
+
+  // ── Create 
+  const newFeature = await prisma.carFeatureMaster.create({
+    data: {
+      name: name.trim().toUpperCase(),
+      description: description?.trim() || null,
+      status: status || 'Active',
+      isActive: isActive !== undefined ? isActive : true,
+      color: color || null,           
+      circleBg: circleBg || null,     
+      textColor: textColor || null,   
+      borderColor: borderColor || null, 
+    },
+  })
+
+  return NextResponse.json(
+    {
+      success: true,
+      data: newFeature,
+      message: 'Feature created successfully.',
+    },
+    { status: 201 }
+  )
 }
+
+
+// Exports
+export const GET = withErrorHandler(handleGET)
+export const POST = withErrorHandler(handlePOST)

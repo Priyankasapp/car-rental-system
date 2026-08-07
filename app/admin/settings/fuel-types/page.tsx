@@ -32,7 +32,7 @@ export default function FuelTypesPage() {
 
   // ── State 
   const [items, setItems] = useState<EntityItem[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
   // ── Fetch fuel types 
@@ -127,7 +127,7 @@ export default function FuelTypesPage() {
   }
 
   // ── Guards 
-  if (userLoading || loading) {
+   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
         title="Fuel Types"
