@@ -50,8 +50,11 @@ async function handlePUT(
       data.staffMasterId = null
       data.staffType = null
     } else {
-      const staffMaster = await prisma.staffMaster.findUnique({
-        where: { id: staffMasterId, isDeleted: false },
+      const staffMaster = await prisma.staffMaster.findFirst({
+        where: { 
+          id: staffMasterId, 
+          isDeleted: false 
+        },
       })
 
       if (!staffMaster) {
