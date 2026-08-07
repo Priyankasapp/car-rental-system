@@ -4,9 +4,11 @@ import { ZodError } from "zod";
 
 
 // Types
+
+
 export type RouteHandler = (
   request: NextRequest,
-  context?: { params: Record<string, string> }
+  context?: {  params: Record<string, string> | Promise<Record<string, string>>; }
 ) => Promise<NextResponse>;
 
 export type RouteContext = { params: Record<string, string> };
