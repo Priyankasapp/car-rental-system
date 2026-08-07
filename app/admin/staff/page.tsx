@@ -1,11 +1,7 @@
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable react-hooks/preserve-manual-memoization */
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   Users,
   Plus,
@@ -22,16 +18,12 @@ import {
   List as ListIcon,
   RotateCw,
 } from 'lucide-react'
+import { usePagePermission } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/lib/permissions'
 
-//  Permission helper
-function hasPermission(user: any, permission: string): boolean {
-  if (!user) return false
-  const role = user.role?.toUpperCase()
-  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
-  const permissions = user.permissions || []
-  return permissions.includes(permission)
-}
-
+// ─────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────
 interface StaffRole {
   id: string
   title: string
@@ -50,68 +42,37 @@ interface StaffMember {
 }
 
 export default function StaffPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [userLoading, setUserLoading] = useState<boolean>(true)
+  // ── Auth & permissions ───────────────────────────────────
+  const { loading: userLoading, hasAccess, hasPermission, isReady } =
+    usePagePermission(PERMISSIONS.STAFF_VIEW, '/admin')
+
+  const canCreate = hasPermission(PERMISSIONS.STAFF_CREATE)
+
+  // ── State ────────────────────────────────────────────────
   const [staffList, setStaffList] = useState<StaffMember[]>([])
   const [roles, setRoles] = useState<StaffRole[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [hasAccess, setHasAccess] = useState<boolean>(false)
-
-  // View Mode: 'grid' or 'list'
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
-  // Modal State
+  // ── Modal state ──────────────────────────────────────────
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  // Form Fields
+  // ── Form fields ──────────────────────────────────────────
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [staffMasterId, setStaffMasterId] = useState('')
 
-  //  Load current user
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await fetch('/api/auth/me')
-        const data = await res.json()
-        if (data.success) {
-          setUser(data.data.user)
-        }
-      } catch (error) {
-        console.error('Failed to load user:', error)
-      } finally {
-        setUserLoading(false)
-      }
-    }
-    loadUser()
-  }, [])
-
-  //  Permission check
-  useEffect(() => {
-    if (!userLoading && user) {
-      const canView = hasPermission(user, 'staff:view')
-      
-      if (!canView) {
-        router.push('/admin')
-        return
-      }
-      
-      setHasAccess(true)
-      fetchData()
-    }
-  }, [user, userLoading])
-
-  // Fetch Staff List & Staff Roles
+  // ── Fetch staff + roles ──────────────────────────────────
   const fetchData = useCallback(async () => {
     try {
       setError(null)
+
       const [staffRes, rolesRes] = await Promise.all([
         fetch('/api/admin/staff', { credentials: 'include' }),
         fetch('/api/admin/staff-master', { credentials: 'include' }),
@@ -125,21 +86,29 @@ export default function StaffPage() {
 
       setStaffList(staffData.data.staffMembers || [])
       setRoles(rolesData.data.staffMasters || [])
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      console.error('Error fetching staff data:', err)
+      setError(message)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // Open Add Modal
+  // ── Trigger fetch once auth + permission confirmed ───────
+  useEffect(() => {
+    if (isReady) {
+      fetchData()
+    }
+  }, [isReady, fetchData])
+
+  // ── Open add modal ───────────────────────────────────────
   const openAddModal = () => {
-    //  Permission check for create
-    if (!hasPermission(user, 'staff:create')) {
+    if (!canCreate) {
       alert('You do not have permission to create staff members')
       return
     }
-    
+
     setFormError(null)
     setFirstName('')
     setLastName('')
@@ -149,16 +118,15 @@ export default function StaffPage() {
     setIsModalOpen(true)
   }
 
-  // Handle Create Staff
+  // ── Create staff ─────────────────────────────────────────
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    //  Permission check for create
-    if (!hasPermission(user, 'staff:create')) {
+
+    if (!canCreate) {
       setFormError('You do not have permission to create staff members')
       return
     }
-    
+
     if (!firstName || !lastName || !email || !staffMasterId) {
       setFormError('Please fill in all required fields.')
       return
@@ -168,22 +136,18 @@ export default function StaffPage() {
       setSaving(true)
       setFormError(null)
 
-      const body = {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim() || null,
-        staffMasterId,
-        role: 'STAFF',
-      }
-
       const res = await fetch('/api/admin/staff', {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim() || null,
+          staffMasterId,
+          role: 'STAFF',
+        }),
       })
 
       const result = await res.json()
@@ -194,14 +158,16 @@ export default function StaffPage() {
 
       setIsModalOpen(false)
       await fetchData()
-    } catch (err: any) {
-      setFormError(err.message || 'Error creating staff member')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error creating staff member'
+      console.error('Error creating staff:', err)
+      setFormError(message)
     } finally {
       setSaving(false)
     }
   }
 
-  // Filter Search
+  // ── Filtered list ────────────────────────────────────────
   const filteredStaff = staffList.filter((s) => {
     const fullName = `${s.firstName} ${s.lastName}`.toLowerCase()
     const query = search.toLowerCase()
@@ -213,7 +179,7 @@ export default function StaffPage() {
     )
   })
 
-  //  Loading state
+  // ── Guards ───────────────────────────────────────────────
   if (userLoading || loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-4">
@@ -223,7 +189,6 @@ export default function StaffPage() {
     )
   }
 
-  //  Access denied state
   if (!hasAccess) {
     return (
       <div className="flex items-center justify-center min-h-100">
@@ -258,6 +223,7 @@ export default function StaffPage() {
     )
   }
 
+  // ── Render ───────────────────────────────────────────────
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -281,17 +247,20 @@ export default function StaffPage() {
             <RotateCw className="w-4 h-4" />
           </button>
 
-          <button
-            onClick={openAddModal}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-all shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            Add Staff Member
-          </button>
+          {/* ✅ Only show Add button if canCreate */}
+          {canCreate && (
+            <button
+              onClick={openAddModal}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-all shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              Add Staff Member
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Control Bar: Search and View Mode Switcher */}
+      {/* Control Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-3 border border-gray-200 rounded-2xl shadow-xs">
         <div className="relative w-full sm:max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
@@ -304,7 +273,6 @@ export default function StaffPage() {
           />
         </div>
 
-        {/* View Switcher (Grid vs List) */}
         <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl self-end sm:self-auto">
           <button
             onClick={() => setViewMode('grid')}
@@ -331,13 +299,12 @@ export default function StaffPage() {
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       {filteredStaff.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center text-gray-500 shadow-xs">
           No staff members found matching your search.
         </div>
       ) : viewMode === 'grid' ? (
-        /* GRID LAYOUT */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredStaff.map((staff) => (
             <div
@@ -395,7 +362,6 @@ export default function StaffPage() {
           ))}
         </div>
       ) : (
-        /* LIST (TABLE) LAYOUT */
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -471,8 +437,8 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* CENTERED ADD STAFF MODAL */}
-      {isModalOpen && (
+      {/* Add Staff Modal — only mount if canCreate */}
+      {isModalOpen && canCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             {/* Modal Header */}
@@ -491,7 +457,7 @@ export default function StaffPage() {
               </button>
             </div>
 
-            {/* Form Body */}
+            {/* Form */}
             <form
               id="staff-form"
               onSubmit={handleCreateStaff}
@@ -504,7 +470,6 @@ export default function StaffPage() {
                 </div>
               )}
 
-              {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -518,7 +483,6 @@ export default function StaffPage() {
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 focus:outline-none"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Last Name <span className="text-rose-500">*</span>
@@ -533,7 +497,6 @@ export default function StaffPage() {
                 </div>
               </div>
 
-              {/* Email & Phone */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Email Address <span className="text-rose-500">*</span>
@@ -559,7 +522,6 @@ export default function StaffPage() {
                 />
               </div>
 
-              {/* Staff Role Selection */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Staff Role (Staff Master) <span className="text-rose-500">*</span>
@@ -570,9 +532,7 @@ export default function StaffPage() {
                   required
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-gray-900 focus:outline-none"
                 >
-                  <option value="" disabled>
-                    Select a role...
-                  </option>
+                  <option value="" disabled>Select a role...</option>
                   {roles.map((role) => (
                     <option key={role.id} value={role.id}>
                       {role.title} ({role.department})

@@ -1,70 +1,31 @@
-/* eslint-disable react-hooks/preserve-manual-memoization */
-/* eslint-disable react-hooks/immutability */
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import React, { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useCallback } from 'react'
 import { EntityGridPage } from '@/components/settings/EntityGridPage'
 import { EntityItem } from '@/components/settings/EntityCard'
 import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
-
-//  Permission helper function
-function hasPermission(user: any, permission: string): boolean {
-  if (!user) return false
-  const role = user.role?.toUpperCase()
-  if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') return true
-  const permissions = user.permissions || []
-  return permissions.includes(permission)
-}
+import { usePagePermission } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/lib/permissions'
 
 export default function CategoriesPage() {
-  const router = useRouter()
+  // ── Auth & permissions ───────────────────────────────────
+  const { loading: userLoading, hasAccess, hasPermission, isReady } =
+    usePagePermission(PERMISSIONS.CATEGORIES_VIEW, '/admin')
+
+  const canCreate = hasPermission(PERMISSIONS.CATEGORIES_CREATE)
+  const canDelete = hasPermission(PERMISSIONS.CATEGORIES_DELETE)
+
+  // ── State ────────────────────────────────────────────────
   const [categories, setCategories] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [userLoading, setUserLoading] = useState<boolean>(true)
-  const [hasAccess, setHasAccess] = useState<boolean>(false)
 
-  //  Load current user
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await fetch('/api/auth/me')
-        const data = await res.json()
-        if (data.success) {
-          setUser(data.data.user)
-        }
-      } catch (error) {
-        console.error('Failed to load user:', error)
-      } finally {
-        setUserLoading(false)
-      }
-    }
-    loadUser()
-  }, [])
-
-  //  Permission check
-  useEffect(() => {
-    if (!userLoading && user) {
-      const canView = hasPermission(user, 'categories:view')
-      
-      if (!canView) {
-        router.push('/admin')
-        return
-      }
-      
-      setHasAccess(true)
-      fetchCategories()
-    }
-  }, [user, userLoading])
-
-  // Fetch categories from API
+  // ── Fetch categories ─────────────────────────────────────
   const fetchCategories = useCallback(async () => {
     try {
       setError(null)
+
       const res = await fetch('/api/admin/categories')
       const result = await res.json()
 
@@ -73,28 +34,35 @@ export default function CategoriesPage() {
       }
 
       setCategories(result.data)
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      console.error('Error fetching categories:', err)
+      setError(message)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // Create or Update Category Handler
+  // ── Trigger fetch once auth + permission confirmed ───────
+  useEffect(() => {
+    if (isReady) {
+      fetchCategories()
+    }
+  }, [isReady, fetchCategories])
+
+  // ── Save (Create or Update) ──────────────────────────────
   const handleSaveCategory = async (item: Partial<EntityItem>) => {
-    //  Permission check for create/edit
-    if (!hasPermission(user, 'categories:create')) {
+    if (!canCreate) {
       throw new Error('You do not have permission to create/edit categories')
     }
-    
+
     const isEdit = Boolean(item.id)
     const url = isEdit
       ? `/api/admin/categories/${item.id}`
       : '/api/admin/categories'
-    const method = isEdit ? 'PATCH' : 'POST'
 
     const res = await fetch(url, {
-      method,
+      method: isEdit ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(item),
     })
@@ -108,13 +76,12 @@ export default function CategoriesPage() {
     await fetchCategories()
   }
 
-  // Delete Category Handler
+  // ── Delete ───────────────────────────────────────────────
   const handleDeleteCategory = async (id: string) => {
-    //  Permission check for delete
-    if (!hasPermission(user, 'categories:delete')) {
+    if (!canDelete) {
       throw new Error('You do not have permission to delete categories')
     }
-    
+
     const res = await fetch(`/api/admin/categories/${id}`, {
       method: 'DELETE',
     })
@@ -128,7 +95,7 @@ export default function CategoriesPage() {
     await fetchCategories()
   }
 
-  //  Loading state
+  // ── Guards ───────────────────────────────────────────────
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -139,7 +106,6 @@ export default function CategoriesPage() {
     )
   }
 
-  //  Access denied state
   if (!hasAccess) {
     return (
       <div className="flex items-center justify-center min-h-100">
@@ -172,17 +138,18 @@ export default function CategoriesPage() {
     )
   }
 
+  // ── Render ───────────────────────────────────────────────
   return (
     <EntityGridPage
       title="Categories"
       entitySingularName="Category"
       description="Manage vehicle categories used in UrbanDrive."
-      addButtonText="Add Category"
+      addButtonText={canCreate ? 'Add Category' : undefined}
       initialItems={categories}
       emptyStateTitle="No categories yet"
       emptyStateDescription="Create your first vehicle category to get started."
-      onSave={handleSaveCategory}
-      onDelete={handleDeleteCategory}
+      onSave={canCreate ? handleSaveCategory : undefined}
+      onDelete={canDelete ? handleDeleteCategory : undefined}
     />
   )
 }
