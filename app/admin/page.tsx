@@ -34,6 +34,10 @@ interface AdminStats {
   totalCars?: number
   totalBookings?: number
   revenue?: number
+  pendingBookings?: number
+  confirmedBookings?: number
+  completedBookings?: number
+  cancelledBookings?: number
 }
 
 interface RecentBooking {
@@ -297,6 +301,13 @@ export default function AdminDashboard() {
           icon={Calendar}
           color="bg-purple-600"
           subtitle="All time"
+        />
+        <StatsCard
+          title="Confirmed Bookings"
+          value={stats?.confirmedBookings || 0}
+          icon={CheckCircle}
+          color="bg-green-600"
+          subtitle="Current confirmed"
         />
         <StatsCard
           title="Revenue"
