@@ -33,19 +33,19 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<EntityItem | null>(null)
 
-  // ── Open modal for new entry ─────────────────────────────
+  //  Open modal for new entry 
   const handleOpenAdd = () => {
     setEditingItem(null)        
     setIsModalOpen(true)
   }
 
-  // ── Open modal for editing ───────────────────────────────
+  //  Open modal for editing 
   const handleOpenEdit = (item: EntityItem) => {
     setEditingItem(item)       
     setIsModalOpen(true)
   }
 
-  // ── Delete ───────────────────────────────────────────────
+  //  Delete 
   const handleDelete = async (id: string) => {
     if (confirm(`Are you sure you want to delete this ${entitySingularName.toLowerCase()}?`)) {
       if (onDelete) {
@@ -54,7 +54,7 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
     }
   }
 
-  // ── Save (Create or Update) ──────────────────────────────
+  //  Save (Create or Update) 
   const handleSave = async (savedData: Omit<EntityItem, 'id'> & { id?: string }) => {
     if (onSave) {
       await onSave(savedData)
@@ -63,7 +63,7 @@ export const EntityGridPage: React.FC<EntityGridPageProps> = ({
     setEditingItem(null)       
   }
 
-  // ── Active count ─────────────────────────────────────────
+  //  Active count 
   const activeCount = initialItems.filter(
     item => item.isActive || item.status === 'Active'
   ).length

@@ -250,8 +250,6 @@ export default function CarDetailPage({
 
 
   // HANDLE INPUT
-
-
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -269,8 +267,6 @@ export default function CarDetailPage({
 
   
   // SAVE CAR
-
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -317,8 +313,6 @@ export default function CarDetailPage({
   }
 
   // DELETE CAR
-
-
   const handleDelete = async () => {
     if (!canDeleteCars) {
       alert('You do not have permission to delete cars.')
@@ -364,8 +358,6 @@ export default function CarDetailPage({
   }
 
   // LOADING
- 
-
   if (loading || authLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
@@ -376,8 +368,6 @@ export default function CarDetailPage({
 
 
   // VIEW PERMISSION
-
-
   if (!canViewCars) {
     return (
       <div className="mx-auto max-w-4xl p-6">
@@ -403,8 +393,6 @@ export default function CarDetailPage({
 
 
   // ERROR
-
-
   if (error || !car) {
     return (
       <div className="mx-auto max-w-4xl p-6">
@@ -468,9 +456,7 @@ export default function CarDetailPage({
           </div>
         </div>
 
-        {/* ======================================================
-            ACTION BUTTONS
-        ====================================================== */}
+            {/* ACTION BUTTONS */}   
 
         <div className="flex items-center gap-2">
 
@@ -501,10 +487,8 @@ export default function CarDetailPage({
         </div>
       </div>
 
-      {/* ========================================================
-          TABS
-      ======================================================== */}
-
+          {/* TABS */}
+    
       <div className="flex border-b border-slate-200 text-sm font-medium">
 
         {(
@@ -527,11 +511,7 @@ export default function CarDetailPage({
 
       </div>
 
-      {/* ========================================================
-          EDIT FORM
-          ONLY IF cars:edit
-      ======================================================== */}
-
+    
       {isEditing && canEditCars && (
         <form
           onSubmit={handleSave}

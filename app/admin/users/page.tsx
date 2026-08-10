@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/refs */
+
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
@@ -217,7 +217,7 @@ export default function AdminUsersPage() {
         const currentUser: AuthUser = authData.data?.user || authData.data
         setUser(currentUser)
 
-        // 2. Check Role / Permissions
+        // Check Role / Permissions
         const role = currentUser.role?.toUpperCase()
         const isSuperAdmin = role === 'SUPERADMIN' || role === 'SUPER_ADMIN'
         const hasViewPerm =
@@ -233,7 +233,7 @@ export default function AdminUsersPage() {
           return
         }
 
-        // 3. Fetch User List
+        //  Fetch User List
         await fetchUsers()
       } catch (err) {
         console.error('Failed to initialize page session:', err)

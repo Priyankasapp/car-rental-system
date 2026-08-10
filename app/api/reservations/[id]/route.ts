@@ -6,9 +6,7 @@ import { isUnitAvailable } from '@/lib/reservations/availability'
 import { calculateReservationPricing } from '@/lib/reservations/pricing'
 import { withErrorHandler } from '@/lib/api-handler'
 
-// ─────────────────────────────────────────────────────────────
 // POST /api/reservations — Create new reservation
-// ─────────────────────────────────────────────────────────────
 async function handlePOST(request: NextRequest): Promise<NextResponse> {
   const user = await getAuthenticatedUser(request)
   if (!user) {
@@ -36,7 +34,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     satelliteConnectivity,
   } = body
 
-  // ── Validate required fields ─────────────────────────────
+  //  Validate required fields 
   if (!carId || !pickupDate || !dropoffDate) {
     return NextResponse.json(
       { success: false, message: 'Car, pickup date and dropoff date are required.' },
@@ -44,7 +42,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── Check car exists ─────────────────────────────────────
+  //  Check car exists 
   const car = await prisma.car.findUnique({
     where: { id: carId },
   })
@@ -63,9 +61,9 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── Availability check ───────────────────────────────────
+  //  Availability check 
   const available = await isUnitAvailable({
-    carId,           // ✅ correct field name
+    carId,           
     startDate: pickupDate,
     endDate: dropoffDate,
   })
@@ -77,7 +75,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── Calculate pricing ────────────────────────────────────
+  //  Calculate pricing 
   const pricing = calculateReservationPricing({
     pricePerDay: car.pricePerDay,
     startDate: new Date(pickupDate),
@@ -90,13 +88,13 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
 
   const totalBeforeTax = pricing.subtotal + pricing.addOnsTotal
 
-  // ── Generate reservation ref ─────────────────────────────
+  //  Generate reservation ref 
   const reservationRef = `RES-${Date.now()}-${Math.random()
     .toString(36)
     .substring(2, 7)
     .toUpperCase()}`
 
-  // ── Create reservation ───────────────────────────────────
+  //  Create reservation 
   const reservation = await prisma.reservation.create({
     data: {
       reservationRef,
@@ -143,9 +141,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
   )
 }
 
-// ─────────────────────────────────────────────────────────────
 // GET /api/reservations — List reservations
-// ─────────────────────────────────────────────────────────────
 async function handleGET(request: NextRequest): Promise<NextResponse> {
   const user = await getAuthenticatedUser(request)
   if (!user) {
@@ -167,7 +163,7 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
 
   const reservations = await prisma.reservation.findMany({
     where: {
-      // ✅ Admins see all — customers see only their own
+      //  Admins see all — customers see only their own
       ...(isAdmin ? {} : { userId: user.id }),
       ...(status ? { status: status as never } : {}),
     },
@@ -208,8 +204,6 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
   })
 }
 
-// ─────────────────────────────────────────────────────────────
 // Exports
-// ─────────────────────────────────────────────────────────────
 export const GET = withErrorHandler(handleGET)
 export const POST = withErrorHandler(handlePOST)

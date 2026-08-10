@@ -80,24 +80,24 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const method = request.method;
 
-  // ── 1. Token extraction 
+  //  Token extraction 
   const token =
     request.cookies.get("accessToken")?.value ||
     request.cookies.get("token")?.value;
 
-  // ── 2. Verify token 
+  //  Verify token 
   const payload = token ? await verifyTokenEdge(token) : null;
   const userId = payload?.userId || payload?.sub;
   const role = payload?.role?.toUpperCase();
 
-  // ── 3. Role flags
+  //  Role flags
   const isSuperAdmin = role === "SUPERADMIN" || role === "SUPER_ADMIN";
   const isAdmin = role === "ADMIN";
   const isStaff = role === "STAFF";
 
   const isDashboardUser = isSuperAdmin || isAdmin || isStaff;
 
-  // ── 4. Permission checker
+  //  Permission checker
   const hasPermission = (requiredPermission: string): boolean => {
     // SuperAdmin & Admin have all permissions
     if (isSuperAdmin || isAdmin) return true;
@@ -125,7 +125,7 @@ export async function proxy(request: NextRequest) {
 
   if (!path.startsWith("/api")) {
 
-    // ── A1. Guest-only pages 
+     
     // Logged-in dashboard users → redirect to /admin
     if (isDashboardUser && matchesRoute(path, guestOnlyPages)) {
       return NextResponse.redirect(new URL("/admin", request.url));
@@ -140,12 +140,12 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    // ── A2. Redirect dashboard users from "/" to "/admin" 
+    //  Redirect dashboard users from "/" to "/admin" 
     if (isDashboardUser && path === "/") {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
 
-    // ── A3. /admin/* route guards 
+    //  /admin/* route guards 
     if (path.startsWith("/admin")) {
       // No token → login
       if (!payload) {
@@ -196,8 +196,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
-    //  /bookings/* — customer-only protected pages ──────
-    // Fixed: moved OUT of /admin block
+    //  /bookings/*
     if (path.startsWith("/bookings")) {
       if (!payload) {
         const loginUrl = new URL("/login", request.url);
@@ -206,7 +205,7 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // All other frontend routes — allow
+    // All other frontend routes 
     return NextResponse.next();
   }
 

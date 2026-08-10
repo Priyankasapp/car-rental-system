@@ -9,7 +9,7 @@ import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
-// ── API item shape 
+//  API item shape 
 interface FuelTypeApiItem {
   id: string
   name: string
@@ -23,19 +23,19 @@ interface FuelTypeApiItem {
 }
 
 export default function FuelTypesPage() {
-  // ── Auth & permissions 
+  //  Auth & permissions 
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.FUELS_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.FUELS_CREATE)
   const canDelete = hasPermission(PERMISSIONS.FUELS_DELETE)
 
-  // ── State 
+  //  State 
   const [items, setItems] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Fetch fuel types 
+  //  Fetch fuel types 
   const fetchFuelTypes = useCallback(async () => {
     try {
       setLoading(true)
@@ -72,14 +72,14 @@ export default function FuelTypesPage() {
     }
   }, [])
 
-  // ── Trigger fetch once auth + permission confirmed ───────
+  //  Trigger fetch once auth + permission confirmed 
   useEffect(() => {
     if (isReady) {
       fetchFuelTypes()
     }
   }, [isReady, fetchFuelTypes])
 
-  // ── Save (Create or Update) 
+  //  Save (Create or Update) 
   const handleSaveItem = async (itemData: Partial<EntityItem>) => {
     if (!canCreate) {
       throw new Error('You do not have permission to create/edit fuel types')
@@ -107,7 +107,7 @@ export default function FuelTypesPage() {
     await fetchFuelTypes()
   }
 
-  // ── Delete 
+  //  Delete 
   const handleDeleteItem = async (id: string | number) => {
     if (!canDelete) {
       throw new Error('You do not have permission to delete fuel types')
@@ -126,7 +126,7 @@ export default function FuelTypesPage() {
     await fetchFuelTypes()
   }
 
-  // ── Guards 
+  //  Guards 
    if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -167,7 +167,7 @@ export default function FuelTypesPage() {
     )
   }
 
-  // ── Render ───────────────────────────────────────────────
+  //  Render 
   return (
     <EntityGridPage
       title="Fuel Types"

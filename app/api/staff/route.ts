@@ -66,7 +66,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     isActive,
   } = body
 
-  // ── Validate required fields 
+  //  Validate required fields 
   const requiredFields = ['firstName', 'lastName', 'email', 'password']
   const missingFields = requiredFields.filter((f) => !body[f])
 
@@ -80,7 +80,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── Role validation 
+  //  Role validation 
   const targetRole = role === 'ADMIN' ? 'ADMIN' : 'STAFF'
   const requestingRole = request.headers.get('x-user-role')
 
@@ -91,7 +91,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── Check duplicate email
+  //  Check duplicate email
   const existing = await prisma.user.findUnique({
     where: { email: email.toLowerCase().trim() },
   })
@@ -103,7 +103,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── Resolve staffMaster permissions
+  //  Resolve staffMaster permissions
   // Typed as StaffType | null — matches Prisma enum
   let staffType: StaffType | null = null
   let permissions: string[] = []
@@ -128,10 +128,10 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     permissions = staffMaster.defaultPermissions
   }
 
-  // ── Hash password 
+  //  Hash password 
   const hashedPassword = await hashPassword(password)
 
-  // ── Create staff 
+  //  Create staff 
   const staff = await prisma.user.create({
     data: {
       firstName: firstName.trim(),

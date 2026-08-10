@@ -10,19 +10,19 @@ import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
 export default function CarFeaturesPage() {
-  // ── Auth & permissions ───────────────────────────────────
+  //  Auth & permissions 
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.FEATURES_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.FEATURES_CREATE)
   const canDelete = hasPermission(PERMISSIONS.FEATURES_DELETE)
 
-  // ── State ────────────────────────────────────────────────
+  //  State 
   const [features, setFeatures] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Fetch features ───────────────────────────────────────
+  //  Fetch features 
   const fetchFeatures = useCallback(async () => {
     try {
       setError(null)
@@ -50,7 +50,7 @@ export default function CarFeaturesPage() {
     }
   }, [isReady, fetchFeatures])
 
-  // ── Save (Create or Update) 
+  //  Save (Create or Update) 
   const handleSaveFeature = async (item: Partial<EntityItem>) => {
     if (!canCreate) {
       throw new Error('You do not have permission to create/edit features')
@@ -76,7 +76,7 @@ export default function CarFeaturesPage() {
     await fetchFeatures()
   }
 
-  // ── Delete 
+  //  Delete 
   const handleDeleteFeature = async (id: string | number) => {
     if (!canDelete) {
       throw new Error('You do not have permission to delete features')
@@ -95,7 +95,7 @@ export default function CarFeaturesPage() {
     await fetchFeatures()
   }
 
-  // ── Guards 
+  //  Guards 
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -138,7 +138,7 @@ export default function CarFeaturesPage() {
     )
   }
 
-  // ── Render 
+  //  Render 
   return (
     <EntityGridPage
       title="Car Features & Amenities"

@@ -50,6 +50,7 @@ export async function GET() {
         firstName: true,
         lastName: true,
         email: true,
+        phone: true,
         role: true,
         permissions: true,
         staffMaster: {

@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 1. Availability check using lib/reservations/availability.ts
+    //  Availability check using lib/reservations/availability.ts
     const available = await isUnitAvailable({
       carId: carId,
       startDate: pickupDate,
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     const satelliteConnectivity = Boolean(enhancements?.satelliteConnectivity)
     const platinumInsurance = enhancements?.platinumInsurance !== false
 
-    // 2. Pricing calculation using lib/reservations/pricing.ts
+    //  Pricing calculation using lib/reservations/pricing.ts
     const pricing = calculateReservationPricing({
       pricePerDay: car.pricePerDay,
       startDate: pickupDate,
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
         : null,
     }
 
-    // 3. Isolated Async Email Notification
+    // Isolated Async Email Notification
     try {
       const fullCarName =
         `${reservation.car?.year ?? ''} ${reservation.car?.manufacturer ?? ''} ${reservation.car?.model ?? ''}`.trim()

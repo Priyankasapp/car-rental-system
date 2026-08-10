@@ -19,7 +19,7 @@ export function withErrorHandler(handler: RouteHandler): RouteHandler {
     try {
       return await handler(request, context);
     } catch (error) {
-      // ── ZodError 
+      //  ZodError 
       if (error instanceof ZodError) {
         return NextResponse.json(
           {
@@ -31,7 +31,7 @@ export function withErrorHandler(handler: RouteHandler): RouteHandler {
         );
       }
 
-      // ── Prisma Errors 
+      //  Prisma Errors 
       const prismaError = error as {
         code?: string;
         meta?: { target?: string };
@@ -71,7 +71,7 @@ export function withErrorHandler(handler: RouteHandler): RouteHandler {
         );
       }
 
-      // ── Generic Error
+      //  Generic Error
       console.error("API Error:", error);
 
       return NextResponse.json(

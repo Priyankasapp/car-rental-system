@@ -4,9 +4,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { MoreVertical, ShieldCheck, Users } from 'lucide-react'
 
-// ─────────────────────────────────────────────────────────────
 // Types — defined locally, no context dependency
-// ─────────────────────────────────────────────────────────────
 export interface StaffMaster {
   id: string
   title: string
@@ -38,7 +36,7 @@ export default function StaffTypeCard({
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // ── Close menu on outside click 
+  // Close menu on outside click 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {

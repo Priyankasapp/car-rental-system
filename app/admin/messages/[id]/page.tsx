@@ -21,9 +21,7 @@ import {
 import { usePagePermission } from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/lib/permissions";
 
-// ─────────────────────────────────────────────────────────────
 // Types
-// ─────────────────────────────────────────────────────────────
 interface ServiceInfo {
   id: string;
   name: string;
@@ -42,9 +40,7 @@ interface ContactDetail {
   service?: ServiceInfo | null;
 }
 
-// ─────────────────────────────────────────────────────────────
-// Status Badge
-// ─────────────────────────────────────────────────────────────
+// Status Badge// 
 function StatusBadge({ status }: { status: ContactDetail["status"] }) {
   const map: Record<ContactDetail["status"], string> = {
     RESOLVED: "bg-blue-100 text-blue-700",
@@ -65,9 +61,7 @@ function StatusBadge({ status }: { status: ContactDetail["status"] }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
 // Page
-// ─────────────────────────────────────────────────────────────
 export default function MessageDetailsPage({
   params,
 }: {
@@ -77,7 +71,7 @@ export default function MessageDetailsPage({
   const id = resolvedParams?.id;
   const router = useRouter();
 
-  // ── Permissions ──────────────────────────────────────────
+  //  Permissions 
   const { loading: authLoading, hasAccess, hasPermission } =
     usePagePermission(PERMISSIONS.MESSAGES_VIEW, "/admin");
 
@@ -86,7 +80,7 @@ export default function MessageDetailsPage({
   const canUpdateStatus = hasPermission(PERMISSIONS.MESSAGES_EDIT);
   const canSaveNotes = hasPermission(PERMISSIONS.MESSAGES_EDIT);
 
-  // ── State ────────────────────────────────────────────────
+  //  State 
   const [message, setMessage] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +93,7 @@ export default function MessageDetailsPage({
   const [replyText, setReplyText] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
 
-  // ── Fetch message ────────────────────────────────────────
+  //  Fetch message 
   useEffect(() => {
     if (authLoading || !hasAccess) return;
 
@@ -133,7 +127,7 @@ export default function MessageDetailsPage({
     fetchMessage();
   }, [id, authLoading, hasAccess]);
 
-  // ── Update status ────────────────────────────────────────
+  //  Update status 
   const handleUpdateStatus = async (newStatus: ContactDetail["status"]) => {
     if (!id || !canUpdateStatus) return;
 
@@ -156,7 +150,7 @@ export default function MessageDetailsPage({
     }
   };
 
-  // ── Save notes ───────────────────────────────────────────
+  // Save notes 
   const handleSaveNotes = async () => {
     if (!id || !canSaveNotes) return;
 
@@ -186,7 +180,7 @@ export default function MessageDetailsPage({
     }
   };
 
-  // ── Delete ───────────────────────────────────────────────
+  //  Delete 
   const handleDelete = async () => {
     if (!id || !canDelete) return;
     if (!confirm("Are you sure you want to delete this message?")) return;
@@ -207,7 +201,7 @@ export default function MessageDetailsPage({
     }
   };
 
-  // ── Send reply ───────────────────────────────────────────
+  //  Send reply 
   const handleSendReply = async () => {
     if (!id || !replyText.trim() || !message || !canReply) return;
 
@@ -242,7 +236,7 @@ export default function MessageDetailsPage({
     }
   };
 
-  // ── Guards ───────────────────────────────────────────────
+  //  Guards 
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-gray-500">
@@ -296,7 +290,7 @@ export default function MessageDetailsPage({
     hour12: true,
   });
 
-  // ── Render ───────────────────────────────────────────────
+  //  Render 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-5xl">
@@ -441,7 +435,7 @@ export default function MessageDetailsPage({
             </button>
           )}
 
-          {/* Delete — needs delete permission */}
+          {/* Delete */}
           {canDelete && (
             <button
               onClick={handleDelete}

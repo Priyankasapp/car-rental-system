@@ -8,7 +8,7 @@ import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
-// ── API item shape ───────────────────────────────────────────
+// API item shape 
 interface TransmissionApiItem {
   id: string
   name: string
@@ -22,19 +22,19 @@ interface TransmissionApiItem {
 }
 
 export default function TransmissionTypesPage() {
-  // ── Auth & permissions ───────────────────────────────────
+  //  Auth & permissions
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.TRANSMISSIONS_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.TRANSMISSIONS_CREATE)
   const canDelete = hasPermission(PERMISSIONS.TRANSMISSIONS_DELETE)
 
-  // ── State ────────────────────────────────────────────────
+  //  State 
   const [items, setItems] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Fetch transmission types ─────────────────────────────
+  //  Fetch transmission types 
   const fetchTransmissions = useCallback(async (isInitialLoad = false) => {
     try {
       if (isInitialLoad) setLoading(true)
@@ -71,14 +71,14 @@ export default function TransmissionTypesPage() {
     }
   }, [])
 
-  // ── Trigger fetch once auth + permission confirmed ───────
+  // Trigger fetch once auth + permission confirmed 
   useEffect(() => {
     if (isReady) {
       fetchTransmissions(true)
     }
   }, [isReady, fetchTransmissions])
 
-  // ── Save (Create or Update) ──────────────────────────────
+  //  Save (Create or Update) 
   const handleSave = async (data: Partial<EntityItem>) => {
     if (!canCreate) {
       alert('You do not have permission to create/edit transmission types')
@@ -116,7 +116,7 @@ export default function TransmissionTypesPage() {
     }
   }
 
-  // ── Delete ───────────────────────────────────────────────
+  //  Delete 
   const handleDelete = async (id: string) => {
     if (!canDelete) {
       alert('You do not have permission to delete transmission types')
@@ -146,7 +146,7 @@ export default function TransmissionTypesPage() {
     }
   }
 
-  // ── Guards ───────────────────────────────────────────────
+  //  Guards 
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -185,7 +185,7 @@ export default function TransmissionTypesPage() {
     )
   }
 
-  // ── Render ───────────────────────────────────────────────
+  // Render
   return (
     <EntityGridPage
       title="Transmission Types"

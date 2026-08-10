@@ -40,7 +40,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     borderColor, 
   } = body
 
-  // ── Validate name 
+  //  Validate name 
   if (!name || typeof name !== 'string' || !name.trim()) {
     return NextResponse.json(
       { success: false, message: 'Feature name is required.' },
@@ -48,7 +48,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── Check duplicate 
+  //  Check duplicate 
   const existing = await prisma.carFeatureMaster.findFirst({
     where: { name: name.trim().toUpperCase() },
   })
@@ -60,7 +60,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── Create 
+  //  Create 
   const newFeature = await prisma.carFeatureMaster.create({
     data: {
       name: name.trim().toUpperCase(),

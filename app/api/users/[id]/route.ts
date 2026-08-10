@@ -6,9 +6,7 @@ import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
 
-// ─────────────────────────────────────────────────────────────
 // Helper — resolve params
-// ─────────────────────────────────────────────────────────────
 async function resolveId(context?: RouteContext): Promise<string | null> {
   if (!context?.params) return null
   const params =
@@ -18,9 +16,7 @@ async function resolveId(context?: RouteContext): Promise<string | null> {
   return params.id ?? null
 }
 
-// ─────────────────────────────────────────────────────────────
 // GET /api/admin/users/[id]
-// ─────────────────────────────────────────────────────────────
 async function handleGET(
   request: NextRequest,
   context?: RouteContext
@@ -36,7 +32,7 @@ async function handleGET(
     )
   }
 
-  // ✅ No isDeleted — use isActive instead
+  //  No isDeleted — use isActive instead
   const user = await prisma.user.findFirst({
     where: {
       id,
@@ -78,9 +74,7 @@ async function handleGET(
   })
 }
 
-// ─────────────────────────────────────────────────────────────
 // PUT /api/admin/users/[id]
-// ─────────────────────────────────────────────────────────────
 async function handlePUT(
   request: NextRequest,
   context?: RouteContext
@@ -99,7 +93,7 @@ async function handlePUT(
   const body = await request.json()
   const { firstName, lastName, phone, role, isActive, password } = body
 
-  // ── Check user exists ────────────────────────────────────
+  //  Check user exists 
   const existingUser = await prisma.user.findUnique({ where: { id } })
   if (!existingUser) {
     return NextResponse.json(
@@ -108,7 +102,7 @@ async function handlePUT(
     )
   }
 
-  // ── Build update data ─────────────────────────────────────
+  //  Build update data 
   const updateData: Record<string, unknown> = {}
 
   if (firstName) updateData.firstName = firstName
@@ -144,9 +138,7 @@ async function handlePUT(
   })
 }
 
-// ─────────────────────────────────────────────────────────────
 // DELETE /api/admin/users/[id] — Soft delete
-// ─────────────────────────────────────────────────────────────
 async function handleDELETE(
   request: NextRequest,
   context?: RouteContext
@@ -162,7 +154,7 @@ async function handleDELETE(
     )
   }
 
-  // ── Check user exists ────────────────────────────────────
+  //  Check user exists 
   const existingUser = await prisma.user.findUnique({ where: { id } })
   if (!existingUser) {
     return NextResponse.json(
@@ -171,7 +163,7 @@ async function handleDELETE(
     )
   }
 
-  // ── Prevent self-deletion ────────────────────────────────
+  //  Prevent self-deletion 
   const currentUserId = request.headers.get('x-user-id')
   if (currentUserId === id) {
     return NextResponse.json(
@@ -180,7 +172,7 @@ async function handleDELETE(
     )
   }
 
-  // ── Soft delete ──────────────────────────────────────────
+  //  Soft delete 
   await prisma.user.update({
     where: { id },
     data: { isActive: false },
@@ -192,9 +184,7 @@ async function handleDELETE(
   })
 }
 
-// ─────────────────────────────────────────────────────────────
 // Exports
-// ─────────────────────────────────────────────────────────────
 export const GET = withErrorHandler(handleGET)
 export const PUT = withErrorHandler(handlePUT)
 export const DELETE = withErrorHandler(handleDELETE)

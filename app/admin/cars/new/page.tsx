@@ -96,7 +96,7 @@ const INITIAL_FORM: FormData = {
 export default function AddCarPage() {
   const router = useRouter();
 
-  // ── UI state 
+  //  UI state 
   const [loading, setLoading] = useState(false);
   const [fetchingMasterData, setFetchingMasterData] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +105,7 @@ export default function AddCarPage() {
     Record<string, string>
   >({});
 
-  // ── Master data 
+  //  Master data 
   const [categories, setCategories] = useState<MasterOption[]>([]);
   const [fuelTypes, setFuelTypes] = useState<MasterOption[]>([]);
   const [transmissions, setTransmissions] = useState<MasterOption[]>([]);
@@ -113,15 +113,15 @@ export default function AddCarPage() {
     []
   );
 
-  // ── Selections
+  //  Selections
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [mainImageUrl, setMainImageUrl] = useState<string>("");
 
-  // ── Form data
+  //  Form data
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM);
 
-  // ── Load master data
+  //  Load master data
   useEffect(() => {
     async function loadMasterData() {
       try {
@@ -162,7 +162,7 @@ export default function AddCarPage() {
     loadMasterData();
   }, []);
 
-  // ── Auto-set main image 
+   
   useEffect(() => {
     if (imageUrls.length > 0) {
       if (!mainImageUrl || !imageUrls.includes(mainImageUrl)) {
@@ -173,7 +173,7 @@ export default function AddCarPage() {
     }
   }, [imageUrls, mainImageUrl]);
 
-  // ── Handlers 
+  //  Handlers 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value, type } = e.target;
@@ -208,7 +208,7 @@ export default function AddCarPage() {
     [validationErrors.images]
   );
 
-  // ── Validation 
+  //  Validation 
   const validateForm = useCallback((): boolean => {
     const errors: Record<string, string> = {};
 
@@ -232,7 +232,7 @@ export default function AddCarPage() {
     return Object.keys(errors).length === 0;
   }, [formData, imageUrls]);
 
-  // ── Submit 
+  //  Submit 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -292,7 +292,7 @@ export default function AddCarPage() {
     [formData, imageUrls, mainImageUrl, selectedFeatures, validateForm, router]
   );
 
-  // ── Render 
+  //  Render 
   return (
     <div className="min-h-screen bg-gray-50/80 py-8 px-4">
       <div className="max-w-5xl mx-auto">
@@ -332,7 +332,7 @@ export default function AddCarPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* ── Vehicle Details */}
+          {/*  Vehicle Details */}
           <FormSection
             icon={Car}
             title="Vehicle Details"
@@ -404,7 +404,7 @@ export default function AddCarPage() {
             </div>
           </FormSection>
 
-          {/* ── Specifications  */}
+          {/* Specifications  */}
           <FormSection
             icon={Settings2}
             title="Specifications"
@@ -476,7 +476,7 @@ export default function AddCarPage() {
             </div>
           </FormSection>
 
-          {/* ── Vehicle Features  */}
+          {/*  Vehicle Features  */}
           <FormSection
             icon={CheckSquare}
             title="Vehicle Features"
@@ -523,7 +523,7 @@ export default function AddCarPage() {
             )}
           </FormSection>
 
-          {/* ── Pricing  */}
+          {/*  Pricing  */}
           <FormSection
             icon={DollarSign}
             title="Pricing & Rates"
@@ -585,7 +585,7 @@ export default function AddCarPage() {
             </div>
           </FormSection>
 
-          {/* ── Image Gallery  */}
+          {/*  Image Gallery  */}
           <FormSection
             icon={ImageIcon}
             title="Image Gallery"
@@ -632,7 +632,7 @@ export default function AddCarPage() {
             )}
           </FormSection>
 
-          {/* ── Location */}
+          {/*  Location */}
           <FormSection
             icon={MapPin}
             title="Location"
@@ -660,7 +660,7 @@ export default function AddCarPage() {
             </div>
           </FormSection>
 
-          {/* ── Actions  */}
+          {/*  Actions  */}
           <FormActions
             onCancel={() => router.back()}
             isSubmitting={loading}

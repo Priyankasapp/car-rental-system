@@ -10,9 +10,7 @@ import { DataExplorer, Column } from "@/components/admin/DataExplorer";
 import { PERMISSIONS } from "@/lib/permissions";
 import { usePagePermission } from "@/hooks/usePermissions";
 
-// ─────────────────────────────────────────────────────────────
 // Types
-// ─────────────────────────────────────────────────────────────
 interface MasterItem {
   id: string;
   name: string;
@@ -31,9 +29,7 @@ interface CarItem {
   category?: MasterItem | null;
 }
 
-// ─────────────────────────────────────────────────────────────
 // Status Badge
-// ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: CarItem["status"] }) {
   const map: Record<
     CarItem["status"],
@@ -69,22 +65,19 @@ function StatusBadge({ status }: { status: CarItem["status"] }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────
 export default function CarsPage() {
   const router = useRouter();
 
-  // ✅ Single hook — fetches user, checks permission, exposes hasPermission
+  //  Single hook — fetches user, checks permission, exposes hasPermission
   const { loading: authLoading, hasAccess, hasPermission } =
     usePagePermission(PERMISSIONS.CARS_VIEW, "/admin");
 
-  // ── Derived permissions ──────────────────────────────────
+  //  Derived permissions 
   const canCreateCars = hasPermission(PERMISSIONS.CARS_CREATE);
   const canEditCars = hasPermission(PERMISSIONS.CARS_EDIT);
   const canDeleteCars = hasPermission(PERMISSIONS.CARS_DELETE);
 
-  // ── State ────────────────────────────────────────────────
+  //  State 
   const [cars, setCars] = useState<CarItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>("");
@@ -93,13 +86,13 @@ export default function CarsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [categories, setCategories] = useState<MasterItem[]>([]);
 
-  // ── Search debounce ──────────────────────────────────────
+  //  Search debounce 
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(handler);
   }, [search]);
 
-  // ── Load categories ──────────────────────────────────────
+  // Load categories 
   useEffect(() => {
     if (authLoading || !hasAccess) return;
 
@@ -119,7 +112,7 @@ export default function CarsPage() {
     loadCategories();
   }, [authLoading, hasAccess]);
 
-  // ── Fetch cars ───────────────────────────────────────────
+  //  Fetch cars 
   const fetchCars = useCallback(async () => {
     if (authLoading || !hasAccess) {
       setCars([]);
@@ -159,7 +152,7 @@ export default function CarsPage() {
     fetchCars();
   }, [fetchCars]);
 
-  // ── Delete car ───────────────────────────────────────────
+  //Delete car 
   const handleDelete = async (id: string) => {
     if (!canDeleteCars) {
       alert("You do not have permission to delete vehicles.");
@@ -186,22 +179,22 @@ export default function CarsPage() {
     }
   };
 
-  // ── Table columns ────────────────────────────────────────
+  //  Table columns
   const columns: Column<CarItem>[] = [
     {
       header: "Vehicle",
       accessor: (car) => (
-        <div className="flex items-center gap-3 min-w-35">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-40 max-w-60">
           <img
             src={car.imageMain || "/placeholder.png"}
             alt={`${car.manufacturer} ${car.model}`}
-            className="w-10 h-10 rounded-md object-cover border bg-gray-50 shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-md object-cover border bg-gray-50 shrink-0"
           />
-          <div className="min-w-0">
-            <div className="font-medium text-gray-900 truncate">
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-gray-900 truncate text-xs sm:text-sm">
               {car.manufacturer} {car.model}
             </div>
-            <div className="text-xs text-gray-400">{car.year}</div>
+            <div className="text-[11px] sm:text-xs text-gray-400">{car.year}</div>
           </div>
         </div>
       ),
@@ -209,14 +202,18 @@ export default function CarsPage() {
     {
       header: "Plate",
       accessor: (car) => (
-        <span className="font-mono text-xs text-gray-700">
+        <span className="font-mono text-xs text-gray-700 whitespace-nowrap">
           {car.licensePlate || "N/A"}
         </span>
       ),
     },
     {
       header: "Category",
-      accessor: (car) => car.category?.name ?? "Standard",
+      accessor: (car) => (
+        <span className="text-xs sm:text-sm text-gray-600 truncate block max-w-30">
+          {car.category?.name ?? "Standard"}
+        </span>
+      ),
     },
     {
       header: "Status",
@@ -225,7 +222,7 @@ export default function CarsPage() {
     {
       header: "Rate / Day",
       accessor: (car) => (
-        <span className="font-medium text-gray-900">
+        <span className="font-medium text-xs sm:text-sm text-gray-900 whitespace-nowrap">
           ₹{car.pricePerDay?.toLocaleString() ?? 0}
         </span>
       ),
@@ -234,32 +231,32 @@ export default function CarsPage() {
       header: "Actions",
       className: "text-right",
       accessor: (car) => (
-        <div className="inline-flex items-center gap-2 text-gray-400 justify-end w-full">
+        <div className="inline-flex items-center gap-1 sm:gap-2 text-gray-400 justify-end w-full">
           {hasAccess && (
             <button
               onClick={() => router.push(`/admin/cars/${car.id}`)}
-              className="hover:text-black p-1 hover:bg-gray-100 rounded transition-colors"
+              className="hover:text-black p-1.5 hover:bg-gray-100 rounded transition-colors"
               title="View Details"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           )}
           {canEditCars && (
             <button
               onClick={() => router.push(`/admin/cars/${car.id}/edit`)}
-              className="hover:text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"
+              className="hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded transition-colors"
               title="Edit Vehicle"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           )}
           {canDeleteCars && (
             <button
               onClick={() => handleDelete(car.id)}
-              className="hover:text-red-600 p-1 hover:bg-red-50 rounded transition-colors"
+              className="hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition-colors"
               title="Delete Vehicle"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           )}
         </div>
@@ -267,10 +264,10 @@ export default function CarsPage() {
     },
   ];
 
-  // ── Guards ───────────────────────────────────────────────
+  //  Guards 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-100">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <p className="text-sm text-gray-500">Loading permissions...</p>
       </div>
     );
@@ -278,7 +275,7 @@ export default function CarsPage() {
 
   if (!hasAccess) {
     return (
-      <div className="flex items-center justify-center min-h-100">
+      <div className="flex items-center justify-center min-h-[50vh] px-4">
         <div className="text-center max-w-sm mx-auto">
           <h2 className="text-lg font-semibold text-gray-900">
             Access Denied
@@ -291,9 +288,9 @@ export default function CarsPage() {
     );
   }
 
-  // ── Render ───────────────────────────────────────────────
+  //  Render 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8">
+    <div className="w-full px-2 sm:px-6 lg:px-8 py-4 sm:py-6">
       <DataExplorer<CarItem>
         title="Vehicles"
         subtitle="Overview of all active fleet vehicles."
@@ -332,8 +329,8 @@ export default function CarsPage() {
         ]}
         columns={columns}
         renderGridCard={(car) => (
-          <div className="border rounded-xl bg-white overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full max-w-sm mx-auto w-full">
-            <div className="relative h-48 sm:h-40 md:h-44 lg:h-48 w-full bg-gray-100">
+          <div className="border rounded-xl bg-white overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full w-full">
+            <div className="relative h-44 sm:h-48 w-full bg-gray-100">
               <img
                 src={car.imageMain || "/placeholder.png"}
                 alt={`${car.manufacturer} ${car.model}`}
@@ -344,7 +341,7 @@ export default function CarsPage() {
               </div>
             </div>
 
-            <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
+            <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="font-medium text-gray-900 text-sm sm:text-base leading-snug truncate">
@@ -362,8 +359,8 @@ export default function CarsPage() {
                 </div>
               </div>
 
-              <div className="pt-2 border-t flex items-center justify-between text-xs text-gray-400 gap-2 flex-wrap">
-                <span className="text-[11px] text-gray-500 truncate">
+              <div className="pt-2.5 border-t flex items-center justify-between text-xs text-gray-400 gap-2">
+                <span className="text-[11px] sm:text-xs text-gray-500 truncate max-w-30 sm:max-w-37.5">
                   {car.category?.name ?? "Standard"}
                 </span>
                 <div className="flex items-center gap-1 shrink-0">

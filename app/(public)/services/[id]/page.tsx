@@ -1,38 +1,74 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import FleetGrid from '@/components/fleet/FleetGrid'
+
+interface ServiceCar {
+  id: string
+  manufacturer?: string | null
+  model?: string | null
+  year?: number | null
+  licensePlate?: string | null
+  status?: string | null
+  imageMain?: string | null
+}
+
+interface ServiceDetails {
+  id: string
+  name: string
+  description?: string | null
+  cars?: ServiceCar[]
+}
 
 export default function ServicePage() {
   const params = useParams()
-  const router = useRouter()
   const id = params?.id
 
-  const [service, setService] = useState<any | null>(null)
-  const [cars, setCars] = useState<any[]>([])
+  const [service, setService] = useState<ServiceDetails | null>(null)
+  const [cars, setCars] = useState<ServiceCar[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
 
-    setLoading(true)
-    setError(null)
+    let isMounted = true
 
-    fetch(`/api/services/${id}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (!json.success) throw new Error(json.message || 'Failed to load')
+    const fetchService = async () => {
+      if (!isMounted) return
+
+      setLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetch(`/api/services/${id}`)
+        const json = await response.json()
+
+        if (!json.success) {
+          throw new Error(json.message || 'Failed to load')
+        }
+
+        if (!isMounted) return
+
         setService(json.data)
         setCars(json.data.cars || [])
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error loading service:', err)
-        setError(err?.message || 'Failed to load service')
-      })
-      .finally(() => setLoading(false))
-  }, [id, router])
+        setError((err as Error)?.message || 'Failed to load service')
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchService()
+
+    return () => {
+      isMounted = false
+    }
+  }, [id])
 
   if (loading) {
     return <div className="py-12">Loading...</div>

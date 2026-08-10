@@ -27,7 +27,7 @@ function resolvePermissions(
 async function handlePOST(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
 
-  // ── Validate input ───────────────────────────────────────
+  //  Validate input 
   const validation = LoginSchema.safeParse(body);
 
   if (!validation.success) {
@@ -42,7 +42,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
 
   const { email, password } = validation.data;
 
-  // ── Find user 
+  //  Find user 
   const user = await prisma.user.findUnique({
     where: { email },
     select: {
@@ -65,7 +65,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     },
   });
 
-  // ── Guards 
+  //  Guards 
   if (!user || !user.password) {
     return NextResponse.json(
       { success: false, message: "Invalid email or password." },
@@ -104,7 +104,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // ── Resolve permissions 
+  //  Resolve permissions 
   const userPermissions = user.permissions ?? [];
   const staffMasterPermissions = user.staffMaster?.defaultPermissions ?? [];
 
@@ -113,18 +113,8 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     staffMasterPermissions
   );
 
-  // ── Debug log (remove in production) 
-  if (process.env.NODE_ENV === "development") {
-    console.log("🔐 ===== LOGIN DEBUG =====");
-    console.log("📧 Email:", email);
-    console.log("👤 Role:", user.role);
-    console.log("📋 User Permissions (DB):", userPermissions);
-    console.log("📋 StaffMaster Permissions:", staffMasterPermissions);
-    console.log("📋 Effective Permissions:", effectivePermissions);
-    console.log("=========================");
-  }
 
-  // ── Create session & tokens 
+  //  Create session & tokens 
   const ipAddress = request.headers.get("x-forwarded-for") ?? undefined;
   const userAgent = request.headers.get("user-agent") ?? undefined;
 
@@ -143,14 +133,14 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     console.log(" Permissions in JWT:", effectivePermissions);
   }
 
-  // ── Set cookies 
+  //  Set cookies 
   const cookieStore = await cookies();
 
   cookieStore.set("accessToken", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24, // 1 day
+    maxAge: 60 * 60 * 24, 
     path: "/",
   });
 
@@ -158,11 +148,11 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7, 
     path: "/",
   });
 
-  // ── Response 
+  //  Response 
   return NextResponse.json(
     {
       success: true,

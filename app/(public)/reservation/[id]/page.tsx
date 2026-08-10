@@ -86,17 +86,18 @@ export default function ReservationPage() {
   // Get Today's Date String for `min` date attribute (YYYY-MM-DD)
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
-  // 1. FETCH USER PROFILE TO PRE-FILL CUSTOMER DETAILS
+  //  FETCH USER PROFILE TO PRE-FILL CUSTOMER DETAILS
   useEffect(() => {
     async function loadUserProfile() {
       try {
-        const res = await fetch('/api/auth/me')
+        const res = await fetch('/api/auth/me', { credentials: 'include' })
         if (res.ok) {
-          const data = await res.json()
-          if (data?.user) {
-            setFullName(`${data.user.firstName || ''} ${data.user.lastName || ''}`.trim())
-            setEmail(data.user.email || '')
-            setPhone(data.user.phone || '')
+          const result = await res.json()
+          const user = result?.data?.user
+          if (user) {
+            setFullName(`${user.firstName || ''} ${user.lastName || ''}`.trim())
+            setEmail(user.email || '')
+            setPhone(user.phone || '')
           }
         }
       } catch {
@@ -106,7 +107,7 @@ export default function ReservationPage() {
     loadUserProfile()
   }, [])
 
-  // 2. FETCH CAR DETAILS
+  //  FETCH CAR DETAILS
   useEffect(() => {
     if (!carId) return
 
@@ -140,9 +141,7 @@ export default function ReservationPage() {
         }
 
         setCar(formattedCar)
-        if (!pickupLocation) {
-          setPickupLocation(formattedCar.location)
-        }
+        setPickupLocation((current) => current || formattedCar.location)
       } catch (error) {
         console.error('Failed to fetch car:', error)
         setCarError(error instanceof Error ? error.message : 'Failed to load vehicle')
@@ -152,9 +151,9 @@ export default function ReservationPage() {
     }
 
     fetchCar()
-  }, [carId, pickupLocation])
+  }, [carId])
 
-  // 3. UTC SAFE DAY CALCULATION
+  //  UTC SAFE DAY CALCULATION
   const rentalDays = useMemo(() => {
     if (!pickupDate || !returnDate) return 1
 
@@ -168,7 +167,7 @@ export default function ReservationPage() {
     return diffDays > 0 ? diffDays : 1
   }, [pickupDate, returnDate])
 
-  // 4. PRICING CALCULATIONS
+  // PRICING CALCULATIONS
   const dailyRate = car?.price || 0
   const baseRate = dailyRate * rentalDays
   const addOns =
@@ -180,7 +179,7 @@ export default function ReservationPage() {
   const tax = Math.round(subtotal * 0.12)
   const total = subtotal + tax
 
-  // 5. SUBMIT HANDLER
+  //  SUBMIT HANDLER
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setErrorMessage('')

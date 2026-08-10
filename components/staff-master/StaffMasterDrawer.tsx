@@ -7,9 +7,7 @@ import { X } from 'lucide-react'
 import { PERMISSION_GROUPS } from '@/lib/permissions'
 import { StaffMaster } from '@prisma/client'
 
-// ─────────────────────────────────────────────────────────────
 // Types
-// ─────────────────────────────────────────────────────────────
 export type StaffMasterFormPayload = {
   title: string
   department: string
@@ -26,9 +24,7 @@ interface StaffMasterDrawerProps {
   onSubmit: (payload: StaffMasterFormPayload) => Promise<void>
 }
 
-// ─────────────────────────────────────────────────────────────
 // Initial form state
-// ─────────────────────────────────────────────────────────────
 const emptyForm = {
   title: '',
   department: '',
@@ -38,9 +34,7 @@ const emptyForm = {
   isActive: true,
 }
 
-// ─────────────────────────────────────────────────────────────
 // Component
-// ─────────────────────────────────────────────────────────────
 export default function StaffMasterDrawer({
   isOpen,
   onClose,
@@ -51,7 +45,7 @@ export default function StaffMasterDrawer({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Reset / prefill on open ──────────────────────────────
+  //  Reset / prefill on open 
   useEffect(() => {
     if (!isOpen) return
     setError(null)
@@ -70,7 +64,7 @@ export default function StaffMasterDrawer({
     }
   }, [isOpen, editing])
 
-  // ── Toggle single permission ─────────────────────────────
+  //  Toggle single permission 
   const togglePermission = (key: string) => {
     setForm((prev) => ({
       ...prev,
@@ -80,7 +74,7 @@ export default function StaffMasterDrawer({
     }))
   }
 
-  // ── Toggle all permissions in a category ─────────────────
+  //  Toggle all permissions in a category 
   const toggleCategory = (keys: string[], checked: boolean) => {
     setForm((prev) => ({
       ...prev,
@@ -90,7 +84,7 @@ export default function StaffMasterDrawer({
     }))
   }
 
-  // ── Submit ───────────────────────────────────────────────
+  //  Submit 
   const handleSubmit = async () => {
     if (!form.title.trim() || !form.department.trim()) {
       setError('Staff type name and department are required.')
@@ -246,7 +240,7 @@ export default function StaffMasterDrawer({
             </div>
 
             <div className="space-y-4">
-              {/* ✅ Use PERMISSION_GROUPS from permissions.ts */}
+              {/*  Use PERMISSION_GROUPS from permissions.ts */}
               {PERMISSION_GROUPS.map((group) => {
                 const groupKeys = group.permissions.map((p) => p.key)
                 const allChecked = groupKeys.every((k) =>

@@ -24,19 +24,19 @@ interface StaffMasterApiItem {
 
 // Page
 export default function StaffMasterPage() {
-  // ── Auth & permissions 
+  //  Auth & permissions 
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.STAFF_MASTER_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.STAFF_MASTER_CREATE)
   const canDelete = hasPermission(PERMISSIONS.STAFF_MASTER_DELETE)
 
-  // ── State 
+  //  State 
   const [staffRoles, setStaffRoles] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Fetch staff master roles 
+  //  Fetch staff master roles 
   const fetchStaffRoles = useCallback(async () => {
     try {
       setError(null)
@@ -70,14 +70,14 @@ export default function StaffMasterPage() {
     }
   }, [])
 
-  // ── Trigger fetch once auth + permission confirmed 
+  //  Trigger fetch once auth + permission confirmed 
   useEffect(() => {
     if (isReady) {
       fetchStaffRoles()
     }
   }, [isReady, fetchStaffRoles])
 
-  // ── Save (Create or Update) 
+  //  Save (Create or Update) 
   const handleSaveStaffRole = async (
     item: Partial<EntityItem> & Record<string, unknown>
   ) => {
@@ -110,7 +110,7 @@ export default function StaffMasterPage() {
     await fetchStaffRoles()
   }
 
-  // ── Delete 
+  //  Delete 
   const handleDeleteStaffRole = async (id: string) => {
     if (!canDelete) {
       throw new Error('You do not have permission to delete staff roles')
@@ -129,7 +129,7 @@ export default function StaffMasterPage() {
     await fetchStaffRoles()
   }
 
-  // ── Guards 
+  //  Guards 
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -174,7 +174,7 @@ export default function StaffMasterPage() {
     )
   }
 
-  // ── Render 
+  //  Render 
   return (
     <EntityGridPage
       title="Staff Master Roles"

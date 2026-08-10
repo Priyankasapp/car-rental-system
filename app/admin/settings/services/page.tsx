@@ -9,19 +9,19 @@ import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
 export default function ServicesPage() {
-  // ── Auth & permissions ───────────────────────────────────
+  //  Auth & permissions 
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.SERVICES_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.SERVICES_CREATE)
   const canDelete = hasPermission(PERMISSIONS.SERVICES_DELETE)
 
-  // ── State ────────────────────────────────────────────────
+  //  State 
   const [items, setItems] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Fetch services ───────────────────────────────────────
+  //  Fetch services 
   const fetchServices = useCallback(async () => {
     try {
       setLoading(true)
@@ -44,14 +44,14 @@ export default function ServicesPage() {
     }
   }, [])
 
-  // ── Trigger fetch once auth + permission confirmed ───────
+  //  Trigger fetch once auth + permission confirmed 
   useEffect(() => {
     if (isReady) {
       fetchServices()
     }
   }, [isReady, fetchServices])
 
-  // ── Save (Create or Update) ──────────────────────────────
+  //  Save (Create or Update) 
   const handleSaveItem = async (itemData: Partial<EntityItem>) => {
     if (!canCreate) {
       throw new Error('You do not have permission to create/edit services')
@@ -79,7 +79,7 @@ export default function ServicesPage() {
     await fetchServices()
   }
 
-  // ── Delete ───────────────────────────────────────────────
+  //  Delete 
   const handleDeleteItem = async (id: string | number) => {
     if (!canDelete) {
       throw new Error('You do not have permission to delete services')
@@ -98,7 +98,7 @@ export default function ServicesPage() {
     await fetchServices()
   }
 
-  // ── Guards ───────────────────────────────────────────────
+  //  Guards 
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -138,7 +138,7 @@ export default function ServicesPage() {
     )
   }
 
-  // ── Render ───────────────────────────────────────────────
+  //  Render
   return (
     <EntityGridPage
       title="Services"
