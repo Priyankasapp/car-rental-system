@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyToken, signAccessToken } from "@/lib/auth/jwt";
-import { normalizePermissions } from '@/lib/permissions'
+import { normalizePermissions } from "@/lib/permissions";
 
 export async function POST() {
   try {
@@ -17,7 +17,7 @@ export async function POST() {
       );
     }
 
-    // 1. Verify Refresh Token
+    //  Verify refresh token 
     const payload = await verifyToken(refreshToken);
 
     if (!payload?.sub || !payload?.sessionId) {
@@ -27,19 +27,22 @@ export async function POST() {
       );
     }
 
-    // 2. Validate DB Session
+    //  Validate DB session 
     const session = await prisma.session.findUnique({
       where: { id: payload.sessionId },
     });
 
     if (!session || session.isRevoked || session.expiresAt < new Date()) {
       return NextResponse.json(
-        { success: false, message: "Session expired or revoked. Please log in again." },
+        {
+          success: false,
+          message: "Session expired or revoked. Please log in again.",
+        },
         { status: 401 }
       );
     }
 
-    // 3. Validate User Account Status & Token Version
+    //  Validate user 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -47,6 +50,8 @@ export async function POST() {
         email: true,
         role: true,
         permissions: true,
+        isActive: true,       
+        tokenVersion: true,   
         staffMaster: {
           select: {
             defaultPermissions: true,
@@ -62,7 +67,7 @@ export async function POST() {
       );
     }
 
-    // Ensure session hasn't been invalidated by password change/reset
+    // 4. Check token version 
     if (payload.tokenVersion !== user.tokenVersion) {
       return NextResponse.json(
         { success: false, message: "Session invalidated. Please log in again." },
@@ -70,17 +75,24 @@ export async function POST() {
       );
     }
 
-    const staffMasterPermissions = Array.isArray(user.staffMaster?.defaultPermissions)
+    // Resolve permissions 
+    const userPermissions = Array.isArray(user.permissions)
+      ? user.permissions
+      : [];
+
+    const staffMasterPermissions = Array.isArray(
+      user.staffMaster?.defaultPermissions
+    )
       ? user.staffMaster.defaultPermissions
       : [];
 
     const effectivePermissions = Array.from(
-      new Set([...(Array.isArray(user.permissions) ? user.permissions : []), ...staffMasterPermissions])
+      new Set([...userPermissions, ...staffMasterPermissions])
     );
 
-    const normalizedPermissions = normalizePermissions(effectivePermissions)
+    const normalizedPermissions = normalizePermissions(effectivePermissions);
 
-    // 4. Generate New Access Token
+    // . Sign new access token 
     const newAccessToken = await signAccessToken({
       userId: user.id,
       email: user.email,
@@ -91,12 +103,12 @@ export async function POST() {
       sub: undefined,
     });
 
-    // 5. Update Access Token Cookie
+    //  Set new cookie 
     cookieStore.set("accessToken", newAccessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 24 * 60 * 60, // 1 day
+      maxAge: 60 * 60 * 24, 
       path: "/",
     });
 

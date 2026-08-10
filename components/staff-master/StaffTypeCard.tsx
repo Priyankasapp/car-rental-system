@@ -3,7 +3,24 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { MoreVertical, ShieldCheck, Users } from 'lucide-react'
-import { StaffMaster } from '@/context/AdminContext'
+
+// ─────────────────────────────────────────────────────────────
+// Types — defined locally, no context dependency
+// ─────────────────────────────────────────────────────────────
+export interface StaffMaster {
+  id: string
+  title: string
+  department: string
+  description?: string | null
+  isActive: boolean
+  defaultPermissions: string[]
+  staffType?: string | null
+  createdAt?: string
+  updatedAt?: string
+  _count?: {
+    staffMembers: number
+  }
+}
 
 interface StaffTypeCardProps {
   staffMaster: StaffMaster
@@ -11,10 +28,17 @@ interface StaffTypeCardProps {
   onDelete: (id: string) => void
 }
 
-export default function StaffTypeCard({ staffMaster, onEdit, onDelete }: StaffTypeCardProps) {
+
+// Component
+export default function StaffTypeCard({
+  staffMaster,
+  onEdit,
+  onDelete,
+}: StaffTypeCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  // ── Close menu on outside click 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -27,9 +51,12 @@ export default function StaffTypeCard({ staffMaster, onEdit, onDelete }: StaffTy
 
   return (
     <div className="relative bg-surface border border-border p-8 shadow-[0px_10px_40px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0px_10px_40px_rgba(0,0,0,0.08)]">
+      {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h3 className="text-2xl font-semibold text-text-primary">{staffMaster.title}</h3>
+          <h3 className="text-2xl font-semibold text-text-primary">
+            {staffMaster.title}
+          </h3>
           <span
             className={`inline-block mt-1 px-3 py-1 font-semibold text-[10px] rounded-full uppercase tracking-tighter ${
               staffMaster.isActive
@@ -41,6 +68,7 @@ export default function StaffTypeCard({ staffMaster, onEdit, onDelete }: StaffTy
           </span>
         </div>
 
+        {/* Actions menu */}
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
@@ -75,10 +103,12 @@ export default function StaffTypeCard({ staffMaster, onEdit, onDelete }: StaffTy
         </div>
       </div>
 
+      {/* Description */}
       <p className="text-text-secondary text-base mb-8 min-h-12">
         {staffMaster.description || 'No description added yet.'}
       </p>
 
+      {/* Footer stats */}
       <div className="flex items-center justify-between text-text-secondary">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4" />

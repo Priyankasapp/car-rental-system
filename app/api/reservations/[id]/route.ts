@@ -1,268 +1,215 @@
-// app/api/reservations/[id]/route.ts
-
+// app/api/reservations/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser } from '@/lib/api-auth'
 import { isUnitAvailable } from '@/lib/reservations/availability'
 import { calculateReservationPricing } from '@/lib/reservations/pricing'
+import { withErrorHandler } from '@/lib/api-handler'
 
-interface RouteParams {
-  params: Promise<{ id: string }>
+// ─────────────────────────────────────────────────────────────
+// POST /api/reservations — Create new reservation
+// ─────────────────────────────────────────────────────────────
+async function handlePOST(request: NextRequest): Promise<NextResponse> {
+  const user = await getAuthenticatedUser(request)
+  if (!user) {
+    return NextResponse.json(
+      { success: false, message: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
+  const body = await request.json()
+  const {
+    carId,
+    pickupDate,
+    dropoffDate,
+    pickupTime,
+    dropoffTime,
+    pickupLocation,
+    dropoffLocation,
+    customerName,
+    customerEmail,
+    customerPhone,
+    chauffeur,
+    conciergeDelivery,
+    platinumInsurance,
+    satelliteConnectivity,
+  } = body
+
+  // ── Validate required fields ─────────────────────────────
+  if (!carId || !pickupDate || !dropoffDate) {
+    return NextResponse.json(
+      { success: false, message: 'Car, pickup date and dropoff date are required.' },
+      { status: 400 }
+    )
+  }
+
+  // ── Check car exists ─────────────────────────────────────
+  const car = await prisma.car.findUnique({
+    where: { id: carId },
+  })
+
+  if (!car) {
+    return NextResponse.json(
+      { success: false, message: 'Car not found.' },
+      { status: 404 }
+    )
+  }
+
+  if (!car.isPublished || car.status !== 'AVAILABLE') {
+    return NextResponse.json(
+      { success: false, message: 'This car is not available for booking.' },
+      { status: 400 }
+    )
+  }
+
+  // ── Availability check ───────────────────────────────────
+  const available = await isUnitAvailable({
+    carId,           // ✅ correct field name
+    startDate: pickupDate,
+    endDate: dropoffDate,
+  })
+
+  if (!available) {
+    return NextResponse.json(
+      { success: false, message: 'This car is already booked for the selected dates.' },
+      { status: 400 }
+    )
+  }
+
+  // ── Calculate pricing ────────────────────────────────────
+  const pricing = calculateReservationPricing({
+    pricePerDay: car.pricePerDay,
+    startDate: new Date(pickupDate),
+    endDate: new Date(dropoffDate),
+    chauffeur: chauffeur ?? false,
+    conciergeDelivery: conciergeDelivery ?? false,
+    platinumInsurance: platinumInsurance ?? false,
+    satelliteConnectivity: satelliteConnectivity ?? false,
+  })
+
+  const totalBeforeTax = pricing.subtotal + pricing.addOnsTotal
+
+  // ── Generate reservation ref ─────────────────────────────
+  const reservationRef = `RES-${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(2, 7)
+    .toUpperCase()}`
+
+  // ── Create reservation ───────────────────────────────────
+  const reservation = await prisma.reservation.create({
+    data: {
+      reservationRef,
+      carId,
+      userId: user.id ?? null,
+      customerName: customerName ?? `${user.firstName} ${user.lastName}`,
+      customerEmail: customerEmail ?? user.email,
+      customerPhone: customerPhone ?? null,
+      isGuestBooking: false,
+
+      pickupDate: new Date(pickupDate),
+      pickupTime: pickupTime ?? '10:00',
+      pickupLocation: pickupLocation ?? car.locationAddress,
+
+      dropoffDate: new Date(dropoffDate),
+      dropoffTime: dropoffTime ?? '10:00',
+      dropoffLocation: dropoffLocation ?? car.locationAddress,
+
+      chauffeur: chauffeur ?? false,
+      conciergeDelivery: conciergeDelivery ?? false,
+      platinumInsurance: platinumInsurance ?? false,
+      satelliteConnectivity: satelliteConnectivity ?? false,
+
+      dailyRate: pricing.dailyRate,
+      rentalDays: pricing.rentalDays,
+      subtotal: totalBeforeTax,
+      tax: pricing.tax,
+      total: pricing.total,
+
+      status: 'PENDING',
+    },
+    include: {
+      car: true,
+    },
+  })
+
+  return NextResponse.json(
+    {
+      success: true,
+      message: 'Reservation created successfully.',
+      data: { reservation },
+    },
+    { status: 201 }
+  )
 }
 
-// GET /api/reservations/[id] - Get single reservation
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
-  try {
-    const { id } = await params
-    const user = await getAuthenticatedUser(request)
+// ─────────────────────────────────────────────────────────────
+// GET /api/reservations — List reservations
+// ─────────────────────────────────────────────────────────────
+async function handleGET(request: NextRequest): Promise<NextResponse> {
+  const user = await getAuthenticatedUser(request)
+  if (!user) {
+    return NextResponse.json(
+      { success: false, message: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+  const { searchParams } = new URL(request.url)
+  const status = searchParams.get('status')
+  const page = parseInt(searchParams.get('page') ?? '1')
+  const limit = parseInt(searchParams.get('limit') ?? '10')
+  const skip = (page - 1) * limit
 
-    const reservation = await prisma.reservation.findUnique({
-      where: { id },
-      include: {
-        car: true,
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-          },
+  const isAdmin =
+    user.role === 'ADMIN' ||
+    user.role === 'SUPERADMIN'
+
+  const reservations = await prisma.reservation.findMany({
+    where: {
+      // ✅ Admins see all — customers see only their own
+      ...(isAdmin ? {} : { userId: user.id }),
+      ...(status ? { status: status as never } : {}),
+    },
+    include: {
+      car: {
+        select: {
+          id: true,
+          manufacturer: true,
+          model: true,
+          imageMain: true,
+          pricePerDay: true,
         },
       },
-    })
+    },
+    orderBy: { createdAt: 'desc' },
+    skip,
+    take: limit,
+  })
 
-    if (!reservation) {
-      return NextResponse.json(
-        { success: false, message: 'Reservation not found' },
-        { status: 404 }
-      )
-    }
+  const total = await prisma.reservation.count({
+    where: {
+      ...(isAdmin ? {} : { userId: user.id }),
+      ...(status ? { status: status as never } : {}),
+    },
+  })
 
-    // Check ownership or admin status
-    if (
-      reservation.userId !== user.id &&
-      user.role !== 'ADMIN' &&
-      user.role !== 'SUPER_ADMIN'
-    ) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden' },
-        { status: 403 }
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: { reservation },
-    })
-  } catch (error) {
-    console.error('Error fetching reservation:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch reservation' },
-      { status: 500 }
-    )
-  }
+  return NextResponse.json({
+    success: true,
+    data: {
+      reservations,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
+  })
 }
 
-// PUT /api/reservations/[id] - Update reservation (reschedule, status, add-ons)
-export async function PUT(
-  request: NextRequest,
-  { params }: RouteParams
-) {
-  try {
-    const { id } = await params
-    const user = await getAuthenticatedUser(request)
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const {
-      status,
-      pickupDate,
-      dropoffDate,
-      chauffeur,
-      conciergeDelivery,
-      platinumInsurance,
-      satelliteConnectivity,
-    } = body
-
-    const existingReservation = await prisma.reservation.findUnique({
-      where: { id },
-      include: { car: true },
-    })
-
-    if (!existingReservation) {
-      return NextResponse.json(
-        { success: false, message: 'Reservation not found' },
-        { status: 404 }
-      )
-    }
-
-    // Verify ownership or admin permission
-    if (
-      existingReservation.userId !== user.id &&
-      user.role !== 'ADMIN' &&
-      user.role !== 'SUPER_ADMIN'
-    ) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden' },
-        { status: 403 }
-      )
-    }
-
-    const newPickupDate = pickupDate ? new Date(pickupDate) : existingReservation.pickupDate
-    const newDropoffDate = dropoffDate ? new Date(dropoffDate) : existingReservation.dropoffDate
-
-    // Verify date availability if dates are changing
-    if (pickupDate || dropoffDate) {
-      const available = await isUnitAvailable({
-        unitId: existingReservation.carId,
-        startDate: newPickupDate,
-        endDate: newDropoffDate,
-        excludeReservationId: id,
-      })
-
-      if (!available) {
-        return NextResponse.json(
-          { success: false, message: 'This car is already booked for the newly selected dates.' },
-          { status: 400 }
-        )
-      }
-    }
-
-    // Re-calculate pricing
-    const pricing = calculateReservationPricing({
-      pricePerDay: existingReservation.car.pricePerDay,
-      startDate: newPickupDate,
-      endDate: newDropoffDate,
-      chauffeur: chauffeur ?? existingReservation.chauffeur,
-      conciergeDelivery: conciergeDelivery ?? existingReservation.conciergeDelivery,
-      platinumInsurance: platinumInsurance ?? existingReservation.platinumInsurance,
-      satelliteConnectivity: satelliteConnectivity ?? existingReservation.satelliteConnectivity,
-    })
-
-    const totalBeforeTax = pricing.subtotal + pricing.addOnsTotal
-
-    // If cancelling, restore car status to AVAILABLE
-    if (status === 'CANCELLED' && existingReservation.status !== 'CANCELLED') {
-      await prisma.car.update({
-        where: { id: existingReservation.carId },
-        data: { status: 'AVAILABLE' },
-      })
-    }
-
-    const updatedReservation = await prisma.reservation.update({
-      where: { id },
-      data: {
-        status: status || existingReservation.status,
-        pickupDate: newPickupDate,
-        dropoffDate: newDropoffDate,
-        chauffeur: chauffeur ?? existingReservation.chauffeur,
-        conciergeDelivery: conciergeDelivery ?? existingReservation.conciergeDelivery,
-        platinumInsurance: platinumInsurance ?? existingReservation.platinumInsurance,
-        satelliteConnectivity: satelliteConnectivity ?? existingReservation.satelliteConnectivity,
-        dailyRate: pricing.dailyRate,
-        rentalDays: pricing.rentalDays,
-        subtotal: totalBeforeTax,
-        tax: pricing.tax,
-        total: pricing.total,
-      },
-      include: {
-        car: true,
-      },
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Reservation updated successfully',
-      data: { reservation: updatedReservation },
-    })
-  } catch (error) {
-    console.error('Error updating reservation:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to update reservation' },
-      { status: 500 }
-    )
-  }
-}
-
-// DELETE /api/reservations/[id] - Soft delete & cancel reservation
-export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
-) {
-  try {
-    const { id } = await params
-    const user = await getAuthenticatedUser(request)
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const existingReservation = await prisma.reservation.findUnique({
-      where: { id },
-    })
-
-    if (!existingReservation) {
-      return NextResponse.json(
-        { success: false, message: 'Reservation not found' },
-        { status: 404 }
-      )
-    }
-
-    if (
-      existingReservation.userId !== user.id &&
-      user.role !== 'ADMIN' &&
-      user.role !== 'SUPER_ADMIN'
-    ) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden' },
-        { status: 403 }
-      )
-    }
-
-    // Soft delete reservation and set status to CANCELLED
-    await prisma.reservation.update({
-      where: { id },
-      data: {
-        
-        status: 'CANCELLED',
-      },
-    })
-
-    // Restore car availability
-    await prisma.car.update({
-      where: { id: existingReservation.carId },
-      data: { status: 'AVAILABLE' },
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Reservation cancelled successfully',
-    })
-  } catch (error) {
-    console.error('Error cancelling reservation:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to cancel reservation' },
-      { status: 500 }
-    )
-  }
-}
+// ─────────────────────────────────────────────────────────────
+// Exports
+// ─────────────────────────────────────────────────────────────
+export const GET = withErrorHandler(handleGET)
+export const POST = withErrorHandler(handlePOST)

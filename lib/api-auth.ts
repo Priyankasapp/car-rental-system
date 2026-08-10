@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 import { hasPermission, type PermissionKey } from '@/lib/permissions'
 
 export interface AuthUser {
+  lastName: any
+  firstName: any
   id: string
   email: string
   role: string
@@ -45,6 +48,8 @@ export async function getAuthenticatedUser(
     select: {
       id: true,
       email: true,
+      firstName: true,
+      lastName: true,
       role: true,
       permissions: true,
       isActive: true,
@@ -54,6 +59,8 @@ export async function getAuthenticatedUser(
   if (!user || !user.isActive) return null
 
   return {
+    firstName: user.firstName,
+    lastName: user.lastName,
     id: user.id,
     email: user.email,
     role: user.role,

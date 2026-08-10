@@ -1,93 +1,90 @@
+// app/api/admin/staff-master/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
-import { Role } from '@prisma/client'
+import { withErrorHandler } from '@/lib/api-handler'
+import { authorizeUser } from '@/lib/auth-guard'
+import { PERMISSIONS } from '@/lib/permissions'
 
-// GET: Fetch all Staff Master blueprints
-export async function GET(request: NextRequest) {
-  try {
-    const token = request.cookies.get('token')?.value
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-    }
 
-    const payload = verifyToken(token)
-    if (!payload || (payload.role !== Role.SUPERADMIN && payload.role !== Role.ADMIN)) {
-      return NextResponse.json({ success: false, message: 'Admin access required' }, { status: 403 })
-    }
+// GET /api/admin/staff-master — Fetch all staff master roles
+async function handleGET(request: NextRequest): Promise<NextResponse> {
+  const authResult = await authorizeUser(request, PERMISSIONS.STAFF_MASTER_VIEW)
+  if (!authResult.isAuth) return authResult.response
 
-    const staffMasters = await prisma.staffMaster.findMany({
-      where: { isDeleted: false },
-      include: {
-        _count: {
-          select: { staffMembers: true }, 
-        },
+  const staffMasters = await prisma.staffMaster.findMany({
+    where: {
+      isActive: true, 
+    },
+    include: {
+      _count: {
+        select: { staffMembers: true },
       },
-      orderBy: { createdAt: 'desc' },
-    })
+    },
+    orderBy: { createdAt: 'desc' },
+  })
 
-    return NextResponse.json({
-      success: true,
-      data: { staffMasters },
-    })
-  } catch (error) {
-    console.error('Error fetching staff masters:', error)
-    return NextResponse.json({ success: false, message: 'Failed to fetch staff masters' }, { status: 500 })
-  }
+  return NextResponse.json({
+    success: true,
+    data: { staffMasters },
+  })
 }
 
-// POST: Create a new Staff Master
-export async function POST(request: NextRequest) {
-  try {
-    const token = request.cookies.get('token')?.value
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-    }
 
-    const payload = verifyToken(token)
-    if (!payload || (payload.role !== Role.SUPERADMIN && payload.role !== Role.ADMIN)) {
-      return NextResponse.json({ success: false, message: 'Admin access required' }, { status: 403 })
-    }
+// POST /api/admin/staff-master — Create a new staff master role
 
-    const body = await request.json()
-    const { title, department, staffType, defaultPermissions, description } = body
+async function handlePOST(request: NextRequest): Promise<NextResponse> {
+  const authResult = await authorizeUser(request, PERMISSIONS.STAFF_MASTER_CREATE)
+  if (!authResult.isAuth) return authResult.response
 
-    if (!title || !department) {
-      return NextResponse.json(
-        { success: false, message: 'Title and department are required' },
-        { status: 400 }
-      )
-    }
+  const body = await request.json()
+  const { title, department, staffType, defaultPermissions, description } = body
 
-    // Check if title already exists
-    const existing = await prisma.staffMaster.findUnique({
-      where: { title },
-    })
+  // Validate required fields 
+  if (!title?.trim() || !department?.trim()) {
+    return NextResponse.json(
+      { success: false, message: 'Title and department are required.' },
+      { status: 400 }
+    )
+  }
 
-    if (existing) {
-      return NextResponse.json(
-        { success: false, message: 'A Staff Master with this title already exists' },
-        { status: 400 }
-      )
-    }
+  // Check duplicate title 
+  const existing = await prisma.staffMaster.findUnique({
+    where: { title: title.trim() },
+  })
 
-    const staffMaster = await prisma.staffMaster.create({
-      data: {
-        title,
-        department,
-        staffType: staffType || null,
-        defaultPermissions: defaultPermissions || [],
-        description: description || null,
+  if (existing) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'A Staff Master with this title already exists.',
       },
-    })
+      { status: 409 }
+    )
+  }
 
-    return NextResponse.json({
+  //  Create 
+  const staffMaster = await prisma.staffMaster.create({
+    data: {
+      title: title.trim(),
+      department: department.trim(),
+      staffType: staffType ?? null,
+      defaultPermissions: defaultPermissions ?? [],
+      description: description?.trim() ?? null,
+    },
+  })
+
+  return NextResponse.json(
+    {
       success: true,
-      message: 'Staff Master created successfully',
+      message: 'Staff Master created successfully.',
       data: { staffMaster },
-    })
-  } catch (error) {
-    console.error('Error creating staff master:', error)
-    return NextResponse.json({ success: false, message: 'Failed to create staff master' }, { status: 500 })
-  }
+    },
+    { status: 201 }
+  )
 }
+
+
+// Exports
+
+export const GET = withErrorHandler(handleGET)
+export const POST = withErrorHandler(handlePOST)

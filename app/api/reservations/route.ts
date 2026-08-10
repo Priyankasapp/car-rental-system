@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     // 1. Availability check using lib/reservations/availability.ts
     const available = await isUnitAvailable({
-      unitId: carId,
+      carId: carId,
       startDate: pickupDate,
       endDate: dropoffDate,
     })

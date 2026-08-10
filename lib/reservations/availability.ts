@@ -1,22 +1,20 @@
 // lib/reservations/availability.ts
-
 import { prisma } from "@/lib/prisma";
 import { ReservationStatus } from "@prisma/client";
 
 export interface CheckAvailabilityParams {
-  unitId: string;
+  carId: string;                        
   startDate: Date | string;
   endDate: Date | string;
-  /** Option to ignore a specific reservation ID (useful during updates/edits) */
   excludeReservationId?: string;
 }
 
 /**
- * Checks if a car/unit is available for a given date range.
+ * Checks if a car is available for a given date range.
  * Returns true if available, false if there is an overlapping reservation.
  */
 export async function isUnitAvailable({
-  unitId,
+  carId,
   startDate,
   endDate,
   excludeReservationId,
@@ -24,7 +22,7 @@ export async function isUnitAvailable({
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  // Active statuses that block dates from being booked
+  // Active statuses that block availability
   const activeStatuses: ReservationStatus[] = [
     ReservationStatus.PENDING,
     ReservationStatus.CONFIRMED,
@@ -32,16 +30,17 @@ export async function isUnitAvailable({
 
   const overlappingReservation = await prisma.reservation.findFirst({
     where: {
-      unitId,
+      carId,                             
       status: { in: activeStatuses },
       ...(excludeReservationId && {
         id: { not: excludeReservationId },
       }),
-      // Date overlap check: (pickupDate < requestedEnd) AND (returnDate > requestedStart)
-      // Note: If your schema uses `startAt`/`endAt` or `startDate`/`endDate`, match those names here.
+      
+      // pickupDate — when reservation starts
+      // dropoffDate — when reservation ends
       AND: [
-        { pickupDate: { lt: end } },
-        { returnDate: { gt: start } },
+        { pickupDate: { lt: end } },    
+        { dropoffDate: { gt: start } },  
       ],
     },
     select: { id: true },

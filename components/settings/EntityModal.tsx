@@ -112,7 +112,8 @@ const EntityModalForm: React.FC<EntityModalFormProps> = ({
         color,
         circleBg,
         textColor,
-        borderColor
+        borderColor,
+        isActive: false
       })
       onClose()
     } catch (err: any) {

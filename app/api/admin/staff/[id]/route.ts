@@ -123,7 +123,7 @@ async function handleDELETE(
 
   await prisma.user.update({
     where: { id },
-    data: { isDeleted: true, isActive: false },
+    data: {  isActive: false },
   })
 
   return NextResponse.json({
