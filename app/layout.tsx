@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     template: "%s | UrbanDrive"
   },
   description: "Experience premium, on-demand executive and luxury car rentals.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -8,7 +8,7 @@ import { ArrowRight, Phone } from "lucide-react";
 import { contactCTA } from "@/data/contact";
 
 // Register ScrollTrigger
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
@@ -18,29 +18,28 @@ const ContactCTA = () => {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-
       // Background Blurs Animation (Pulse)
-      gsap.to('.blur-1', {
+      gsap.to(".blur-1", {
         scale: 1.2,
         opacity: 0.6,
         duration: 4,
         ease: "sine.inOut",
         yoyo: true,
-        repeat: -1
-      })
+        repeat: -1,
+      });
 
-      gsap.to('.blur-2', {
+      gsap.to(".blur-2", {
         scale: 1.3,
         opacity: 0.7,
         duration: 5,
         ease: "sine.inOut",
         yoyo: true,
         repeat: -1,
-        delay: 1
-      })
+        delay: 1,
+      });
 
       //  Title Split Animation (Word by Word)
-      const titleWords = document.querySelectorAll('.cta-word');
+      const titleWords = document.querySelectorAll(".cta-word");
       gsap.fromTo(
         titleWords,
         { opacity: 0, y: 40, rotateX: 45 },
@@ -54,14 +53,14 @@ const ContactCTA = () => {
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top 80%",
-            toggleActions: "play none none none"
-          }
-        }
-      )
+            toggleActions: "play none none none",
+          },
+        },
+      );
 
       // Subtitle Fade In
       gsap.fromTo(
-        '.cta-subtitle',
+        ".cta-subtitle",
         { opacity: 0, y: 30 },
         {
           opacity: 1,
@@ -72,14 +71,14 @@ const ContactCTA = () => {
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top 75%",
-            toggleActions: "play none none none"
-          }
-        }
-      )
+            toggleActions: "play none none none",
+          },
+        },
+      );
 
       // Buttons Stagger
       gsap.fromTo(
-        '.cta-button',
+        ".cta-button",
         { opacity: 0, y: 40, scale: 0.9 },
         {
           opacity: 1,
@@ -92,72 +91,73 @@ const ContactCTA = () => {
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top 70%",
-            toggleActions: "play none none none"
-          }
-        }
-      )
+            toggleActions: "play none none none",
+          },
+        },
+      );
 
       // Button Hover Effects
-      document.querySelectorAll('.cta-button').forEach((btn) => {
-        const element = btn as HTMLElement
-        
-        element.addEventListener('mouseenter', () => {
+      document.querySelectorAll(".cta-button").forEach((btn) => {
+        const element = btn as HTMLElement;
+
+        element.addEventListener("mouseenter", () => {
           gsap.to(element, {
             scale: 1.05,
-            boxShadow: '0 20px 60px rgba(255,255,255,0.15)',
+            boxShadow: "0 20px 60px rgba(255,255,255,0.15)",
             duration: 0.3,
-            ease: "power2.out"
-          })
-        })
-        
-        element.addEventListener('mouseleave', () => {
+            ease: "power2.out",
+          });
+        });
+
+        element.addEventListener("mouseleave", () => {
           gsap.to(element, {
             scale: 1,
-            boxShadow: 'none',
+            boxShadow: "none",
             duration: 0.3,
-            ease: "power2.in"
-          })
-        })
-      })
+            ease: "power2.in",
+          });
+        });
+      });
 
       //  Arrow Hover Animation
-      document.querySelectorAll('.cta-arrow').forEach((arrow) => {
-        const element = arrow as HTMLElement
-        
-        element.parentElement?.addEventListener('mouseenter', () => {
+      document.querySelectorAll(".cta-arrow").forEach((arrow) => {
+        const element = arrow as HTMLElement;
+
+        element.parentElement?.addEventListener("mouseenter", () => {
           gsap.to(element, {
             x: 5,
             scale: 1.2,
             duration: 0.3,
-            ease: "power2.out"
-          })
-        })
-        
-        element.parentElement?.addEventListener('mouseleave', () => {
+            ease: "power2.out",
+          });
+        });
+
+        element.parentElement?.addEventListener("mouseleave", () => {
           gsap.to(element, {
             x: 0,
             scale: 1,
             duration: 0.3,
-            ease: "power2.in"
-          })
-        })
-      })
+            ease: "power2.in",
+          });
+        });
+      });
+    }, sectionRef);
 
-    }, sectionRef)
-
-    return () => ctx.revert()
-  }, [])
+    return () => ctx.revert();
+  }, []);
 
   //  Split title into words
-  const titleWords = contactCTA.title.split(' ').map((word, index) => (
+  const titleWords = contactCTA.title.split(" ").map((word, index) => (
     <span key={index} className="cta-word inline-block mr-2">
       {word}
     </span>
-  ))
+  ));
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden bg-black py-24 lg:py-32">
-      
+    <section
+      ref={sectionRef}
+      className="relative overflow-hidden bg-black py-24 lg:py-32"
+    >
       {/* ===== BACKGROUND ===== */}
       <div className="absolute inset-0 bg-linear-to-br from-zinc-900 via-black to-zinc-950" />
 
@@ -166,8 +166,10 @@ const ContactCTA = () => {
       <div className="blur-2 absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
 
       {/* ===== CONTENT ===== */}
-      <div ref={contentRef} className="relative z-10 mx-auto max-w-5xl px-6 text-center lg:px-8">
-        
+      <div
+        ref={contentRef}
+        className="relative z-10 mx-auto max-w-5xl px-6 text-center lg:px-8"
+      >
         {/* Heading */}
         <h2 className="text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
           {titleWords}

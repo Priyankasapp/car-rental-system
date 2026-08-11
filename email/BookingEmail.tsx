@@ -155,7 +155,7 @@ export function generateBookingHTML({
                 ? `
             <div style="${emailStyles.credItem}">
               <div style="${emailStyles.credLabel}">Total Amount</div>
-              <div style="${emailStyles.credValue}"><strong>$${totalAmount}</strong></div>
+              <div style="${emailStyles.credValue}"><strong>₹${totalAmount}</strong></div>
             </div>
             `
                 : ''

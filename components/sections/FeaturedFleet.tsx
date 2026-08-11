@@ -24,7 +24,7 @@ export default function CarCard({
       style={style}
     >
       {/* Image */}
-      <div className="relative h-[400px] overflow-hidden bg-surface">
+      <div className="relative h-100 overflow-hidden bg-surface">
         <div 
           className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
           style={{ backgroundImage: `url(${car.image})` }}
@@ -61,7 +61,7 @@ export default function CarCard({
             <span className="font-label-sm text-[10px] text-text-secondary uppercase tracking-widest">
               Transmission
             </span>
-            <span className="font-body-md font-semibold text-primary">
+            <span className="font-body-md text-primary">
               {car.specs.transmission}
             </span>
           </div>
@@ -69,7 +69,7 @@ export default function CarCard({
             <span className="font-label-sm text-[10px] text-text-secondary uppercase tracking-widest">
               Power
             </span>
-            <span className="font-body-md font-semibold text-primary">
+            <span className="font-body-md text-primary">
               {car.specs.power}
             </span>
           </div>
@@ -77,7 +77,7 @@ export default function CarCard({
             <span className="font-label-sm text-[10px] text-text-secondary uppercase tracking-widest">
               {car.specs.acceleration ? '0-60 MPH' : car.specs.passengers ? 'Passengers' : 'Range'}
             </span>
-            <span className="font-body-md font-semibold text-primary">
+            <span className="font-body-md text-primary">
               {car.specs.acceleration || car.specs.passengers || car.specs.range || '-'}
             </span>
           </div>
