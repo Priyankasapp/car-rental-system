@@ -128,7 +128,7 @@ export default function ContactInfo() {
             ease: "back.out(1.7)"
           })
         })
-        
+          
         card.addEventListener('mouseleave', () => {
           gsap.to(icon, {
             scale: 1,

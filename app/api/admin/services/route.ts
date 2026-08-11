@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { withErrorHandler } from "@/lib/api-handler";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
@@ -8,27 +7,21 @@ import { NextRequest, NextResponse } from "next/server";
 // ======================================================
 
 export const GET = withErrorHandler(async (request: NextRequest) => {
-  const { searchParams } = new URL(request.url);
+  new URL(request.url);
 
-  const includeInactive =
-    searchParams.get("includeInactive") === "true";
 
-  const where: Prisma.ServiceMasterWhereInput = {
-    ...(includeInactive ? {} : { isActive: true }),
-  };
 
   const services = await prisma.serviceMaster.findMany({
-    where,
-    orderBy: {
-      createdAt: "desc",
+    orderBy:{
+      createdAt:"desc",
     },
-    include: {
-      _count: {
-        select: {
-          cars: true,
-        },
-      },
-    },
+    include:{
+      _count:{
+        select:{
+          cars:true,
+        }
+      }
+    }
   });
 
   return NextResponse.json(
