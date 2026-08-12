@@ -117,9 +117,12 @@ export const PATCH = PUT
 
 // DELETE: Hard-delete a transmission type
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: RouteParams
 ) {
+  const authResult = await authorizeUser(request, PERMISSIONS.TRANSMISSIONS_DELETE)
+  if (!authResult.isAuth) return authResult.response
+
   try {
     const { id } = await params
 

@@ -11,7 +11,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 
 export const GET = withErrorHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) => {
-    const authResult = await authorizeUser(request,PERMISSIONS.SERVICES_EDIT );
+    const authResult = await authorizeUser(request, PERMISSIONS.SERVICES_VIEW);
     if(authResult.isAuth) return authResult.response;
     
     // Handle both sync and async params
@@ -113,6 +113,9 @@ export const GET = withErrorHandler(
 
 export const PATCH = withErrorHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) => {
+    const authResult = await authorizeUser(request, PERMISSIONS.SERVICES_EDIT);
+    if (!authResult.isAuth) return authResult.response;
+
     const params = await context.params;
     const id = params.id;
     const body = await request.json();
@@ -286,6 +289,9 @@ export const PATCH = withErrorHandler(
 
 export const DELETE = withErrorHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) => {
+    const authResult = await authorizeUser(request, PERMISSIONS.SERVICES_DELETE);
+    if (!authResult.isAuth) return authResult.response;
+
     const params = await context.params;
     const id = params.id;
 
@@ -388,6 +394,9 @@ export const DELETE = withErrorHandler(
 
 export const PUT = withErrorHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) => {
+    const authResult = await authorizeUser(request, PERMISSIONS.SERVICES_EDIT);
+    if (!authResult.isAuth) return authResult.response;
+
     const params = await context.params;
     const id = params.id;
     const body = await request.json();
