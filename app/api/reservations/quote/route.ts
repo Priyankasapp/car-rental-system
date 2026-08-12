@@ -10,20 +10,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { calculateBookingPricing } from '@/lib/pricing'
 import { withErrorHandler } from '@/lib/api-handler'
+import { QuoteSchema } from '@/lib/reservations/validation'
 
 async function handlePOST(request: NextRequest): Promise<NextResponse> {
   const body = await request.json()
-  const { carId, pickupDate, dropoffDate, enhancements } = body ?? {}
 
-  if (!carId || !pickupDate || !dropoffDate) {
+  const validation = QuoteSchema.safeParse(body)
+  if (!validation.success) {
     return NextResponse.json(
       {
         success: false,
-        message: 'carId, pickupDate and dropoffDate are required.',
+        message: 'Validation failed',
+        errors: validation.error.flatten().fieldErrors,
       },
       { status: 400 }
     )
   }
+
+  const { carId, pickupDate, dropoffDate, enhancements } = validation.data
 
   // Price against the car's stored rate, never a rate supplied by the client.
   const car = await prisma.car.findUnique({

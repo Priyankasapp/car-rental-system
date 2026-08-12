@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
+import { StaffCreateSchema } from '@/lib/staff/validation'
+import { hashPassword, generatePassword } from '@/lib/auth'
 
 // GET — List all staff members
 export async function GET(request: NextRequest) {
@@ -57,14 +59,24 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { firstName, lastName, email, phone, staffMasterId, role } = body
 
-    if (!firstName || !lastName || !email || !staffMasterId) {
+    const validation = StaffCreateSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, message: 'First name, last name, email, and staff role are required' },
+        {
+          success: false,
+          message: 'Validation failed',
+          errors: validation.error.flatten().fieldErrors,
+        },
         { status: 400 }
       )
     }
+
+    // `role` is constrained to STAFF | ADMIN by the schema. It used to come
+    // straight off the body, so anyone with staff:create could mint a
+    // SUPERADMIN for themselves.
+    const { firstName, lastName, email, phone, staffMasterId, role } =
+      validation.data
 
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
@@ -78,8 +90,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Default password placeholder if the Prisma schema requires a non-null string
-    const defaultPassword = 'ChangeMe123!'
+    // Every staff account previously shared the literal password
+    // 'ChangeMe123!', stored unhashed. Generate a unique random one and hash
+    // it; the account must go through the password-reset flow to be used.
+    const temporaryPassword = generatePassword(12)
+    const hashedPassword = await hashPassword(temporaryPassword)
 
     const newStaff = await prisma.user.create({
       data: {
@@ -87,8 +102,9 @@ export async function POST(request: NextRequest) {
         lastName,
         email: email.toLowerCase(),
         phone: phone || null,
-        password: defaultPassword,
-        role: role || 'STAFF',
+        password: hashedPassword,
+        mustChangePassword: true,
+        role,
         staffMasterId,
         isActive: true,
       },

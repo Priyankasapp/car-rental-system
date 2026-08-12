@@ -7,6 +7,7 @@ import { getAuthenticatedUser } from '@/lib/api-auth'
 import { isUnitAvailable } from '@/lib/reservations/availability'
 import { calculateBookingPricing } from '@/lib/pricing'
 import { sendBookingEmail } from '@/lib/email'
+import { ReservationCreateSchema } from '@/lib/reservations/validation'
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -65,14 +66,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { carId, customer, pickup, dropoff, chauffeur, enhancements } = body
 
-    if (!carId || !customer?.name || !customer?.email || !pickup?.date || !dropoff?.date) {
+    const validation = ReservationCreateSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields' },
+        {
+          success: false,
+          message: 'Validation failed',
+          errors: validation.error.flatten().fieldErrors,
+        },
         { status: 400 }
       )
     }
+
+    const { carId, customer, pickup, dropoff, chauffeur, enhancements } =
+      validation.data
 
     let userId: string | null = null
     let isGuestBooking = true
@@ -98,20 +106,6 @@ export async function POST(request: NextRequest) {
 
     const pickupDate = new Date(`${pickup.date}T${pickup.time || '10:00'}:00`)
     const dropoffDate = new Date(`${dropoff.date}T${dropoff.time || '10:00'}:00`)
-
-    if (isNaN(pickupDate.getTime()) || isNaN(dropoffDate.getTime())) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid pickup or return date format.' },
-        { status: 400 }
-      )
-    }
-
-    if (pickupDate >= dropoffDate) {
-      return NextResponse.json(
-        { success: false, message: 'Drop-off date must be after pickup date.' },
-        { status: 400 }
-      )
-    }
 
     //  Availability check using lib/reservations/availability.ts
     const available = await isUnitAvailable({
