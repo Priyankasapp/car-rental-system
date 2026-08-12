@@ -10,11 +10,12 @@ export const PERMISSIONS = {
   CARS_EDIT: "cars:edit",
   CARS_DELETE: "cars:delete",
 
-  // MESSAGES
+   // MESSAGES
   MESSAGES_VIEW: "messages:view",
   MESSAGES_REPLY: "messages:reply",
   MESSAGES_DELETE: "messages:delete",
   MESSAGES_EDIT: "messages:edit",
+
 
   // CATEGORIES
   CATEGORIES_VIEW: "categories:view",
@@ -74,7 +75,7 @@ export const PERMISSIONS = {
   PERMISSIONS_VIEW: "permissions:view",
   PERMISSIONS_MANAGE: "permissions:manage",
 
-  //REPORTS
+   //REPORTS
   REPORTS_VIEW: "reports:view",
   REPORTS_EXPORT: "reports:export",
 } as const;
@@ -199,7 +200,7 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
   {
     category: "Message",
     permissions: [
-      {
+     {
         key: PERMISSIONS.MESSAGES_VIEW,
         label: "View Message",
         description: "Can view the messages list and message details",
@@ -219,7 +220,7 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
   {
     category: "Categories",
     permissions: [
-      {
+     {
         key: PERMISSIONS.CATEGORIES_VIEW,
         label: "View Categories",
         description: "Can view car categories (e.g., Luxury, SUV, Electric)",
@@ -269,7 +270,7 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
   {
     category: "Fuel Types",
     permissions: [
-      {
+       {
         key: PERMISSIONS.FUELS_VIEW,
         label: "View Fuel Types",
         description: "Can view fuel options",
@@ -294,7 +295,7 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
   {
     category: "Car Features",
     permissions: [
-      {
+       {
         key: PERMISSIONS.FEATURES_VIEW,
         label: "View Car Features",
         description: "Can view feature lists",
@@ -319,7 +320,7 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
   {
     category: "Services",
     permissions: [
-      {
+       {
         key: PERMISSIONS.SERVICES_VIEW,
         label: "View Contact Services",
         description: "Can view services lists",
@@ -344,7 +345,7 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
   {
     category: "Reservations",
     permissions: [
-      {
+       {
         key: PERMISSIONS.RESERVATIONS_VIEW,
         label: "View Reservations",
         description: "Can view customer reservations and booking details",
@@ -444,7 +445,7 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
   {
     category: "Permissions",
     permissions: [
-      {
+       {
         key: PERMISSIONS.PERMISSIONS_VIEW,
         label: "View Permissions",
         description: "Can view a staff member's permission assignments",
@@ -456,21 +457,21 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
       },
     ],
   },
-  {
-    category: "Reports",
-    permissions: [
-      {
-        key: PERMISSIONS.REPORTS_VIEW,
-        label: "View Reports",
-        description: "Can view analytics reports and charts",
-      },
-      {
-        key: PERMISSIONS.REPORTS_EXPORT,
-        label: "Export Reports",
-        description: "CAn download report data as CSV/PDF",
-      },
-    ],
-  },
+  // {
+  //   category: "Reports",
+  //   permissions: [
+  //     {
+  //       key: PERMISSIONS.REPORTS_VIEW,
+  //       label: "View Reports",
+  //       description: "Can view analytics reports and charts",
+  //     },
+  //     {
+  //       key: PERMISSIONS.REPORTS_EXPORT,
+  //       label: "Export Reports",
+  //       description: "CAn download report data as CSV/PDF",
+  //     },
+  //   ],
+  // },
 ] as const;
 
 /**
@@ -508,8 +509,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     PERMISSIONS.STAFF_VIEW,
     PERMISSIONS.STAFF_MASTER_VIEW,
     PERMISSIONS.PERMISSIONS_VIEW,
-    PERMISSIONS.REPORTS_VIEW,
-    PERMISSIONS.REPORTS_EXPORT,
+    // PERMISSIONS.REPORTS_VIEW,
+    // PERMISSIONS.REPORTS_EXPORT,
     
   ],
   STAFF: [
@@ -537,7 +538,7 @@ export function hasPermission(
   const role = userRole.toString().toUpperCase();
 
   // Superadmin bypasses explicit permission checks
-  if (
+   if (
     role === Role.SUPERADMIN ||
     role === "SUPERADMIN" ||
     role === "SUPER_ADMIN"

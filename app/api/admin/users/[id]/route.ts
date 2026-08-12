@@ -111,10 +111,8 @@ export async function GET(
   }
 }
 
-// ============================================================================
 // PUT - Update Customer Profile
 // Permission: users:edit
-// ============================================================================
 export async function PUT(
   request: NextRequest,
   { params }: RouteParams
@@ -337,7 +335,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: RouteParams
 ) {
-  // 🔐 Check users:delete permission
+  //  Check users:delete permission
   const authResult = await authorizeUser(
     request,
     PERMISSIONS.USERS_DELETE
