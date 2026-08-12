@@ -206,10 +206,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
- 
-  //  API ROUTES (/api/*)
-
-
   //  Always public 
   if (matchesRoute(path, alwaysPublicRoutes)) {
     return NextResponse.next();
