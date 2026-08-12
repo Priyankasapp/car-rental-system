@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/auth.ts
 import jwt, { Secret, SignOptions } from 'jsonwebtoken'
 import { randomInt, randomBytes } from 'crypto'
@@ -12,11 +11,13 @@ if (!JWT_SECRET) {
 }
 
 export interface JWTPayload {
-  sessionId: any
+  sessionId?: string
   userId: string
   email: string
   role: string
   permissions?: string[]
+  /** Bumped by revokeAllUserSessions() to invalidate every outstanding JWT. */
+  tokenVersion?: number
 }
 
 // ============ JWT Functions ============
