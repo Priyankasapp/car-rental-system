@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { generateReservationRef } from '@/lib/auth'
 import { getAuthenticatedUser } from '@/lib/api-auth'
 import { isUnitAvailable } from '@/lib/reservations/availability'
-import { calculateReservationPricing } from '@/lib/reservations/pricing'
+import { calculateBookingPricing } from '@/lib/reservations/pricing'
 import { sendBookingEmail } from '@/lib/email'
 
 function formatDate(date: Date): string {
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     const platinumInsurance = enhancements?.platinumInsurance !== false
 
     //  Pricing calculation using lib/reservations/pricing.ts
-    const pricing = calculateReservationPricing({
+    const pricing = calculateBookingPricing({
       pricePerDay: car.pricePerDay,
       startDate: pickupDate,
       endDate: dropoffDate,
