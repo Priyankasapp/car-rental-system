@@ -3,20 +3,13 @@
 import jwt, { Secret, SignOptions } from 'jsonwebtoken'
 import { randomInt, randomBytes } from 'crypto'
 import bcrypt from 'bcryptjs'
+import type { JWTPayload } from '@/types/auth'
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET || ''
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d'
 
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required')
-}
-
-export interface JWTPayload {
-  sessionId: any
-  userId: string
-  email: string
-  role: string
-  permissions?: string[]
 }
 
 // ============ JWT Functions ============

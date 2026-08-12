@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, JWTPayload } from '@/lib/auth'
+import { verifyToken } from '@/lib/auth'
+import type { JWTPayload } from '@/types/auth'
 import { prisma } from '@/lib/prisma'
 import { hasPermission, normalizePermissions, PermissionKey } from '@/lib/permissions'
 
@@ -57,6 +58,32 @@ export async function authorizeUser(
   }
 
   try {
+
+    if(payload.sessionId){
+       const session = await prisma.session.findFirst({
+        where: {
+          id: payload.sessionId,
+          isRevoked: false,
+          expiresAt: { gt: new Date() },
+        },
+        select: { id: true },
+      })
+
+      if (!session) {
+        return {
+          isAuth: false,
+          response: NextResponse.json(
+            {
+              success: false,
+              error: 'SESSION_REVOKED',
+              message: 'Session has expired or been revoked. Please log in again.',
+            },
+            { status: 401 }
+          ),
+        }
+      }
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: {
@@ -67,6 +94,7 @@ export async function authorizeUser(
         role: true,
         isActive: true,
         permissions: true,
+        tokenVersion: true,
         staffMasterId: true,
         staffMaster: {
           select: {
@@ -85,6 +113,24 @@ export async function authorizeUser(
         ),
       }
     }
+
+     if (
+      typeof payload.tokenVersion === 'number' &&
+      payload.tokenVersion !== user.tokenVersion
+    ) {
+      return {
+        isAuth: false,
+        response: NextResponse.json(
+          {
+            success: false,
+            error: 'SESSION_REVOKED',
+            message: 'Session has been invalidated. Please log in again.',
+          },
+          { status: 401 }
+        ),
+      }
+    }
+
 
     const inheritedStaffPermissions = user.staffMaster?.defaultPermissions || []
     const rawPermissions = [...(user.permissions || []), ...inheritedStaffPermissions]

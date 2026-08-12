@@ -21,6 +21,7 @@ export interface UserSession {
 // JWT Payload — decoded token shape
 
 export interface JWTPayload {
+  
   sub?: string;        
   userId: string;
   email: string;
