@@ -242,13 +242,12 @@ export async function proxy(request: NextRequest) {
   //  Admin API permission guards
   if (path.startsWith("/api/admin")) {
 
-    if(!isDashboardUser){
+     if(!isDashboardUser){
       return NextResponse.json(
         { success:false, message:"Admin access required"},
         { status: 403 }
       );
     }
-
     const apiGuards: Array<{
       pathPrefix: string;
       permission: string;

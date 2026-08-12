@@ -15,6 +15,7 @@ export async function POST() {
   // to a live session and can be replayed.
   if (accessToken) {
     try {
+      // Verified with jose, matching how createSession() signs the token.
       const payload = await verifyToken(accessToken);
       if (payload?.sessionId) {
         // Imported lazily so that a Prisma/DB init failure cannot break the

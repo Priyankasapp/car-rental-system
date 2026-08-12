@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/auth.ts
 import jwt, { Secret, SignOptions } from 'jsonwebtoken'
 import { randomInt, randomBytes } from 'crypto'
@@ -11,6 +12,7 @@ if (!JWT_SECRET) {
 }
 
 export interface JWTPayload {
+  sessionId: any
   userId: string
   email: string
   role: string
