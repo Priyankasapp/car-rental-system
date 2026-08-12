@@ -9,7 +9,18 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    // Fail closed: if CRON_SECRET is not configured, refuse to run rather
+    // than skipping the check. This route is in alwaysPublicRoutes, so a
+    // missing secret previously left it open to anyone on the internet.
+    if (!cronSecret) {
+      console.error("CRON_SECRET is not configured; refusing to run cron job");
+      return NextResponse.json(
+        { success: false, message: "Cron endpoint is not configured" },
+        { status: 503 }
+      );
+    }
+
+    if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json(
         { success: false, message: "Unauthorized cron request" },
         { status: 401 }
