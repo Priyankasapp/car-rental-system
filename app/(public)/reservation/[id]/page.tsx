@@ -40,6 +40,25 @@ interface RawCar {
   transmission: { id: string; name: string } | null
 }
 
+interface PricingAddOnLine {
+  key: string
+  label: string
+  price: number
+  unit: 'perDay' | 'oneOff'
+  amount: number
+}
+
+interface PricingQuote {
+  dailyRate: number
+  rentalDays: number
+  baseSubtotal: number
+  addOnsTotal: number
+  addOnLines: PricingAddOnLine[]
+  subtotal: number
+  tax: number
+  total: number
+}
+
 interface BookingResponse {
   success: boolean
   message?: string
@@ -76,7 +95,7 @@ export default function ReservationPage() {
   const [hasChauffeur, setHasChauffeur] = useState(false)
   const [hasDelivery, setHasDelivery] = useState(false)
   const [hasSatellite, setHasSatellite] = useState(false)
-  const hasInsurance = true
+  const [hasInsurance, setHasInsurance] = useState(false)
 
   // SUBMISSION STATE
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -167,17 +186,67 @@ export default function ReservationPage() {
     return diffDays > 0 ? diffDays : 1
   }, [pickupDate, returnDate])
 
-  // PRICING CALCULATIONS
-  const dailyRate = car?.price || 0
-  const baseRate = dailyRate * rentalDays
-  const addOns =
-    (hasChauffeur ? 100 * rentalDays : 0) +
-    (hasDelivery ? 150 : 0) +
-    (hasSatellite ? 45 * rentalDays : 0)
+  // PRICING — fetched from the server so the figure shown here is produced by
+  // the same code that prices the booking on submit. Never calculated inline:
+  // a browser-side copy is how the quote and the charge drifted apart before.
+  const [quote, setQuote] = useState<PricingQuote | null>(null)
+  const [quoteError, setQuoteError] = useState('')
 
-  const subtotal = baseRate + addOns
-  const tax = Math.round(subtotal * 0.12)
-  const total = subtotal + tax
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const fetchQuote = async () => {
+      if (!car || !pickupDate || !returnDate) {
+        setQuote(null)
+        return
+      }
+
+      try {
+        const res = await fetch('/api/reservations/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            carId: car.id,
+            pickupDate,
+            dropoffDate: returnDate,
+            enhancements: {
+              chauffeur: hasChauffeur,
+              conciergeDelivery: hasDelivery,
+              satelliteConnectivity: hasSatellite,
+              platinumInsurance: hasInsurance,
+            },
+          }),
+        })
+
+        const json = await res.json()
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.message || 'Could not calculate price.')
+        }
+
+        setQuote(json.data.pricing)
+        setQuoteError('')
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return
+        setQuote(null)
+        setQuoteError((err as Error).message || 'Could not calculate price.')
+      }
+    }
+
+    fetchQuote()
+    return () => controller.abort()
+  }, [
+    car,
+    pickupDate,
+    returnDate,
+    hasChauffeur,
+    hasDelivery,
+    hasSatellite,
+    hasInsurance,
+  ])
+
+  const dailyRate = quote?.dailyRate ?? car?.price ?? 0
 
   //  SUBMIT HANDLER
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -527,18 +596,18 @@ export default function ReservationPage() {
                     />
                   </label>
 
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 opacity-80">
+                  <label className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100/80 rounded-xl border border-gray-200 cursor-pointer transition">
                     <span>
                       <span className="font-medium text-gray-900 block">
                         Platinum Insurance Coverage
                       </span>
-                      <small className="text-gray-500">Included in base package</small>
+                      <small className="text-gray-500">+₹75 / day</small>
                     </span>
                     <input
                       type="checkbox"
-                      checked
-                      disabled
-                      className="w-5 h-5 rounded text-black"
+                      checked={hasInsurance}
+                      onChange={(e) => setHasInsurance(e.target.checked)}
+                      className="w-5 h-5 rounded text-black focus:ring-black"
                     />
                   </label>
                 </div>
@@ -566,27 +635,49 @@ export default function ReservationPage() {
 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Base Rental Fee</span>
-                  <span className="font-medium">₹{baseRate.toLocaleString()}</span>
+                  <span className="font-medium">
+                    ₹{(quote?.baseSubtotal ?? 0).toLocaleString()}
+                  </span>
                 </div>
 
-                {addOns > 0 && (
-                  <div className="flex justify-between text-indigo-600">
-                    <span>Selected Add-ons</span>
-                    <span className="font-medium">+₹{addOns.toLocaleString()}</span>
+                {/* Itemised so the customer sees exactly what they are billed
+                    for — insurance in particular used to be charged silently. */}
+                {quote?.addOnLines.map((line) => (
+                  <div
+                    key={line.key}
+                    className="flex justify-between text-indigo-600"
+                  >
+                    <span>
+                      {line.label}
+                      <span className="text-gray-400 text-xs ml-1">
+                        {line.unit === 'perDay'
+                          ? `₹${line.price.toLocaleString()} × ${quote.rentalDays}`
+                          : 'one-off'}
+                      </span>
+                    </span>
+                    <span className="font-medium">
+                      +₹{line.amount.toLocaleString()}
+                    </span>
                   </div>
-                )}
+                ))}
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Estimated Tax (12%)</span>
-                  <span className="font-medium">₹{tax.toLocaleString()}</span>
+                  <span className="text-gray-600">Estimated Tax</span>
+                  <span className="font-medium">
+                    ₹{(quote?.tax ?? 0).toLocaleString()}
+                  </span>
                 </div>
 
                 <div className="border-t border-gray-200 pt-4 flex justify-between items-baseline">
                   <strong className="text-lg text-gray-900">Total Due</strong>
                   <strong className="text-2xl text-gray-900">
-                    ₹{total.toLocaleString()}
+                    ₹{(quote?.total ?? 0).toLocaleString()}
                   </strong>
                 </div>
+
+                {quoteError && (
+                  <p className="text-red-600 text-xs">{quoteError}</p>
+                )}
               </div>
 
               <button

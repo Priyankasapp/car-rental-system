@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { generateReservationRef } from '@/lib/auth'
 import { getAuthenticatedUser } from '@/lib/api-auth'
 import { isUnitAvailable } from '@/lib/reservations/availability'
-import { calculateReservationPricing } from '@/lib/reservations/pricing'
+import { calculateBookingPricing } from '@/lib/pricing'
 import { sendBookingEmail } from '@/lib/email'
 
 function formatDate(date: Date): string {
@@ -130,13 +130,13 @@ export async function POST(request: NextRequest) {
     const chauffeurSelected = Boolean(chauffeur)
     const conciergeDelivery = Boolean(enhancements?.conciergeDelivery)
     const satelliteConnectivity = Boolean(enhancements?.satelliteConnectivity)
-    const platinumInsurance = enhancements?.platinumInsurance !== false
+    const platinumInsurance = Boolean(enhancements?.platinumInsurance)
 
-    //  Pricing calculation using lib/reservations/pricing.ts
-    const pricing = calculateReservationPricing({
+    //  Pricing via the shared module — same code the quote endpoint runs
+    const pricing = calculateBookingPricing({
       pricePerDay: car.pricePerDay,
-      startDate: pickupDate,
-      endDate: dropoffDate,
+      startDate: pickup.date,
+      endDate: dropoff.date,
       chauffeur: chauffeurSelected,
       conciergeDelivery,
       platinumInsurance,
@@ -157,7 +157,6 @@ export async function POST(request: NextRequest) {
     }
 
     const reservationRef = generateReservationRef()
-    const totalBeforeTax = pricing.subtotal + pricing.addOnsTotal
 
     const rawReservation = await prisma.reservation.create({
       data: {
@@ -180,7 +179,7 @@ export async function POST(request: NextRequest) {
         satelliteConnectivity,
         dailyRate: pricing.dailyRate,
         rentalDays: pricing.rentalDays,
-        subtotal: totalBeforeTax,
+        subtotal: pricing.subtotal,
         tax: pricing.tax,
         total: pricing.total,
         status: 'PENDING',

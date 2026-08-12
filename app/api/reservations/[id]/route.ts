@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser } from '@/lib/api-auth'
 import { isUnitAvailable } from '@/lib/reservations/availability'
-import { calculateReservationPricing } from '@/lib/reservations/pricing'
+import { calculateBookingPricing } from '@/lib/pricing'
 import { withErrorHandler } from '@/lib/api-handler'
 
 // POST /api/reservations — Create new reservation
@@ -76,7 +76,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
   }
 
   //  Calculate pricing 
-  const pricing = calculateReservationPricing({
+  const pricing = calculateBookingPricing({
     pricePerDay: car.pricePerDay,
     startDate: new Date(pickupDate),
     endDate: new Date(dropoffDate),
@@ -86,7 +86,6 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
     satelliteConnectivity: satelliteConnectivity ?? false,
   })
 
-  const totalBeforeTax = pricing.subtotal + pricing.addOnsTotal
 
   //  Generate reservation ref 
   const reservationRef = `RES-${Date.now()}-${Math.random()
@@ -120,7 +119,7 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
 
       dailyRate: pricing.dailyRate,
       rentalDays: pricing.rentalDays,
-      subtotal: totalBeforeTax,
+      subtotal: pricing.subtotal,
       tax: pricing.tax,
       total: pricing.total,
 
