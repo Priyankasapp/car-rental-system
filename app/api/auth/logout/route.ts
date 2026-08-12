@@ -1,7 +1,7 @@
 // app/api/auth/logout/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth/jwt";
+import { verifyToken } from "@/lib/auth";
 
 export async function POST() {
   const cookieStore = await cookies();
@@ -15,7 +15,6 @@ export async function POST() {
   // to a live session and can be replayed.
   if (accessToken) {
     try {
-      // Verified with jose, matching how createSession() signs the token.
       const payload = await verifyToken(accessToken);
       if (payload?.sessionId) {
         // Imported lazily so that a Prisma/DB init failure cannot break the
