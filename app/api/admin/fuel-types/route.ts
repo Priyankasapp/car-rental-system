@@ -3,6 +3,7 @@ import { NextRequest,NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
+import { MasterDataCreateSchema } from '@/lib/master-data/validation'
 
 
 // GET: Fetch all fuel types
@@ -44,14 +45,20 @@ export async function POST(request: NextRequest) {
   if(!authResult.isAuth) return authResult.response
   try {
     const body = await request.json()
-    const { name, description, color, circleBg, textColor, borderColor, status, isActive } = body
-
-    if (!name || typeof name !== 'string' || !name.trim()) {
+    const validation = MasterDataCreateSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, message: 'Fuel type name is required' },
+        {
+          success: false,
+          message: 'Validation failed',
+          errors: validation.error.flatten().fieldErrors,
+        },
         { status: 400 }
       )
     }
+
+    const { name, description, color, circleBg, textColor, borderColor, status, isActive } =
+      validation.data
 
     const trimmedName = name.trim()
 
