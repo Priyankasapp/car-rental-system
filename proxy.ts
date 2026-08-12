@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { success } from "zod";
 
 
 // Route Definitions
@@ -21,11 +22,7 @@ const alwaysPublicRoutes = [
 const publicApiGetRoutes = [
   "/api/cars",
   "/api/settings",
-  "/api/admin/car-features",
-  "/api/admin/categories",
-  "/api/admin/fuel-types",
-  "/api/admin/transmission-types",
-  "/api/admin/services",
+
 ];
 
 const publicApiWriteRoutes = ["/api/reservations"];
@@ -245,6 +242,14 @@ export async function proxy(request: NextRequest) {
 
   //  Admin API permission guards
   if (path.startsWith("/api/admin")) {
+
+    if(!isDashboardUser){
+      return NextResponse.json(
+        { success:false, message:"Admin access required"},
+        { status: 403 }
+      );
+    }
+
     const apiGuards: Array<{
       pathPrefix: string;
       permission: string;
@@ -253,10 +258,17 @@ export async function proxy(request: NextRequest) {
       { pathPrefix: "/api/admin/cars", permission: "cars:view" },
       { pathPrefix: "/api/admin/reservations", permission: "reservations:view" },
       { pathPrefix: "/api/admin/bookings", permission: "reservations:view" },
+      {pathPrefix: "/api/admin/staff-master", permission:"staff-master:view"},
       { pathPrefix: "/api/admin/staff", permission: "staff:view" },
       { pathPrefix: "/api/admin/maintenance", permission: "maintenance:view" },
       { pathPrefix: "/api/admin/promotions", permission: "promotions:view" },
       { pathPrefix: "/api/admin/reports", permission: "reports:view" },
+      { pathPrefix: "/api/admin/contacts", permission: "messages:view" },
+      { pathPrefix: "/api/admin/categories", permission: "categories:view" },
+      { pathPrefix: "/api/admin/transmission-types", permission: "transmissions:view" },
+      { pathPrefix: "/api/admin/fuel-types", permission: "fuels:view" },
+      { pathPrefix: "/api/admin/car-features", permission: "features:view" },
+      { pathPrefix: "/api/admin/services", permission: "services:view" },
     ];
 
     // SuperAdmin-only endpoint

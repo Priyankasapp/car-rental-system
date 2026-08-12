@@ -1,4 +1,6 @@
 import { withErrorHandler } from "@/lib/api-handler";
+import { authorizeUser } from "@/lib/auth-guard";
+import { PERMISSIONS } from "@/lib/permissions";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -7,6 +9,9 @@ import { NextRequest, NextResponse } from "next/server";
 // ======================================================
 
 export const GET = withErrorHandler(async (request: NextRequest) => {
+  const authResult = await authorizeUser(request, PERMISSIONS.SERVICES_VIEW)
+  if(!authResult.isAuth)return authResult.response;
+
   new URL(request.url);
 
 
@@ -35,11 +40,12 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   );
 });
 
-// ======================================================
 // POST: Create Service
-// ======================================================
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
+  const authResult = await authorizeUser(request, PERMISSIONS.SERVICES_CREATE );
+  if(!authResult.isAuth) return authResult.response;
+  
   const body = await request.json();
 
   const {

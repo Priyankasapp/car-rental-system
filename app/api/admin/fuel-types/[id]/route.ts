@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextResponse } from 'next/server'
+import {NextRequest,  NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { PERMISSIONS } from '@/lib/permissions'
+import { authorizeUser } from '@/lib/auth-guard'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -8,9 +10,13 @@ interface RouteParams {
 
 // GET: Fetch a single fuel type by ID
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: RouteParams
 ) {
+
+  const authResult = await authorizeUser(request, PERMISSIONS.FUELS_VIEW)
+  if(!authResult.isAuth) return authResult.response
+
   try {
     const { id } = await params
 
@@ -42,9 +48,13 @@ export async function GET(
 
 // PUT / PATCH: Update a fuel type
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: RouteParams
 ) {
+
+  const authResult = await authorizeUser(request, PERMISSIONS.FUELS_EDIT)
+  if(!authResult.isAuth  ) return authResult.response
+
   try {
     const { id } = await params
     const body = await request.json()
@@ -107,9 +117,12 @@ export const PATCH = PUT
 
 // DELETE: Hard-delete a fuel type
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: RouteParams
 ) {
+  const authResult = await authorizeUser(request, PERMISSIONS.FUELS_DELETE)
+  if(!authResult.isAuth) return authResult.response
+
   try {
     const { id } = await params
 

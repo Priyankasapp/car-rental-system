@@ -4,13 +4,16 @@ import { Prisma } from "@prisma/client";
 import { withErrorHandler } from "@/lib/api-handler";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { authorizeUser } from "@/lib/auth-guard";
+import { PERMISSIONS } from "@/lib/permissions";
 
-// ======================================================
 // GET: Fetch Single Service by ID
-// ======================================================
 
 export const GET = withErrorHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) => {
+    const authResult = await authorizeUser(request,PERMISSIONS.SERVICES_EDIT );
+    if(authResult.isAuth) return authResult.response;
+    
     // Handle both sync and async params
     const params = await context.params;
     const id = params.id;
@@ -106,9 +109,7 @@ export const GET = withErrorHandler(
   }
 );
 
-// ======================================================
 // PATCH: Update Service
-// ======================================================
 
 export const PATCH = withErrorHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) => {
@@ -281,9 +282,7 @@ export const PATCH = withErrorHandler(
   }
 );
 
-// ======================================================
 // DELETE: Delete Service
-// ======================================================
 
 export const DELETE = withErrorHandler(
   async (request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) => {

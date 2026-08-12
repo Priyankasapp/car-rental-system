@@ -1,12 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendInquiryReplyEmail } from "@/lib/email";
+import { authorizeUser } from "@/lib/auth-guard";
+import { PERMISSIONS } from "@/lib/permissions"; 
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export async function POST(req: Request, { params }: RouteParams) {
+export async function POST(req: NextRequest, { params }: RouteParams) {
+  const authResult = await authorizeUser(req, PERMISSIONS.MESSAGES_REPLY);
+  if(!authResult.isAuth) return authResult.response;
+  
   try {
-    // 1. Next.js 15+ params must be awaited
+    
     const { id } = await params;
 
     // Validate MongoDB ObjectId format

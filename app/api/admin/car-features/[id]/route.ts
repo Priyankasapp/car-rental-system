@@ -1,12 +1,18 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { authorizeUser } from '@/lib/auth-guard'
+import { PERMISSIONS } from '@/lib/permissions'
+
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
 // PUT /api/admin/car-features/[id]
-export async function PUT(request: Request, { params }: RouteParams) {
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const authResult =  await authorizeUser(request, PERMISSIONS.FEATURES_EDIT)
+  if(!authResult.isAuth) return authResult.response
+
   try {
     const { id } = await params
     const body = await request.json()
@@ -57,7 +63,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 // DELETE /api/admin/car-features/[id]
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const authResult = await authorizeUser(request, PERMISSIONS.FEATURES_DELETE)
+  if(!authResult.isAuth) return authResult.response
+  
   try {
     const { id } = await params
 

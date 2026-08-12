@@ -13,11 +13,9 @@ import { PERMISSIONS } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 
-// ============================================================================
 // GET - Get Customer Users Only
-// ============================================================================
 export async function GET(request: NextRequest) {
-  // 🔐 Check users:view permission
+  //  Check users:view permission
   const authResult = await authorizeUser(
     request,
     PERMISSIONS.USERS_VIEW
@@ -153,9 +151,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// ============================================================================
 // POST - Create New Customer User
-// ============================================================================
 export async function POST(request: NextRequest) {
   // Check users:create permission
   const authResult = await authorizeUser(

@@ -10,15 +10,13 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-// ============================================================================
 // GET - Fetch Single Customer
 // Permission: users:view
-// ============================================================================
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
 ) {
-  // 🔐 Check users:view permission
+  //  Check users:view permission
   const authResult = await authorizeUser(
     request,
     PERMISSIONS.USERS_VIEW

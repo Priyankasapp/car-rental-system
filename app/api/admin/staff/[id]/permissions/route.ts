@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { PERMISSIONS } from '@/lib/permissions'
 import { revokeAllUserSessions } from '@/lib/auth/session'
+import { authorizeUser } from '@/lib/auth-guard'
 
 // GET — fetch a staff member's current permissions
 
@@ -10,12 +11,15 @@ export async function GET(
   request: NextRequest,
   props: { params: Promise<{ id: string }> }
 ) {
+
+  const authResult = await authorizeUser(request, PERMISSIONS.PERMISSIONS_VIEW)
+  if(!authResult.isAuth) return authResult.response
+
   try {
     const { id } = await props.params
-    const requestingRole = request.headers.get('x-user-role')
 
     // Only SUPERADMIN can view/manage permissions
-    if (requestingRole !== 'SUPERADMIN') {
+    if (authResult.user.role !== 'SUPERADMIN') {
       return NextResponse.json(
         { success: false, message: 'Access denied' },
         { status: 403 }
@@ -82,12 +86,16 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+
+  const authResult = await authorizeUser(request, PERMISSIONS.PERMISSIONS_MANAGE)
+  if(!authResult.isAuth) return authResult.response
+
   try {
 
     const {id} = await params
     
-    const requestingRole = request.headers.get('x-user-role')
-    const requestingUserId = request.headers.get('x-user-id')
+    const requestingRole = authResult.user.role
+    const requestingUserId = authResult.user.id
 
     // Only SUPERADMIN can change permissions
     if (requestingRole !== 'SUPERADMIN') {
