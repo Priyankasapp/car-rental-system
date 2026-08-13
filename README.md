@@ -97,6 +97,9 @@ ADMIN_EMAILS="admin@example.com"              # contact-form notifications
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud"
 CLOUDINARY_API_KEY="..."
 CLOUDINARY_API_SECRET="..."
+# Unsigned upload preset — the admin image uploader silently fails without it.
+# Create one at Cloudinary → Settings → Upload → Upload presets (mode: unsigned).
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="urbandrive_unsigned"
 
 # Cron — required. The expiry job refuses to run (503) without it.
 CRON_SECRET="another-random-string"
