@@ -299,10 +299,10 @@ Tracked honestly rather than hidden:
 - **`strict: false`** in `tsconfig.json`, with 56 `: any` annotations.
 - **Two JWT libraries.** `jose` (Edge-compatible, used by the proxy) and
   `jsonwebtoken` (used by six server modules). Should consolidate on `jose`.
-- **Unused dependencies:** `axios`, `mailtrap`, `react-email`,
+- **Ten unused packages were removed** (`axios`, `mailtrap`, `react-email`,
   `@react-email/*`, `@radix-ui/react-icons`, `react-icons`,
   `class-variance-authority`, `react-hook-form`, `@hookform/resolvers`,
-  `ts-node`.
+  `ts-node`). The runtime dependency list is now 15.
 - **Session tokens stored in plaintext** in the `sessions` table. Storing
   SHA-256 hashes would limit the blast radius of a read-only database leak.
 
