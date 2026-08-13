@@ -13,6 +13,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import path from 'node:path'
 
 const ROOT = path.resolve(__dirname, '..')
@@ -202,9 +203,16 @@ describe('secrets and configuration', () => {
   })
 
   it('commits no .env file', () => {
-    for (const name of ['.env', '.env.local', '.env.production']) {
-      expect(existsSync(path.join(ROOT, name)), `${name} must not be committed`).toBe(false)
-    }
+    // Ask git what is TRACKED, not what exists on disk. A local .env is
+    // required to run the app and is correctly gitignored; only a committed
+    // one is a secret leak. An earlier version of this test used existsSync
+    // and failed on every healthy working copy.
+    const tracked = execSync('git ls-files -z', { cwd: ROOT, encoding: 'utf8' })
+      .split('\0')
+      .filter(Boolean)
+      .filter((f) => /(^|\/)\.env/.test(f) && !/\.env\.example$/.test(f))
+
+    expect(tracked, `these env files are committed: ${tracked.join(', ')}`).toEqual([])
   })
 })
 
