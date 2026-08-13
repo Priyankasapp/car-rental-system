@@ -6,6 +6,11 @@ import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
 import { StaffCreateSchema } from '@/lib/staff/validation'
 import { hashPassword, generatePassword } from '@/lib/auth'
+import { sendEmail } from '@/lib/email'
+import {
+  generateTempPasswordHTML,
+  generateTempPasswordText,
+} from '@/email/TempPasswordEmail'
 
 // GET — List all staff members
 export async function GET(request: NextRequest) {
@@ -126,8 +131,41 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Send the temporary password. The account is unusable without it — the
+    // password is hashed and never returned in the response — so if this
+    // fails the admin has to know, otherwise they are left with a staff
+    // member who can never log in and no way to recover the credential.
+    let emailSent = true
+
+    try {
+      await sendEmail({
+        to: newStaff.email,
+        subject: 'Welcome to UrbanDrive - Your Account Credentials',
+        html: generateTempPasswordHTML({
+          firstName: newStaff.firstName,
+          email: newStaff.email,
+          temporaryPassword,
+        }),
+        text: generateTempPasswordText({
+          firstName: newStaff.firstName,
+          email: newStaff.email,
+          temporaryPassword,
+        }),
+      })
+    } catch (emailError) {
+      console.error('Failed to send staff credentials email:', emailError)
+      emailSent = false
+    }
+
     return NextResponse.json(
-      { success: true, message: 'Staff member created successfully', data: { staff: newStaff } },
+      {
+        success: true,
+        message: emailSent
+          ? 'Staff member created successfully. Login credentials have been emailed.'
+          : 'Staff member created, but the credentials email could not be sent. Use "Reset password" to issue new credentials.',
+        emailSent,
+        data: { staff: newStaff },
+      },
       { status: 201 }
     )
   } catch (error: any) {
