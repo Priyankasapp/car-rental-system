@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @next/next/no-img-element */
 // app/admin/cars/page.tsx
@@ -171,10 +172,25 @@ export default function CarsPage() {
         credentials: "include",
       });
 
-      if (!res.ok) throw new Error("Failed to delete");
+      let json: any = null;
+      try {
+        json = await res.json();
+      } catch (e) {
+        // ignore JSON parse errors
+      }
+
+      if (!res.ok) {
+        const message = json?.message || json?.error || `Failed to delete vehicle (${res.status})`;
+        throw new Error(message);
+      }
+
+      // Refresh list after successful deletion
+      await fetchCars();
+      alert('Vehicle deleted successfully.');
     } catch (error) {
       console.error(error);
-      alert("Could not delete vehicle. Rolling back.");
+      const msg = error instanceof Error ? error.message : 'Could not delete vehicle. Rolling back.';
+      alert(msg);
       setCars(previous);
     }
   };
@@ -373,7 +389,7 @@ export default function CarsPage() {
                       <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   )}
-                  {canEditCars && (
+                  {/* {canEditCars && (
                     <button
                       onClick={() => router.push(`/admin/cars/${car.id}/edit`)}
                       className="p-1.5 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -381,7 +397,7 @@ export default function CarsPage() {
                     >
                       <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
-                  )}
+                  )} */}
                   {canDeleteCars && (
                     <button
                       onClick={() => handleDelete(car.id)}

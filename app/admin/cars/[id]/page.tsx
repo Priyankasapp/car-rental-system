@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { ImageUploader } from '@/components/ui/ImageUploader'
 
 interface CategoryDetail {
   id: string
@@ -265,6 +266,17 @@ export default function CarDetailPage({
     }))
   }
 
+  // HANDLE GALLERY
+  const handleGalleryChange = (urls: string[]) => {
+    setFormData((prev) => {
+      const nextMain =
+        prev?.imageMain && urls.includes(prev.imageMain)
+          ? prev.imageMain
+          : urls[0] || ''
+
+      return { ...prev, imageGallery: urls, imageMain: nextMain }
+    })
+  }
   
   // SAVE CAR
   const handleSave = async (e: React.FormEvent) => {
@@ -658,18 +670,52 @@ export default function CarDetailPage({
 
             {/* Image */}
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700">
-                Main Image URL
-              </label>
+            <div className="border-t border-blue-200 pt-4">
 
-              <input
-                type="text"
-                name="imageMain"
-                value={formData.imageMain || ''}
-                onChange={handleChange}
-                className="mt-1 w-full rounded-md border bg-white p-2 text-sm"
-              />
+              <label className="block text-xs font-semibold text-slate-700">
+              Vehicle Images
+            </label>
+
+            <p className="mb-3 mt-0.5 text-[11px] text-slate-500">
+              Upload replaces nothing — new images are added to the gallery.
+              Pick which one is the main thumbnail below.
+            </p>
+
+            <ImageUploader
+              value={formData.imageGallery || []}
+              onChange={handleGalleryChange}
+              multiple
+              folder="cars"
+            />
+
+              {/* Main image selector */}
+            {(formData.imageGallery?.length ?? 0) > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-blue-200 pt-3">
+
+                <span className="text-xs text-slate-500">
+                  Main thumbnail:
+                </span>
+
+                {formData.imageGallery?.map((url, idx) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({ ...prev, imageMain: url }))
+                    }
+                    className={`rounded-lg border px-2.5 py-1 text-xs transition-all ${
+                      formData.imageMain === url
+                        ? 'border-black bg-black font-semibold text-white'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    Img #{idx + 1} {formData.imageMain === url && '★'}
+                  </button>
+                ))}
+
+              </div>
+            )}
+            
             </div>
 
           </div>

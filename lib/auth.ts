@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 // lib/auth.ts
 import jwt, { Secret, SignOptions } from 'jsonwebtoken'
 import { randomInt, randomBytes } from 'crypto'
@@ -23,7 +24,7 @@ export function generateToken(payload: JWTPayload): string {
 export function verifyToken(token: string): JWTPayload | null {
   try {
     return jwt.verify(token, JWT_SECRET) as unknown as JWTPayload
-  } catch (_error) {
+  } catch (error) {
     return null
   }
 }
