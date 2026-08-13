@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # postinstall runs `prisma generate`, which needs to download engine
+      # binaries. Skip it here and generate explicitly below so a network
+      # blip in one step is distinguishable from the other.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npx next build
+        env:
+          # next build evaluates modules that read these at import time.
+          # lib/auth/jwt.ts throws without JWT_SECRET. These are throwaway
+          # CI values, not secrets.
+          DATABASE_URL: mongodb://localhost:27017/ci
+          JWT_SECRET: ci-only-secret-not-used-anywhere-real
+          CRON_SECRET: ci-only-cron-secret

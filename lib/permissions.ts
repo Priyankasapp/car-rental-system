@@ -211,6 +211,12 @@ export const PERMISSION_GROUPS: readonly PermissionGroup[] = [
         description: "Can Reply on message",
       },
       {
+        key: PERMISSIONS.MESSAGES_EDIT,
+        label: "Edit Message",
+        description:
+          "Can change a message's status and save internal notes",
+      },
+      {
         key: PERMISSIONS.MESSAGES_DELETE,
         label: "DELETE Message",
         description: "Can Delete message",
