@@ -40,6 +40,22 @@ interface RawCar {
   transmission: { id: string; name: string } | null
 }
 
+interface AddOnLine {
+  label: string
+  amount: number
+}
+
+interface QuoteData {
+  dailyRate: number
+  rentalDays: number
+  baseRate: number
+  addOnsTotal: number
+  addOnLines: AddOnLine[]
+  subtotal: number
+  tax: number
+  total: number
+}
+
 interface BookingResponse {
   success: boolean
   message?: string
@@ -76,7 +92,10 @@ export default function ReservationPage() {
   const [hasChauffeur, setHasChauffeur] = useState(false)
   const [hasDelivery, setHasDelivery] = useState(false)
   const [hasSatellite, setHasSatellite] = useState(false)
-  const hasInsurance = true
+  const [hasInsurance, setHasInsurance] = useState(false)
+
+  // QUOTE STATE FROM API
+  const [quote, setQuote] = useState<QuoteData | null>(null)
 
   // SUBMISSION STATE
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -86,7 +105,7 @@ export default function ReservationPage() {
   // Get Today's Date String for `min` date attribute (YYYY-MM-DD)
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
-  //  FETCH USER PROFILE TO PRE-FILL CUSTOMER DETAILS
+  // FETCH USER PROFILE TO PRE-FILL CUSTOMER DETAILS
   useEffect(() => {
     async function loadUserProfile() {
       try {
@@ -107,7 +126,7 @@ export default function ReservationPage() {
     loadUserProfile()
   }, [])
 
-  //  FETCH CAR DETAILS
+  // FETCH CAR DETAILS
   useEffect(() => {
     if (!carId) return
 
@@ -153,7 +172,7 @@ export default function ReservationPage() {
     fetchCar()
   }, [carId])
 
-  //  UTC SAFE DAY CALCULATION
+  // UTC SAFE DAY CALCULATION
   const rentalDays = useMemo(() => {
     if (!pickupDate || !returnDate) return 1
 
@@ -167,19 +186,61 @@ export default function ReservationPage() {
     return diffDays > 0 ? diffDays : 1
   }, [pickupDate, returnDate])
 
-  // PRICING CALCULATIONS
-  const dailyRate = car?.price || 0
-  const baseRate = dailyRate * rentalDays
-  const addOns =
-    (hasChauffeur ? 100 * rentalDays : 0) +
-    (hasDelivery ? 150 : 0) +
-    (hasSatellite ? 45 * rentalDays : 0)
+  // FETCH PRICING QUOTE FROM API
+  useEffect(() => {
+    if (!car) return
 
-  const subtotal = baseRate + addOns
-  const tax = Math.round(subtotal * 0.12)
-  const total = subtotal + tax
+    let isMounted = true
 
-  //  SUBMIT HANDLER
+    async function fetchQuote() {
+      try {
+        const response = await fetch('/api/reservations/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            carId: car?.id,
+            pickupDate,
+            returnDate,
+            chauffeur: hasChauffeur,
+            enhancements: {
+              conciergeDelivery: hasDelivery,
+              platinumInsurance: hasInsurance,
+              satelliteConnectivity: hasSatellite,
+            },
+          }),
+        })
+
+        const result = await response.json()
+        if (response.ok && result.success && isMounted) {
+          setQuote(result.data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch quote:', err)
+      }
+    }
+
+    fetchQuote()
+
+    return () => {
+      isMounted = false
+    }
+  }, [car, pickupDate, returnDate, hasChauffeur, hasDelivery, hasInsurance, hasSatellite])
+
+  // FALLBACK LOCAL CALCULATIONS WHILE QUOTE API LOADS
+  const dailyRate = quote?.dailyRate ?? car?.price ?? 0
+  const baseRate = quote?.baseRate ?? dailyRate * rentalDays
+  const addOnsTotal =
+    quote?.addOnsTotal ??
+    ((hasChauffeur ? 100 * rentalDays : 0) +
+      (hasDelivery ? 150 : 0) +
+      (hasSatellite ? 45 * rentalDays : 0) +
+      (hasInsurance ? 75 * rentalDays : 0))
+
+  const subtotal = quote?.subtotal ?? baseRate + addOnsTotal
+  const tax = quote?.tax ?? Math.round(subtotal * 0.12)
+  const total = quote?.total ?? subtotal + tax
+
+  // SUBMIT HANDLER
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setErrorMessage('')
@@ -527,18 +588,18 @@ export default function ReservationPage() {
                     />
                   </label>
 
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 opacity-80">
+                  <label className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100/80 rounded-xl border border-gray-200 cursor-pointer transition">
                     <span>
                       <span className="font-medium text-gray-900 block">
                         Platinum Insurance Coverage
                       </span>
-                      <small className="text-gray-500">Included in base package</small>
+                      <small className="text-gray-500">+₹75 / day</small>
                     </span>
                     <input
                       type="checkbox"
-                      checked
-                      disabled
-                      className="w-5 h-5 rounded text-black"
+                      checked={hasInsurance}
+                      onChange={(e) => setHasInsurance(e.target.checked)}
+                      className="w-5 h-5 rounded text-black focus:ring-black"
                     />
                   </label>
                 </div>
@@ -560,7 +621,8 @@ export default function ReservationPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Rental Duration</span>
                   <span className="font-medium">
-                    {rentalDays} {rentalDays === 1 ? 'day' : 'days'}
+                    {quote?.rentalDays ?? rentalDays}{' '}
+                    {(quote?.rentalDays ?? rentalDays) === 1 ? 'day' : 'days'}
                   </span>
                 </div>
 
@@ -569,12 +631,20 @@ export default function ReservationPage() {
                   <span className="font-medium">₹{baseRate.toLocaleString()}</span>
                 </div>
 
-                {addOns > 0 && (
+                {/* ITEMIZED ADD-ONS FROM QUOTE */}
+                {quote?.addOnLines && quote.addOnLines.length > 0 ? (
+                  quote.addOnLines.map((line, idx) => (
+                    <div key={idx} className="flex justify-between text-indigo-600">
+                      <span>{line.label}</span>
+                      <span className="font-medium">+₹{line.amount.toLocaleString()}</span>
+                    </div>
+                  ))
+                ) : addOnsTotal > 0 ? (
                   <div className="flex justify-between text-indigo-600">
                     <span>Selected Add-ons</span>
-                    <span className="font-medium">+₹{addOns.toLocaleString()}</span>
+                    <span className="font-medium">+₹{addOnsTotal.toLocaleString()}</span>
                   </div>
-                )}
+                ) : null}
 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Estimated Tax (12%)</span>
