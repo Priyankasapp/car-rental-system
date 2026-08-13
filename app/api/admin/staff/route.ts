@@ -112,6 +112,14 @@ export async function POST(request: NextRequest) {
         role,
         staffMasterId,
         isActive: true,
+        // An admin creating this account IS the verification — the address
+        // was chosen by staff, not self-asserted by a stranger, and the
+        // temporary password is delivered to it. Without this the schema
+        // default of false applies and login rejects them with
+        // "Please verify your email address", but no OTP is ever sent for
+        // admin-created accounts, so the account is permanently locked out.
+        // POST /api/admin/users does the same for the customers it creates.
+        isEmailVerified: true,
       },
       select: {
         id: true,
