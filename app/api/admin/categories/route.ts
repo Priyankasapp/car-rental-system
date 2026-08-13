@@ -23,13 +23,12 @@ async function getCurrentUser() {
     const userId = (payload.userId || payload.sub) as string;
     if (!userId) return null;
 
-    // permissions is just a String[] on User, so select it directly
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         role: true,
-        permissions: true, // String[]
+        permissions: true,
       },
     });
 
@@ -38,14 +37,14 @@ async function getCurrentUser() {
     return {
       id: user.id,
       role: user.role,
-      permissions: user.permissions, // already string[]
+      permissions: user.permissions,
     };
   } catch {
     return null;
   }
 }
 
-// GET: Fetch all categories
+// GET: Fetch all categories (Both Active and Inactive)
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
@@ -72,13 +71,21 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status');
-    const includeInactive = searchParams.get('includeInactive') === 'true';
+    const isActiveParam = searchParams.get('isActive');
 
-    const where: any = {
-      ...(includeInactive ? {} : { isActive: true }),
-      ...(status && { status }),
-    };
+    const where: any = {};
 
+    // Filter by isActive ONLY if explicitly requested (e.g. ?isActive=true)
+    if (isActiveParam !== null) {
+      where.isActive = isActiveParam === 'true';
+    }
+
+    // Filter by status string if explicitly provided
+    if (status) {
+      where.status = status;
+    }
+
+    // Search by name or description
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -86,6 +93,7 @@ export async function GET(request: Request) {
       ];
     }
 
+    // Fetch all categories (no default isActive: true filter)
     const categories = await prisma.categoryMaster.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -142,11 +150,10 @@ export async function POST(request: Request) {
 
     const trimmedName = name.trim();
 
-    // Check duplicate among active categories
+    // Check duplicate category name
     const existing = await prisma.categoryMaster.findFirst({
       where: {
         name: trimmedName,
-        isActive: true,
       },
     });
 
@@ -157,6 +164,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Ensure status string and isActive boolean are synchronized
+    const computedIsActive =
+      status !== undefined
+        ? status === 'Active'
+        : isActive !== undefined
+        ? Boolean(isActive)
+        : true;
+
+    const computedStatus = status || (computedIsActive ? 'Active' : 'Inactive');
+
     const newCategory = await prisma.categoryMaster.create({
       data: {
         name: trimmedName,
@@ -165,8 +182,8 @@ export async function POST(request: Request) {
         circleBg: circleBg || 'bg-sky-100',
         textColor: textColor || 'text-sky-700',
         borderColor: borderColor || 'border-sky-200',
-        status: status || 'Active',
-        isActive: isActive !== undefined ? Boolean(isActive) : true,
+        status: computedStatus,
+        isActive: computedIsActive,
       },
     });
 

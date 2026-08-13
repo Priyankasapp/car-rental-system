@@ -30,7 +30,7 @@ async function getCurrentUser() {
       select: {
         id: true,
         role: true,
-        permissions: true, // String[]
+        permissions: true,
       },
     });
 
@@ -39,14 +39,14 @@ async function getCurrentUser() {
     return {
       id: user.id,
       role: user.role,
-      permissions: user.permissions, // already string[]
+      permissions: user.permissions,
     };
   } catch {
     return null;
   }
 }
 
-// GET: Fetch a single category by ID
+// GET: Fetch a single category by ID (active or inactive)
 export async function GET(request: Request, { params }: Params) {
   try {
     const user = await getCurrentUser();
@@ -73,7 +73,7 @@ export async function GET(request: Request, { params }: Params) {
     const { id } = await params;
 
     const category = await prisma.categoryMaster.findFirst({
-      where: { id, isActive: true },
+      where: { id },
       include: {
         _count: {
           select: { cars: true },
@@ -124,10 +124,10 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const { id } = await params;
     const body = await request.json();
-    const { name, description, color, circleBg, textColor, borderColor, status } = body;
+    const { name, description, color, circleBg, textColor, borderColor, status, isActive } = body;
 
     const existingCategory = await prisma.categoryMaster.findFirst({
-      where: { id, isActive: true },
+      where: { id },
     });
 
     if (!existingCategory) {
@@ -137,12 +137,11 @@ export async function PATCH(request: Request, { params }: Params) {
       );
     }
 
-    // Check duplicate name against ACTIVE categories only
+    // Check duplicate name against other categories
     if (name && name.trim().toLowerCase() !== existingCategory.name.toLowerCase()) {
       const duplicate = await prisma.categoryMaster.findFirst({
         where: {
           name: name.trim(),
-          isActive: true,
           NOT: { id },
         },
       });
@@ -155,6 +154,20 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
 
+    // Keep isActive boolean and status string synchronized
+    let updatedIsActive = existingCategory.isActive;
+    let updatedStatus = existingCategory.status;
+
+    if (isActive !== undefined) {
+      updatedIsActive = Boolean(isActive);
+      updatedStatus = updatedIsActive ? 'Active' : 'Inactive';
+    }
+
+    if (status !== undefined) {
+      updatedStatus = status;
+      updatedIsActive = status === 'Active';
+    }
+
     const updatedCategory = await prisma.categoryMaster.update({
       where: { id },
       data: {
@@ -164,7 +177,8 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(circleBg !== undefined && { circleBg }),
         ...(textColor !== undefined && { textColor }),
         ...(borderColor !== undefined && { borderColor }),
-        ...(status && { status }),
+        status: updatedStatus,
+        isActive: updatedIsActive,
       },
     });
 
@@ -178,7 +192,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-// DELETE: Soft delete category
+// DELETE: Hard delete category permanently
 export async function DELETE(request: Request, { params }: Params) {
   try {
     const user = await getCurrentUser();
@@ -205,7 +219,7 @@ export async function DELETE(request: Request, { params }: Params) {
     const { id } = await params;
 
     const category = await prisma.categoryMaster.findFirst({
-      where: { id, isActive: true },
+      where: { id },
     });
 
     if (!category) {
@@ -215,19 +229,21 @@ export async function DELETE(request: Request, { params }: Params) {
       );
     }
 
-    const deletedCategory = await prisma.categoryMaster.update({
+    const deletedCategory = await prisma.categoryMaster.delete({
       where: { id },
-      data: {
-        isActive: false,
-        status: 'Inactive',
-      },
     });
 
     return NextResponse.json(
-      { success: true, message: 'Category deleted successfully', data: deletedCategory },
+      { success: true, message: 'Category permanently deleted successfully', data: deletedCategory },
       { status: 200 }
     );
   } catch (error: any) {
+    if (error.code === 'P2003') {
+      return NextResponse.json(
+        { success: false, message: 'Cannot delete category — cars are currently assigned to it' },
+        { status: 400 }
+      );
+    }
     console.error('Error deleting category:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to delete category', error: error.message },

@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/api/admin/staff-master/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
 import { StaffType } from '@prisma/client'
 
-// GET — list all active staff master roles
+// GET — list staff master roles (returns all active & inactive by default)
 export async function GET(request: NextRequest) {
   try {
     const authResult = await authorizeUser(request, PERMISSIONS.STAFF_MASTER_VIEW)
@@ -14,8 +13,17 @@ export async function GET(request: NextRequest) {
       return authResult.response
     }
 
+    // Optional query parameter filtering: /api/admin/staff-master?isActive=true
+    const { searchParams } = new URL(request.url)
+    const isActiveParam = searchParams.get('isActive')
+
+    const whereCondition =
+      isActiveParam !== null
+        ? { isActive: isActiveParam === 'true' }
+        : {} // Empty condition returns BOTH active and inactive records
+
     const staffMasters = await prisma.staffMaster.findMany({
-      where: { isActive: true },
+      where: whereCondition,
       include: {
         _count: { select: { staffMembers: true } },
       },
@@ -41,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, department, staffType, defaultPermissions, description, isActive } = body
+    const { title, department, staffType, defaultPermissions, description, isActive, color, circleBg, textColor, borderColor } = body
 
     if (!title || !department) {
       return NextResponse.json(
@@ -84,6 +92,10 @@ export async function POST(request: NextRequest) {
         defaultPermissions: permissions,
         description: description || null,
         isActive: isActive !== undefined ? Boolean(isActive) : true,
+        color: color || null,
+        circleBg: circleBg || null,
+        textColor: textColor || null,
+        borderColor: borderColor || null,
       },
     })
 

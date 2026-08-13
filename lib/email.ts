@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer'
-import { ReservationStatus } from '@prisma/client'
+
 import {
   BookingEmailProps,
   generateBookingHTML,

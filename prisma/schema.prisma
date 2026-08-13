@@ -236,6 +236,10 @@ model StaffMaster {
   staffType          StaffType?
   defaultPermissions String[]   @default([])
   description        String?
+  color              String?
+  circleBg           String?
+  textColor          String?
+  borderColor        String?
   isActive           Boolean    @default(true)
 
   staffMembers User[]

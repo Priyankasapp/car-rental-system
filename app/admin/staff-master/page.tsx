@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
@@ -8,35 +9,36 @@ import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
-
 // Types
-
 interface StaffMasterApiItem {
   id: string
   title: string
   description?: string | null
   department?: string
   isActive?: boolean
+  color?: string | null 
+  circleBg?: string | null
+  textColor?: string | null
+  borderColor?: string | null
   createdAt?: string
   _count?: { staffMembers: number }
 }
 
-
 // Page
 export default function StaffMasterPage() {
-  //  Auth & permissions 
+  // Auth & permissions 
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.STAFF_MASTER_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.STAFF_MASTER_CREATE)
   const canDelete = hasPermission(PERMISSIONS.STAFF_MASTER_DELETE)
 
-  //  State 
+  // State 
   const [staffRoles, setStaffRoles] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  //  Fetch staff master roles 
+  // Fetch staff master roles 
   const fetchStaffRoles = useCallback(async () => {
     try {
       setError(null)
@@ -49,15 +51,22 @@ export default function StaffMasterPage() {
       }
 
       const mappedItems: EntityItem[] = (result.data.staffMasters || []).map(
-        (role: StaffMasterApiItem) => ({
-          id: role.id,
-          name: role.title,
-          description: role.description ?? undefined,
-          count: role._count?.staffMembers ?? 0,
-          createdAt: role.createdAt,
-          isActive: role.isActive ?? true,
-          status: role.isActive ? 'Active' : 'Inactive',
-        })
+        (role: StaffMasterApiItem) => {
+          const activeStatus = typeof role.isActive === 'boolean' ? role.isActive : true
+          return {
+            id: role.id,
+            name: role.title,
+            description: role.description ?? undefined,
+            count: role._count?.staffMembers ?? 0,
+            createdAt: role.createdAt,
+            isActive: activeStatus,
+            status: activeStatus ? 'Active' : 'Inactive',
+            color: role.color ?? undefined, 
+            circleBg: (role as any).circleBg ?? undefined,
+            textColor: (role as any).textColor ?? undefined,
+            borderColor: (role as any).borderColor ?? undefined,
+          }
+        }
       )
 
       setStaffRoles(mappedItems)
@@ -70,14 +79,14 @@ export default function StaffMasterPage() {
     }
   }, [])
 
-  //  Trigger fetch once auth + permission confirmed 
+  // Trigger fetch once auth + permission confirmed 
   useEffect(() => {
     if (isReady) {
       fetchStaffRoles()
     }
   }, [isReady, fetchStaffRoles])
 
-  //  Save (Create or Update) 
+  // Save (Create or Update) 
   const handleSaveStaffRole = async (
     item: Partial<EntityItem> & Record<string, unknown>
   ) => {
@@ -90,14 +99,21 @@ export default function StaffMasterPage() {
       ? `/api/admin/staff-master/${item.id}`
       : '/api/admin/staff-master'
 
+    // Use passed item.isActive, defaulting to true only if undefined
+    const activeValue = typeof item.isActive === 'boolean' ? item.isActive : true
+
     const res = await fetch(url, {
       method: isEdit ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+        body: JSON.stringify({
         title: item.name,
         department: item.department || 'Operations',
         description: item.description || null,
-        isActive: item.isActive ?? true,
+        isActive: activeValue,
+        color: item.color || null, // 👈 Added color to payload sent to backend
+        circleBg: (item as any).circleBg || null,
+        textColor: (item as any).textColor || null,
+        borderColor: (item as any).borderColor || null,
       }),
     })
 
@@ -110,7 +126,7 @@ export default function StaffMasterPage() {
     await fetchStaffRoles()
   }
 
-  //  Delete 
+  // Delete 
   const handleDeleteStaffRole = async (id: string) => {
     if (!canDelete) {
       throw new Error('You do not have permission to delete staff roles')
@@ -129,7 +145,7 @@ export default function StaffMasterPage() {
     await fetchStaffRoles()
   }
 
-  //  Guards 
+  // Guards 
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -174,7 +190,7 @@ export default function StaffMasterPage() {
     )
   }
 
-  //  Render 
+  // Render 
   return (
     <EntityGridPage
       title="Staff Master Roles"

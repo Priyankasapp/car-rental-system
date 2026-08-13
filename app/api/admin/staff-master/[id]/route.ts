@@ -6,7 +6,7 @@ import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
 import { StaffType } from '@prisma/client'
 
-// GET — fetch one staff master role (for the edit page)
+// GET — fetch one staff master role (allows active & inactive)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -18,11 +18,9 @@ export async function GET(
       return authResult.response
     }
 
+    // Removed isActive: true so admins can view and edit inactive roles
     const staffMaster = await prisma.staffMaster.findFirst({
-      where: { 
-        id,
-        isActive: true,
-      },
+      where: { id },
       include: {
         staffMembers: {
           select: {
@@ -65,7 +63,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { title, department, staffType, defaultPermissions, description, isActive } = body
+    const { title, department, staffType, defaultPermissions, description, isActive, color, circleBg, textColor, borderColor } = body
 
     if (staffType && !Object.values(StaffType).includes(staffType)) {
       return NextResponse.json(
@@ -111,6 +109,10 @@ export async function PUT(
         ...(permissions !== undefined && { defaultPermissions: permissions }),
         ...(description !== undefined && { description: description || null }),
         ...(isActive !== undefined && { isActive }),
+        ...(color !== undefined && { color: color || null }),
+        ...(circleBg !== undefined && { circleBg: circleBg || null }),
+        ...(textColor !== undefined && { textColor: textColor || null }),
+        ...(borderColor !== undefined && { borderColor: borderColor || null }),
       },
     })
 
@@ -140,7 +142,7 @@ export async function PUT(
   }
 }
 
-// DELETE — deactivate/delete a staff master role
+// DELETE — permanently delete a staff master role
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -170,15 +172,14 @@ export async function DELETE(
       )
     }
 
-    // Soft-deactivate the role
-    await prisma.staffMaster.update({
+    // Hard-delete record permanently from the database
+    await prisma.staffMaster.delete({
       where: { id },
-      data: { isActive: false },
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Staff master role deactivated successfully',
+      message: 'Staff master role permanently deleted successfully',
     })
   } catch (error: any) {
     if (error.code === 'P2025') {
