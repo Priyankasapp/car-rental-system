@@ -9,93 +9,163 @@ import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
+// API item shape
+interface FeatureApiItem {
+  id: string
+  name: string
+  description?: string | null
+  status?: string | null
+  isActive?: boolean
+  color?: string | null
+  circleBg?: string | null
+  textColor?: string | null
+  borderColor?: string | null
+  _count?: { cars?: number }
+}
+
 export default function CarFeaturesPage() {
-  //  Auth & permissions 
+  // Auth & permissions
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.FEATURES_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.FEATURES_CREATE)
   const canDelete = hasPermission(PERMISSIONS.FEATURES_DELETE)
 
-  //  State 
+  // State
   const [features, setFeatures] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  //  Fetch features 
-  const fetchFeatures = useCallback(async () => {
+  // Fetch features
+  const fetchFeatures = useCallback(async (isInitialLoad = false) => {
     try {
+      if (isInitialLoad) setLoading(true)
       setError(null)
 
       const res = await fetch('/api/admin/car-features')
       const result = await res.json()
 
-      if (!res.ok) {
+      if (!res.ok || !result.success) {
         throw new Error(result.message || 'Failed to load car features')
       }
 
-      setFeatures(result.data || result)
+      const rawItems: FeatureApiItem[] = Array.isArray(result.data)
+        ? result.data
+        : result.data?.features || []
+
+      const formattedItems: EntityItem[] = rawItems.map((item: FeatureApiItem) => {
+        const activeStatus = item.status ? item.status === 'Active' : (item.isActive ?? true)
+        return {
+          id: item.id,
+          name: item.name,
+          description: item.description || '',
+          isActive: activeStatus,
+          status: activeStatus ? 'Active' : 'Inactive',
+          color: item.color || 'bg-amber-400',
+          circleBg: item.circleBg || 'bg-amber-100',
+          textColor: item.textColor || 'text-amber-700',
+          borderColor: item.borderColor || 'border-amber-200',
+          count: item._count?.cars ?? 0,
+        }
+      })
+
+      setFeatures(formattedItems)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong'
       console.error('Error fetching car features:', err)
       setError(message)
     } finally {
-      setLoading(false)
+      if (isInitialLoad) setLoading(false)
     }
   }, [])
 
   useEffect(() => {
     if (isReady) {
-      fetchFeatures()
+      fetchFeatures(true)
     }
   }, [isReady, fetchFeatures])
 
-  //  Save (Create or Update) 
-  const handleSaveFeature = async (item: Partial<EntityItem>) => {
+  // Save (Create or Update)
+  const handleSaveFeature = async (data: Partial<EntityItem>) => {
     if (!canCreate) {
-      throw new Error('You do not have permission to create/edit features')
+      alert('You do not have permission to create/edit features')
+      return
     }
 
-    const isEdit = Boolean(item.id)
+    if (!data.name?.trim()) {
+      alert('Feature name is required.')
+      return
+    }
+
+    const isEdit = Boolean(data.id)
     const url = isEdit
-      ? `/api/admin/car-features/${item.id}`
+      ? `/api/admin/car-features/${data.id}`
       : '/api/admin/car-features'
 
-    const res = await fetch(url, {
-      method: isEdit ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
-    })
+    const isCurrentlyActive = data.status
+      ? data.status === 'Active'
+      : (typeof data.isActive === 'boolean' ? data.isActive : true)
 
-    const result = await res.json()
-
-    if (!res.ok) {
-      throw new Error(result.message || result.error || 'Failed to save feature')
+    const payload = {
+      ...data,
+      name: data.name.trim(),
+      description: data.description || null,
+      isActive: isCurrentlyActive,
+      status: isCurrentlyActive ? 'Active' : 'Inactive',
     }
 
-    await fetchFeatures()
+    try {
+      const res = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST', // FIXED: Changed PUT to PATCH
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const result = await res.json()
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || result.error || 'Failed to save feature')
+      }
+
+      await fetchFeatures(false)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save feature'
+      console.error('Error saving car feature:', err)
+      alert(message)
+    }
   }
 
-  //  Delete 
+  // Delete
   const handleDeleteFeature = async (id: string | number) => {
     if (!canDelete) {
-      throw new Error('You do not have permission to delete features')
+      alert('You do not have permission to delete features')
+      return
     }
 
-    const res = await fetch(`/api/admin/car-features/${id}`, {
-      method: 'DELETE',
-    })
-
-    const result = await res.json()
-
-    if (!res.ok) {
-      throw new Error(result.message || result.error || 'Failed to delete feature')
+    if (!confirm('Are you sure you want to permanently delete this feature?')) {
+      return
     }
 
-    await fetchFeatures()
+    try {
+      const res = await fetch(`/api/admin/car-features/${id}`, {
+        method: 'DELETE',
+      })
+
+      const result = await res.json()
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || result.error || 'Failed to delete feature')
+      }
+
+      await fetchFeatures(false)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete feature'
+      console.error('Error deleting car feature:', err)
+      alert(message)
+    }
   }
 
-  //  Guards 
+  // Guards
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -122,15 +192,11 @@ export default function CarFeaturesPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">
-        <p className="font-medium">Failed to load car features</p>
-        <p className="text-sm">{error}</p>
+      <div className="flex flex-col items-center justify-center min-h-100 gap-3">
+        <p className="text-sm font-semibold text-rose-600">{error}</p>
         <button
-          onClick={() => {
-            setLoading(true)
-            fetchFeatures()
-          }}
-          className="mt-2 text-xs font-semibold underline hover:no-underline"
+          onClick={() => fetchFeatures(true)}
+          className="px-4 py-2 text-xs font-semibold text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors cursor-pointer"
         >
           Try Again
         </button>
@@ -138,19 +204,19 @@ export default function CarFeaturesPage() {
     )
   }
 
-  //  Render 
+  // Render
   return (
     <EntityGridPage
       title="Car Features & Amenities"
       entitySingularName="Feature"
       description="Manage vehicle amenities available during car registration."
       icon={Sparkles}
-      addButtonText={canCreate ? 'Add Feature' : undefined}      
+      addButtonText={canCreate ? 'Add Feature' : undefined}
       initialItems={features}
       emptyStateTitle="No features yet"
       emptyStateDescription="Create your first amenity (e.g., GPS, Bluetooth) to get started."
-      onSave={canCreate ? handleSaveFeature : undefined}          
-      onDelete={canDelete ? handleDeleteFeature : undefined}      
+      onSave={canCreate ? handleSaveFeature : undefined}
+      onDelete={canDelete ? handleDeleteFeature : undefined}
     />
   )
 }

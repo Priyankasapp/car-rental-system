@@ -14,6 +14,7 @@ interface TransmissionApiItem {
   name: string
   description?: string | null
   status?: string | null
+  isActive?: boolean
   color?: string | null
   circleBg?: string | null
   textColor?: string | null
@@ -22,19 +23,19 @@ interface TransmissionApiItem {
 }
 
 export default function TransmissionTypesPage() {
-  //  Auth & permissions
+  // Auth & permissions
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.TRANSMISSIONS_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.TRANSMISSIONS_CREATE)
   const canDelete = hasPermission(PERMISSIONS.TRANSMISSIONS_DELETE)
 
-  //  State 
+  // State 
   const [items, setItems] = useState<EntityItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  //  Fetch transmission types 
+  // Fetch transmission types 
   const fetchTransmissions = useCallback(async (isInitialLoad = false) => {
     try {
       if (isInitialLoad) setLoading(true)
@@ -48,17 +49,21 @@ export default function TransmissionTypesPage() {
       }
 
       const formattedItems: EntityItem[] = json.data.map(
-        (item: TransmissionApiItem) => ({
-          id: item.id,
-          name: item.name,
-          description: item.description || '',
-          status: item.status || 'Active',
-          color: item.color || 'bg-indigo-400',
-          circleBg: item.circleBg || 'bg-indigo-100',
-          textColor: item.textColor || 'text-indigo-700',
-          borderColor: item.borderColor || 'border-indigo-200',
-          count: item._count?.cars ?? 0,
-        })
+        (item: TransmissionApiItem) => {
+          const activeStatus = item.status ? item.status === 'Active' : (item.isActive ?? true)
+          return {
+            id: item.id,
+            name: item.name,
+            description: item.description || '',
+            isActive: activeStatus,
+            status: activeStatus ? 'Active' : 'Inactive',
+            color: item.color || 'bg-indigo-400',
+            circleBg: item.circleBg || 'bg-indigo-100',
+            textColor: item.textColor || 'text-indigo-700',
+            borderColor: item.borderColor || 'border-indigo-200',
+            count: item._count?.cars ?? 0,
+          }
+        }
       )
 
       setItems(formattedItems)
@@ -78,7 +83,7 @@ export default function TransmissionTypesPage() {
     }
   }, [isReady, fetchTransmissions])
 
-  //  Save (Create or Update) 
+  // Save (Create or Update) 
   const handleSave = async (data: Partial<EntityItem>) => {
     if (!canCreate) {
       alert('You do not have permission to create/edit transmission types')
@@ -95,11 +100,24 @@ export default function TransmissionTypesPage() {
       ? `/api/admin/transmission-types/${data.id}`
       : '/api/admin/transmission-types'
 
+    // Determine target active status from modal state
+    const isCurrentlyActive = data.status
+      ? data.status === 'Active'
+      : (typeof data.isActive === 'boolean' ? data.isActive : true)
+
+    const payload = {
+      ...data,
+      name: data.name.trim(),
+      description: data.description || null,
+      isActive: isCurrentlyActive,
+      status: isCurrentlyActive ? 'Active' : 'Inactive',
+    }
+
     try {
       const response = await fetch(endpoint, {
-        method: isEdit ? 'PUT' : 'POST',
+        method: isEdit ? 'PATCH' : 'POST', // FIXED: Changed PUT to PATCH to match API route
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       })
 
       const json = await response.json()
@@ -116,14 +134,14 @@ export default function TransmissionTypesPage() {
     }
   }
 
-  //  Delete 
+  // Delete 
   const handleDelete = async (id: string) => {
     if (!canDelete) {
       alert('You do not have permission to delete transmission types')
       return
     }
 
-    if (!confirm('Are you sure you want to delete this transmission type?')) {
+    if (!confirm('Are you sure you want to permanently delete this transmission type?')) {
       return
     }
 
@@ -146,7 +164,7 @@ export default function TransmissionTypesPage() {
     }
   }
 
-  //  Guards 
+  // Guards 
   if (userLoading || loading) {
     return (
       <EntityGridSkeleton
@@ -191,7 +209,7 @@ export default function TransmissionTypesPage() {
       title="Transmission Types"
       entitySingularName="Transmission"
       description="Manage gearbox and transmission options available for vehicles."
-       addButtonText={canCreate ? "Add Transmission" : undefined}
+      addButtonText={canCreate ? "Add Transmission" : undefined}
       initialItems={items}
       emptyStateTitle="No transmission types found"
       emptyStateDescription="Create your first transmission option to get started."
@@ -199,4 +217,4 @@ export default function TransmissionTypesPage() {
       onDelete={canDelete ? handleDelete : undefined}
     />
   )
-}
+} 
