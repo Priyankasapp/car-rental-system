@@ -181,7 +181,7 @@ export default function PermissionsManagementPage() {
         <button
           onClick={handleSave}
           disabled={saving || isSuperAdmin}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 transition"
+          className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg shadow-sm disabled:opacity-50 transition"
         >
           {saving ? 'Saving...' : 'Save Permissions'}
         </button>

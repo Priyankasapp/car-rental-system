@@ -34,9 +34,9 @@ export function generateInquiryHTML({
   phone = "N/A",
   serviceName = "General Inquiry",
   message,
-  supportPhone = "+91 XXXXX XXXXX",
+  supportPhone = "+91 9535992795",
   supportEmail = "support@urbandrive.com",
-  websiteUrl = "www.urbandrive.com",
+  websiteUrl = "https://car-rental-system-ivory-three.vercel.app",
 }: InquiryEmailProps): string {
   const currentYear = new Date().getFullYear();
   const fullName = `${firstName} ${lastName}`.trim();
@@ -146,9 +146,9 @@ export function generateInquiryText({
   phone = "N/A",
   serviceName = "General Inquiry",
   message,
-  supportPhone = "+91 XXXXX XXXXX",
+  supportPhone = "+91 9535992795",
   supportEmail = "support@urbandrive.com",
-  websiteUrl = "www.urbandrive.com",
+  websiteUrl = "https://car-rental-system-ivory-three.vercel.app",
 }: InquiryEmailProps): string {
   const currentYear = new Date().getFullYear();
   const fullName = `${firstName} ${lastName}`.trim();
@@ -194,9 +194,9 @@ export function generateReplyHTML({
   replyMessage,
   originalMessage,
   serviceName = "General Inquiry",
-  supportPhone = "+91 XXXXX XXXXX",
+  supportPhone = "+91 9535992795",
   supportEmail = "support@urbandrive.com",
-  websiteUrl = "www.urbandrive.com",
+  websiteUrl = "https://car-rental-system-ivory-three.vercel.app",
 }: ReplyEmailProps): string {
   const currentYear = new Date().getFullYear();
 
@@ -286,9 +286,9 @@ export function generateReplyText({
   replyMessage,
   originalMessage,
   serviceName = "General Inquiry",
-  supportPhone = "+91 XXXXX XXXXX",
+  supportPhone = "+91 9535992795",
   supportEmail = "support@urbandrive.com",
-  websiteUrl = "www.urbandrive.com",
+  websiteUrl = "https://car-rental-system-ivory-three.vercel.app",
 }: ReplyEmailProps): string {
   const currentYear = new Date().getFullYear();
 
