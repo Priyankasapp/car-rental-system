@@ -6,6 +6,11 @@ import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
 import { StaffCreateSchema } from '@/lib/staff/validation'
 import { hashPassword, generatePassword } from '@/lib/auth'
+import { sendEmail } from '@/lib/email'
+import {
+  generateTempPasswordHTML,
+  generateTempPasswordText,
+} from '@/email/TempPasswordEmail'
 
 // GET — List all staff members
 export async function GET(request: NextRequest) {
@@ -59,6 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+
     const validation = StaffCreateSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json(
@@ -71,7 +77,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { firstName, lastName, email, phone, staffMasterId, role } = validation.data
+    // `role` is constrained to STAFF | ADMIN by the schema. It used to come
+    // straight off the body, so anyone with staff:create could mint a
+    // SUPERADMIN for themselves.
+    const { firstName, lastName, email, phone, staffMasterId, role } =
+      validation.data
 
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
@@ -85,6 +95,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Every staff account previously shared the literal password
+    // 'ChangeMe123!', stored unhashed. Generate a unique random one and hash
+    // it; the account must go through the password-reset flow to be used.
     const temporaryPassword = generatePassword(12)
     const hashedPassword = await hashPassword(temporaryPassword)
 
@@ -96,9 +109,17 @@ export async function POST(request: NextRequest) {
         phone: phone || null,
         password: hashedPassword,
         mustChangePassword: true,
-        staffMasterId,
         role,
+        staffMasterId,
         isActive: true,
+        // An admin creating this account IS the verification — the address
+        // was chosen by staff, not self-asserted by a stranger, and the
+        // temporary password is delivered to it. Without this the schema
+        // default of false applies and login rejects them with
+        // "Please verify your email address", but no OTP is ever sent for
+        // admin-created accounts, so the account is permanently locked out.
+        // POST /api/admin/users does the same for the customers it creates.
+        isEmailVerified: true,
       },
       select: {
         id: true,
@@ -118,8 +139,41 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Send the temporary password. The account is unusable without it — the
+    // password is hashed and never returned in the response — so if this
+    // fails the admin has to know, otherwise they are left with a staff
+    // member who can never log in and no way to recover the credential.
+    let emailSent = true
+
+    try {
+      await sendEmail({
+        to: newStaff.email,
+        subject: 'Welcome to UrbanDrive - Your Account Credentials',
+        html: generateTempPasswordHTML({
+          firstName: newStaff.firstName,
+          email: newStaff.email,
+          temporaryPassword,
+        }),
+        text: generateTempPasswordText({
+          firstName: newStaff.firstName,
+          email: newStaff.email,
+          temporaryPassword,
+        }),
+      })
+    } catch (emailError) {
+      console.error('Failed to send staff credentials email:', emailError)
+      emailSent = false
+    }
+
     return NextResponse.json(
-      { success: true, message: 'Staff member created successfully', data: { staff: newStaff } },
+      {
+        success: true,
+        message: emailSent
+          ? 'Staff member created successfully. Login credentials have been emailed.'
+          : 'Staff member created, but the credentials email could not be sent. Use "Reset password" to issue new credentials.',
+        emailSent,
+        data: { staff: newStaff },
+      },
       { status: 201 }
     )
   } catch (error: any) {
