@@ -77,9 +77,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // `role` is constrained to STAFF | ADMIN by the schema. It used to come
-    // straight off the body, so anyone with staff:create could mint a
-    // SUPERADMIN for themselves.
+ 
     const { firstName, lastName, email, phone, staffMasterId, role } =
       validation.data
 
@@ -96,8 +94,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Every staff account previously shared the literal password
-    // 'ChangeMe123!', stored unhashed. Generate a unique random one and hash
-    // it; the account must go through the password-reset flow to be used.
     const temporaryPassword = generatePassword(12)
     const hashedPassword = await hashPassword(temporaryPassword)
 
@@ -112,13 +108,7 @@ export async function POST(request: NextRequest) {
         role,
         staffMasterId,
         isActive: true,
-        // An admin creating this account IS the verification — the address
-        // was chosen by staff, not self-asserted by a stranger, and the
-        // temporary password is delivered to it. Without this the schema
-        // default of false applies and login rejects them with
-        // "Please verify your email address", but no OTP is ever sent for
-        // admin-created accounts, so the account is permanently locked out.
-        // POST /api/admin/users does the same for the customers it creates.
+
         isEmailVerified: true,
       },
       select: {
@@ -139,10 +129,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Send the temporary password. The account is unusable without it — the
-    // password is hashed and never returned in the response — so if this
-    // fails the admin has to know, otherwise they are left with a staff
-    // member who can never log in and no way to recover the credential.
+    // Send the system generated password. 
     let emailSent = true
 
     try {
