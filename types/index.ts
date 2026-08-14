@@ -31,7 +31,7 @@ export interface Car {
 export interface Collection {
   id: string
   name: string
-  icon: string
+ icon?: string
   description?: string
   count?: number
   category?: CarCategory | string

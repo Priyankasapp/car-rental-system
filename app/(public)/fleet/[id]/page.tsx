@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
-import { useState, useEffect, use, Suspense } from 'react'
+import { useState, useEffect, use, Suspense, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { apiCarToFleetCar, FleetCar } from '@/types/fleet'
@@ -16,6 +17,10 @@ function CarDetailContent({ id }: { id: string }) {
   const [selectedImage, setSelectedImage] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     async function fetchCarDetails() {
@@ -44,6 +49,63 @@ function CarDetailContent({ id }: { id: string }) {
     fetchCarDetails()
   }, [id])
 
+  // Sync currentIndex with selectedImage when car loads
+  useEffect(() => {
+    if (!car || !car.imageGallery || car.imageGallery.length === 0) return
+    const idx = car.imageGallery.indexOf(selectedImage)
+    if (idx >= 0) {
+      setCurrentIndex(idx)
+    } else {
+      // If selectedImage is the main image and not in gallery, start from 0
+      setCurrentIndex(0)
+      setSelectedImage(car.imageGallery[0])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [car?.imageGallery, selectedImage])
+
+  // Auto-scroll logic
+  useEffect(() => {
+    if (!car || !car.imageGallery || car.imageGallery.length <= 1) return
+
+    if (isPaused) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+      return
+    }
+
+    timerRef.current = setInterval(() => {
+      setCurrentIndex((prev) => {
+        const next = (prev + 1) % car.imageGallery!.length
+        setSelectedImage(car.imageGallery![next])
+        return next
+      })
+    }, 4000) // change every 4s
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [car, isPaused])
+
+  const goToPrev = () => {
+    if (!car || !car.imageGallery || car.imageGallery.length <= 1) return
+    setCurrentIndex((prev) => {
+      const next = (prev - 1 + car.imageGallery!.length) % car.imageGallery!.length
+      setSelectedImage(car.imageGallery![next])
+      return next
+    })
+  }
+
+  const goToNext = () => {
+    if (!car || !car.imageGallery || car.imageGallery.length <= 1) return
+    setCurrentIndex((prev) => {
+      const next = (prev + 1) % car.imageGallery!.length
+      setSelectedImage(car.imageGallery![next])
+      return next
+    })
+  }
+
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-8">
@@ -65,7 +127,9 @@ function CarDetailContent({ id }: { id: string }) {
       <div className="text-center py-20 bg-white border border-gray-200 rounded-2xl p-8">
         <p className="text-5xl mb-4">⚠️</p>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Not Found</h2>
-        <p className="text-gray-500 mb-6">{error || "The vehicle you're looking for doesn't exist or isn't available."}</p>
+        <p className="text-gray-500 mb-6">
+          {error || "The vehicle you're looking for doesn't exist or isn't available."}
+        </p>
         <Link
           href="/fleet"
           className="inline-flex items-center px-6 py-3 bg-black text-white font-medium rounded-xl hover:bg-gray-800 transition"
@@ -75,6 +139,8 @@ function CarDetailContent({ id }: { id: string }) {
       </div>
     )
   }
+
+  const hasGallery = car.imageGallery && car.imageGallery.length > 1
 
   return (
     <div className="space-y-8">
@@ -90,7 +156,12 @@ function CarDetailContent({ id }: { id: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Images Column */}
         <div className="space-y-4">
-          <div className="relative h-80 md:h-112.5 w-full rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
+          {/* Main Image with Auto-scroll + < > controls */}
+          <div
+            className="relative h-80 md:h-112.5 w-full rounded-2xl overflow-hidden bg-gray-100 border border-gray-200"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
             <Image
               src={selectedImage || '/placeholder-car.jpg'}
               alt={car.name}
@@ -98,17 +169,59 @@ function CarDetailContent({ id }: { id: string }) {
               className="object-cover"
               priority
             />
+
+            {hasGallery && (
+              <>
+                {/* Left Arrow */}
+                <button
+                  onClick={goToPrev}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition"
+                  aria-label="Previous image"
+                >
+                  ‹
+                </button>
+
+                {/* Right Arrow */}
+                <button
+                  onClick={goToNext}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition"
+                  aria-label="Next image"
+                >
+                  ›
+                </button>
+
+                {/* Dots Indicator */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                  {car.imageGallery!.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setCurrentIndex(idx)
+                        setSelectedImage(car.imageGallery![idx])
+                      }}
+                      className={`h-2 w-2 rounded-full transition ${
+                        idx === currentIndex ? 'bg-white' : 'bg-white/50 hover:bg-white/80'
+                      }`}
+                      aria-label={`Go to image ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Gallery Thumbnails */}
-          {car.imageGallery && car.imageGallery.length > 1 && (
+          {hasGallery && (
             <div className="flex gap-3 overflow-x-auto pb-2">
               {car.imageGallery.map((img, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setSelectedImage(img)}
+                  onClick={() => {
+                    setCurrentIndex(idx)
+                    setSelectedImage(img)
+                  }}
                   className={`relative w-24 h-20 shrink-0 rounded-lg overflow-hidden border-2 transition ${
-                    selectedImage === img ? 'border-black' : 'border-transparent opacity-70 hover:opacity-100'
+                    idx === currentIndex ? 'border-black' : 'border-transparent opacity-70 hover:opacity-100'
                   }`}
                 >
                   <Image src={img} alt={`${car.name} thumbnail ${idx + 1}`} fill className="object-cover" />
@@ -159,7 +272,9 @@ function CarDetailContent({ id }: { id: string }) {
 
               <div className="p-4 border border-gray-200 rounded-xl">
                 <span className="block text-xs text-gray-400">Fuel Type</span>
-                <span className="text-sm font-semibold text-gray-900 capitalize">{car.fuelType}</span>
+                <span className="text-sm font-semibold text-gray-900 capitalize">
+                  {car.fuelType}
+                </span>
               </div>
 
               <div className="p-4 border border-gray-200 rounded-xl">
@@ -194,20 +309,20 @@ function CarDetailContent({ id }: { id: string }) {
           {/* Action Button */}
           <div className="pt-6 border-t border-gray-100">
             {car.status === 'available' ? (
-  <Link
-    href={`/reservation/${car.id}`}
-    className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-800 transition flex items-center justify-center"
-  >
-    Book This Vehicle
-  </Link>
-) : (
-  <button
-    disabled
-    className="w-full py-4 bg-gray-300 text-gray-500 font-semibold rounded-xl cursor-not-allowed"
-  >
-    Currently Unavailable
-  </button>
-)}
+              <Link
+                href={`/reservation/${car.id}`}
+                className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-800 transition flex items-center justify-center"
+              >
+                Book This Vehicle
+              </Link>
+            ) : (
+              <button
+                disabled
+                className="w-full py-4 bg-gray-300 text-gray-500 font-semibold rounded-xl cursor-not-allowed"
+              >
+                Currently Unavailable
+              </button>
+            )}
           </div>
         </div>
       </div>
