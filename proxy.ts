@@ -22,6 +22,7 @@ const alwaysPublicRoutes = [
 const publicApiGetRoutes = [
   "/api/cars",
   "/api/settings",
+  "/api/categories",
 
 ];
 
