@@ -67,15 +67,13 @@ const sidebarLinks: {
   },
   {
     href: "/admin/messages",
-    label:"Messages",
-    icon:MessageCircle,
-    permission:PERMISSIONS.MESSAGES_VIEW,
+    label: "Messages",
+    icon: MessageCircle,
+    permission: PERMISSIONS.MESSAGES_VIEW,
   }
-  
 ];
 
 // SETTINGS LINKS
-
 const settingsLinks: {
   href: string;
   label: string;
@@ -114,8 +112,7 @@ const settingsLinks: {
   },
 ];
 
-// MANAGEMENT LINKS (
-
+// MANAGEMENT LINKS
 const managementLinks: {
   href: string;
   label: string;
@@ -142,8 +139,60 @@ const permissionsLink = {
   icon: ShieldCheck,
 };
 
-// ADMIN LAYOUT
+// SIDEBAR SKELETON COMPONENT
+function SidebarSkeleton() {
+  return (
+    <div className="p-3 sm:p-4 space-y-6 animate-pulse">
+      {/* Main Nav Links Skeleton */}
+      <div className="space-y-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-gray-100">
+            <div className="h-5 w-5 rounded bg-gray-200 shrink-0" />
+            <div className="h-4 bg-gray-200 rounded w-24 sm:w-32" />
+          </div>
+        ))}
+      </div>
 
+      {/* Settings Section Skeleton */}
+      <div className="pt-4 border-t border-gray-200 space-y-2">
+        <div className="flex items-center justify-between px-3 py-1">
+          <div className="h-3 bg-gray-200 rounded w-16" />
+          <div className="h-4 w-4 bg-gray-200 rounded" />
+        </div>
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center space-x-3 px-3 py-2 rounded-lg ml-2 sm:ml-4 bg-gray-50">
+            <div className="h-4 w-4 rounded bg-gray-200 shrink-0" />
+            <div className="h-3.5 bg-gray-200 rounded w-20 sm:w-28" />
+          </div>
+        ))}
+      </div>
+
+      {/* Management Section Skeleton */}
+      <div className="pt-4 border-t border-gray-200 space-y-2">
+        <div className="flex items-center justify-between px-3 py-1">
+          <div className="h-3 bg-gray-200 rounded w-20" />
+          <div className="h-4 w-4 bg-gray-200 rounded" />
+        </div>
+        {[1, 2].map((i) => (
+          <div key={i} className="flex items-center space-x-3 px-3 py-2 rounded-lg ml-2 sm:ml-4 bg-gray-50">
+            <div className="h-4 w-4 rounded bg-gray-200 shrink-0" />
+            <div className="h-3.5 bg-gray-200 rounded w-20 sm:w-24" />
+          </div>
+        ))}
+      </div>
+
+      {/* Logout Button Skeleton */}
+      <div className="pt-4 border-t border-gray-200">
+        <div className="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-gray-100">
+          <div className="h-5 w-5 rounded bg-gray-200 shrink-0" />
+          <div className="h-4 bg-gray-200 rounded w-16" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ADMIN LAYOUT
 export default function AdminLayout({
   children,
 }: {
@@ -153,6 +202,7 @@ export default function AdminLayout({
   const [managementOpen, setManagementOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -160,7 +210,18 @@ export default function AdminLayout({
   const [user, setUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
-    getCurrentUser().then(setUser);
+    let isMounted = true;
+    getCurrentUser()
+      .then((data) => {
+        if (isMounted) setUser(data);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Handle responsive sidebar
@@ -176,8 +237,8 @@ export default function AdminLayout({
     };
 
     handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Close sidebar on route change (mobile)
@@ -188,19 +249,15 @@ export default function AdminLayout({
   }, [pathname, isMobile]);
 
   // USER INITIALS
-
   const userInitials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "SA";
 
   // ROLE
-
   const role = user?.role?.toUpperCase();
-
   const isSuperAdmin = role === "SUPERADMIN" || role === "SUPER_ADMIN";
 
   // PERMISSION CHECK
-
   const canSee = (permission?: PermissionKey) => {
     if (!permission) return true;
     if (!user) return false;
@@ -224,14 +281,12 @@ export default function AdminLayout({
     visibleManagementLinks.length > 0 || showPermissionsLink;
 
   // LOGOUT
-
   const handleLogout = async () => {
     await logoutCurrentUser();
     router.push("/login");
   };
 
   // ACTIVE LINK
-
   const isActive = (href: string) => {
     if (href === "/admin") {
       return pathname === "/admin";
@@ -272,7 +327,9 @@ export default function AdminLayout({
               UrbanDrive
             </span>
 
-            {isSuperAdmin ? (
+            {isLoading ? (
+              <div className="h-5 w-16 bg-gray-200 animate-pulse rounded-full" />
+            ) : isSuperAdmin ? (
               <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shrink-0">
                 <Crown className="w-3 h-3 text-amber-600" />
                 <span className="hidden sm:inline">Super</span>
@@ -294,159 +351,77 @@ export default function AdminLayout({
           </button>
         </div>
 
-        {/* NAVIGATION */}
-        <nav className="p-3 sm:p-4 space-y-1">
-          {/* MAIN NAVIGATION */}
-          {sidebarLinks
-            .filter((link) => canSee(link.permission))
-            .map((link) => {
-              const Icon = link.icon;
-              const active = isActive(link.href);
+        {/* NAVIGATION / SKELETON */}
+        {isLoading ? (
+          <SidebarSkeleton />
+        ) : (
+          <nav className="p-3 sm:p-4 space-y-1">
+            {/* MAIN NAVIGATION */}
+            {sidebarLinks
+              .filter((link) => canSee(link.permission))
+              .map((link) => {
+                const Icon = link.icon;
+                const active = isActive(link.href);
 
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-colors",
-                    active
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100",
-                    "text-sm sm:text-base"
-                  )}
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span className="font-medium truncate">{link.label}</span>
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-colors",
+                      active
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-600 hover:bg-gray-100",
+                      "text-sm sm:text-base"
+                    )}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="font-medium truncate">{link.label}</span>
+                  </Link>
+                );
+              })}
 
-          {/* SETTINGS */}
-          {visibleSettingsLinks.length > 0 && (
-            <div className="pt-4 mt-4 border-t border-gray-200">
-              <div className="flex items-center justify-between px-3 sm:px-4 py-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-                  Settings
-                </span>
+            {/* SETTINGS */}
+            {visibleSettingsLinks.length > 0 && (
+              <div className="pt-4 mt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between px-3 sm:px-4 py-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    Settings
+                  </span>
 
-                <button
-                  type="button"
-                  onClick={() => setSettingsOpen(!settingsOpen)}
-                  className="p-1 rounded hover:bg-gray-100 transition-colors shrink-0"
-                  aria-label={
-                    settingsOpen ? "Collapse settings" : "Expand settings"
-                  }
-                  aria-expanded={settingsOpen}
-                >
-                  {settingsOpen ? (
-                    <ChevronDown
-                      className="h-4 w-4 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <ChevronRight
-                      className="h-4 w-4 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
-              </div>
-
-              {settingsOpen && (
-                <div className="space-y-1 mt-1">
-                  {visibleSettingsLinks.map((link) => {
-                    const Icon = link.icon;
-                    const active = isActive(link.href);
-
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={cn(
-                          "flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-colors ml-2 sm:ml-4",
-                          active
-                            ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100",
-                          "text-sm sm:text-base"
-                        )}
-                      >
-                        <Icon className="h-5 w-5 shrink-0" />
-                        <span className="font-medium text-sm truncate">
-                          {link.label}
-                        </span>
-                      </Link>
-                    );
-                  })}
+                  <button
+                    type="button"
+                    onClick={() => setSettingsOpen(!settingsOpen)}
+                    className="p-1 rounded hover:bg-gray-100 transition-colors shrink-0"
+                    aria-label={
+                      settingsOpen ? "Collapse settings" : "Expand settings"
+                    }
+                    aria-expanded={settingsOpen}
+                  >
+                    {settingsOpen ? (
+                      <ChevronDown
+                        className="h-4 w-4 text-gray-400"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <ChevronRight
+                        className="h-4 w-4 text-gray-400"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* MANAGEMENT */}
-          {hasAnyManagementLink && (
-            <div className="pt-4 mt-4 border-t border-gray-200">
-              <div className="flex items-center justify-between px-3 sm:px-4 py-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-                  Management
-                </span>
-
-                <button
-                  onClick={() => setManagementOpen(!managementOpen)}
-                  className="p-1 rounded hover:bg-gray-100 transition-colors shrink-0"
-                  aria-label={
-                    managementOpen ? "Collapse management" : "Expand management"
-                  }
-                  aria-expanded={managementOpen}
-                >
-                  {managementOpen ? (
-                    <ChevronDown
-                      className="h-4 w-4 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <ChevronRight
-                      className="h-4 w-4 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
-              </div>
-
-              {managementOpen && (
-                <div className="space-y-1 mt-1">
-                  {visibleManagementLinks.map((link) => {
-                    const Icon = link.icon;
-                    const active = isActive(link.href);
-
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={cn(
-                          "flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-colors ml-2 sm:ml-4",
-                          active
-                            ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100",
-                          "text-sm sm:text-base"
-                        )}
-                      >
-                        <Icon className="h-5 w-5 shrink-0" />
-                        <span className="font-medium text-sm truncate">
-                          {link.label}
-                        </span>
-                      </Link>
-                    );
-                  })}
-
-                  {showPermissionsLink &&
-                    (() => {
-                      const Icon = permissionsLink.icon;
-                      const active = isActive(permissionsLink.href);
+                {settingsOpen && (
+                  <div className="space-y-1 mt-1">
+                    {visibleSettingsLinks.map((link) => {
+                      const Icon = link.icon;
+                      const active = isActive(link.href);
 
                       return (
                         <Link
-                          key={permissionsLink.href}
-                          href={permissionsLink.href}
+                          key={link.href}
+                          href={link.href}
                           className={cn(
                             "flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-colors ml-2 sm:ml-4",
                             active
@@ -457,27 +432,113 @@ export default function AdminLayout({
                         >
                           <Icon className="h-5 w-5 shrink-0" />
                           <span className="font-medium text-sm truncate">
-                            {permissionsLink.label}
+                            {link.label}
                           </span>
                         </Link>
                       );
-                    })()}
-                </div>
-              )}
-            </div>
-          )}
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
-          {/* LOGOUT */}
-          <div className="pt-4 mt-4 border-t border-gray-200">
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 w-full rounded-lg text-gray-600 hover:bg-gray-100 transition-colors text-sm sm:text-base"
-            >
-              <LogOut className="h-5 w-5 shrink-0" />
-              <span className="font-medium">Logout</span>
-            </button>
-          </div>
-        </nav>
+            {/* MANAGEMENT */}
+            {hasAnyManagementLink && (
+              <div className="pt-4 mt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between px-3 sm:px-4 py-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    Management
+                  </span>
+
+                  <button
+                    onClick={() => setManagementOpen(!managementOpen)}
+                    className="p-1 rounded hover:bg-gray-100 transition-colors shrink-0"
+                    aria-label={
+                      managementOpen ? "Collapse management" : "Expand management"
+                    }
+                    aria-expanded={managementOpen}
+                  >
+                    {managementOpen ? (
+                      <ChevronDown
+                        className="h-4 w-4 text-gray-400"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <ChevronRight
+                        className="h-4 w-4 text-gray-400"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
+                </div>
+
+                {managementOpen && (
+                  <div className="space-y-1 mt-1">
+                    {visibleManagementLinks.map((link) => {
+                      const Icon = link.icon;
+                      const active = isActive(link.href);
+
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className={cn(
+                            "flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-colors ml-2 sm:ml-4",
+                            active
+                              ? "bg-gray-900 text-white"
+                              : "text-gray-600 hover:bg-gray-100",
+                            "text-sm sm:text-base"
+                          )}
+                        >
+                          <Icon className="h-5 w-5 shrink-0" />
+                          <span className="font-medium text-sm truncate">
+                            {link.label}
+                          </span>
+                        </Link>
+                      );
+                    })}
+
+                    {showPermissionsLink &&
+                      (() => {
+                        const Icon = permissionsLink.icon;
+                        const active = isActive(permissionsLink.href);
+
+                        return (
+                          <Link
+                            key={permissionsLink.href}
+                            href={permissionsLink.href}
+                            className={cn(
+                              "flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-colors ml-2 sm:ml-4",
+                              active
+                                ? "bg-gray-900 text-white"
+                                : "text-gray-600 hover:bg-gray-100",
+                              "text-sm sm:text-base"
+                            )}
+                          >
+                            <Icon className="h-5 w-5 shrink-0" />
+                            <span className="font-medium text-sm truncate">
+                              {permissionsLink.label}
+                            </span>
+                          </Link>
+                        );
+                      })()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* LOGOUT */}
+            <div className="pt-4 mt-4 border-t border-gray-200">
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 w-full rounded-lg text-gray-600 hover:bg-gray-100 transition-colors text-sm sm:text-base"
+              >
+                <LogOut className="h-5 w-5 shrink-0" />
+                <span className="font-medium">Logout</span>
+              </button>
+            </div>
+          </nav>
+        )}
       </aside>
 
       {/* MAIN CONTENT */}
@@ -500,7 +561,9 @@ export default function AdminLayout({
           </button>
 
           <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1 justify-end">
-            {isSuperAdmin ? (
+            {isLoading ? (
+              <div className="h-6 w-28 bg-gray-200 animate-pulse rounded-full shrink-0" />
+            ) : isSuperAdmin ? (
               <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-xs shrink-0">
                 <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600" />
                 <span className="hidden xs:inline">Super Admin Portal</span>
@@ -512,69 +575,73 @@ export default function AdminLayout({
               </span>
             )}
 
-            {/* AVATAR */}
-            <div className="relative group shrink-0">
-              <button
-                type="button"
-                className={cn(
-                  "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center",
-                  "font-bold text-xs sm:text-sm cursor-pointer transition-all",
-                  "ring-2 ring-offset-1",
-                  isSuperAdmin
-                    ? "bg-amber-600 text-white ring-amber-400"
-                    : "bg-gray-900 text-white ring-gray-300",
-                  "hover:ring-offset-2"
-                )}
-                aria-label={`Open account menu for ${
-                  user?.firstName || "user"
-                }`}
-              >
-                {userInitials}
-              </button>
+            {/* AVATAR / AVATAR SKELETON */}
+            {isLoading ? (
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-200 animate-pulse shrink-0" />
+            ) : (
+              <div className="relative group shrink-0">
+                <button
+                  type="button"
+                  className={cn(
+                    "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center",
+                    "font-bold text-xs sm:text-sm cursor-pointer transition-all",
+                    "ring-2 ring-offset-1",
+                    isSuperAdmin
+                      ? "bg-amber-600 text-white ring-amber-400"
+                      : "bg-gray-900 text-white ring-gray-300",
+                    "hover:ring-offset-2"
+                  )}
+                  aria-label={`Open account menu for ${
+                    user?.firstName || "user"
+                  }`}
+                >
+                  {userInitials}
+                </button>
 
-              {/* DROPDOWN */}
-              <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
-                    {user?.firstName} {user?.lastName}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {user?.email}
-                  </p>
-                  <div className="mt-2">
-                    <span
-                      className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
-                        isSuperAdmin
-                          ? "bg-amber-100 text-amber-800 border border-amber-200"
-                          : "bg-gray-200 text-gray-700",
-                      )}
+                {/* DROPDOWN */}
+                <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user?.email}
+                    </p>
+                    <div className="mt-2">
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
+                          isSuperAdmin
+                            ? "bg-amber-100 text-amber-800 border border-amber-200"
+                            : "bg-gray-200 text-gray-700",
+                        )}
+                      >
+                        Role: {user?.role || "USER"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="py-1">
+                    <Link
+                      href="/admin/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
-                      Role: {user?.role || "USER"}
-                    </span>
+                      Profile
+                    </Link>
+
+                    <hr className="my-1 border-gray-100" />
+
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
                   </div>
                 </div>
-
-                <div className="py-1">
-                  <Link
-                    href="/admin/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Profile
-                  </Link>
-
-                  <hr className="my-1 border-gray-100" />
-
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </button>
-                </div>
               </div>
-            </div>
+            )}
           </div>
         </header>
 

@@ -1,6 +1,6 @@
 import { emailStyles, tokens } from './styles';
 
-export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 export interface BookingEmailProps {
   customerName: string;
@@ -48,7 +48,7 @@ const statusConfig: Record<
       'Great news! Your reservation has been confirmed. Your vehicle will be prepared and ready for pick-up at the designated date and time.',
     nextStepsTitle: 'Pick-Up Instructions',
     nextStepsText:
-      'Please present a valid Driver’s License and Credit Card upon arrival at the pick-up location. Your vehicle will be fully inspected and sanitized.',
+      'Please present a valid Driver\'s License and Credit Card upon arrival at the pick-up location. Your vehicle will be fully inspected and sanitized.',
   },
   CANCELLED: {
     title: 'Booking Cancelled',
@@ -60,6 +60,17 @@ const statusConfig: Record<
     nextStepsTitle: 'Need to rebook?',
     nextStepsText:
       'If this was done in error or you need to select a different date or vehicle, you can make a new reservation at any time through our app or website.',
+  },
+  COMPLETED: {
+    title: 'Trip Completed!',
+    badgeText: 'TRIP COMPLETED',
+    badgeStyle: `background: ${tokens.colors.blueBg}; color: ${tokens.colors.blueText}; border: 1px solid ${tokens.colors.blueBorder};`,
+    greeting: 'Thank You for Riding with Us!',
+    message:
+      'Your trip has been successfully completed. We hope you had a wonderful experience with your UrbanDrive rental. Your feedback is valuable to us!',
+    nextStepsTitle: 'We\'d Love Your Feedback',
+    nextStepsText:
+      'Please take a moment to rate your experience and share any suggestions. We\'re always looking to improve and provide the best service possible. If you\'re satisfied, we\'d appreciate a review!',
   },
 };
 
@@ -168,6 +179,18 @@ export function generateBookingHTML({
             <p style="${emailStyles.pillarText}">${config.nextStepsText}</p>
           </div>
 
+          ${
+            status === 'COMPLETED'
+              ? `
+          <div style="text-align: center; margin: 20px 0;">
+            <div style="display: inline-block; padding: 12px 28px; background: ${tokens.colors.greenBg}; border-radius: 8px; color: ${tokens.colors.greenText}; font-weight: 600;">
+              ✓ Trip Completed Successfully
+            </div>
+          </div>
+          `
+              : ''
+          }
+
           <p style="${emailStyles.securityNote}">
             Have questions about reference <strong>${reservationRef}</strong>? Contact our support team at <a href="mailto:${supportEmail}" style="color: #000; font-weight: 600;">${supportEmail}</a>.
           </p>
@@ -225,6 +248,11 @@ ${totalAmount ? `Total Amount:     $${totalAmount}\n` : ''}${
 ${config.nextStepsTitle.toUpperCase()}
 ${config.nextStepsText}
 
+${
+  status === 'COMPLETED'
+    ? '\nThank you for choosing UrbanDrive! We hope to see you again soon.\n'
+    : ''
+}
 Need assistance? Reach out to support with your booking reference code (${reservationRef}).
 
 © ${currentYear} UrbanDrive Global. All Rights Reserved.

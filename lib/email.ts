@@ -72,6 +72,7 @@ const BOOKING_SUBJECTS: Record<BookingEmailProps['status'], string> = {
   PENDING: 'Booking Request Received - UrbanDrive',
   CONFIRMED: 'Booking Confirmed! - UrbanDrive',
   CANCELLED: 'Booking Cancelled - UrbanDrive',
+  COMPLETED: 'Trip Completed - Thank You for Choosing UrbanDrive',
 }
 
 export async function sendBookingEmail({

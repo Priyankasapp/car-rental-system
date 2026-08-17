@@ -4,16 +4,16 @@
 import Link from "next/link";
 
 const fleetLinks = [
-  { label: "Exotic Sports", href: "/fleets?category=sports" },
-  { label: "Executive SUVs", href: "/fleets?category=suv" },
-  { label: "Next-Gen Electric", href: "/fleets?category=electric" },
-  { label: "Classic Collection", href: "/fleets?category=classic" },
+  { label: "Exotic Sports", href: "/fleet" },
+  { label: "Executive SUVs", href: "/fleet" },
+  { label: "Next-Gen Electric", href: "/fleet" },
+  { label: "Classic Collection", href: "/fleets" },
 ];
 
 const companyLinks = [
   { label: "About Us", href: "/about" },
   { label: "Contact Us", href: "/contact" },
-  { label: "Browse Fleet", href: "/fleets" },
+  { label: "Browse Fleet", href: "/fleet" },
   { label: "My Bookings", href: "/bookings" },  
 ];
 

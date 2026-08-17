@@ -83,6 +83,26 @@ interface AuthUser {
   createdAt: string
 }
 
+// Status badge configuration
+const STATUS_CONFIG = {
+  AVAILABLE: {
+    label: 'Available',
+    className: 'border-emerald-300 bg-emerald-100 text-emerald-800',
+  },
+  RENTED: {
+    label: 'Rented',
+    className: 'border-blue-300 bg-blue-100 text-blue-800',
+  },
+  MAINTENANCE: {
+    label: 'Maintenance',
+    className: 'border-amber-300 bg-amber-100 text-amber-800',
+  },
+  UNAVAILABLE: {
+    label: 'Unavailable',
+    className: 'border-rose-300 bg-rose-100 text-rose-800',
+  },
+} as const
+
 export default function CarDetailPage({
   params,
 }: {
@@ -95,37 +115,26 @@ export default function CarDetailPage({
   const [car, setCar] = useState<Car | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
- 
-  // AUTH / PERMISSIONS
- 
-
   const [user, setUser] = useState<AuthUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
-
-
-  // EDIT MODE
-
-
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<Partial<Car>>({})
   const [saving, setSaving] = useState(false)
-
   const [activeTab, setActiveTab] = useState<
     'overview' | 'gallery' | 'pricing'
   >('overview')
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
 
-
-  // FETCH CURRENT USER + PERMISSIONS
- 
-
+  // FETCH CURRENT USER
   useEffect(() => {
     let isMounted = true
 
     const fetchCurrentUser = async () => {
       try {
         setAuthLoading(true)
-
         const res = await fetch('/api/auth/me', {
           method: 'GET',
           credentials: 'include',
@@ -143,7 +152,6 @@ export default function CarDetailPage({
         }
       } catch (error) {
         console.error('Failed to load user permissions:', error)
-
         if (isMounted) {
           setUser(null)
         }
@@ -155,26 +163,19 @@ export default function CarDetailPage({
     }
 
     fetchCurrentUser()
-
     return () => {
       isMounted = false
     }
   }, [])
 
-
   // PERMISSION CHECK
-
-
   const hasPermission = (permission: string) => {
     if (!user) return false
 
     const role = user.role?.toUpperCase()
 
     // Super Admin gets everything
-    if (
-      role === 'SUPERADMIN' ||
-      role === 'SUPER_ADMIN'
-    ) {
+    if (role === 'SUPERADMIN' || role === 'SUPER_ADMIN') {
       return true
     }
 
@@ -198,15 +199,12 @@ export default function CarDetailPage({
   const canDeleteCars = hasPermission('cars:delete')
 
   // FETCH CAR DETAILS
- 
-
   useEffect(() => {
     let isMounted = true
 
     const fetchCarDetails = async () => {
       try {
         setLoading(true)
-
         const res = await fetch(`/api/admin/cars/${carId}`, {
           credentials: 'include',
           cache: 'no-store',
@@ -215,9 +213,7 @@ export default function CarDetailPage({
         const json = await res.json()
 
         if (!res.ok || !json.success) {
-          throw new Error(
-            json.message || 'Failed to fetch car details'
-          )
+          throw new Error(json.message || 'Failed to fetch car details')
         }
 
         if (isMounted) {
@@ -226,11 +222,7 @@ export default function CarDetailPage({
         }
       } catch (err: unknown) {
         if (isMounted) {
-          const errorMessage =
-            err instanceof Error
-              ? err.message
-              : 'An error occurred'
-
+          const errorMessage = err instanceof Error ? err.message : 'An error occurred'
           setError(errorMessage)
         }
       } finally {
@@ -249,15 +241,11 @@ export default function CarDetailPage({
     }
   }, [carId])
 
-
   // HANDLE INPUT
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target
-
     const checked = (e.target as HTMLInputElement).checked
 
     setFormData((prev) => ({
@@ -269,15 +257,14 @@ export default function CarDetailPage({
   // HANDLE GALLERY
   const handleGalleryChange = (urls: string[]) => {
     setFormData((prev) => {
-      const nextMain =
-        prev?.imageMain && urls.includes(prev.imageMain)
-          ? prev.imageMain
-          : urls[0] || ''
+      const nextMain = prev?.imageMain && urls.includes(prev.imageMain)
+        ? prev.imageMain
+        : urls[0] || ''
 
       return { ...prev, imageGallery: urls, imageMain: nextMain }
     })
   }
-  
+
   // SAVE CAR
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -287,7 +274,29 @@ export default function CarDetailPage({
       return
     }
 
+    // Validate required fields
+    if (!formData.manufacturer?.trim()) {
+      alert('Manufacturer is required')
+      return
+    }
+
+    if (!formData.model?.trim()) {
+      alert('Model is required')
+      return
+    }
+
+    if (!formData.licensePlate?.trim()) {
+      alert('License plate is required')
+      return
+    }
+
+    if (!formData.pricePerDay || formData.pricePerDay <= 0) {
+      alert('Price per day must be greater than 0')
+      return
+    }
+
     setSaving(true)
+    setNotification(null)
 
     try {
       const res = await fetch(`/api/admin/cars/${carId}`, {
@@ -302,23 +311,25 @@ export default function CarDetailPage({
       const json = await res.json()
 
       if (!res.ok || !json.success) {
-        throw new Error(
-          json.message || 'Failed to update vehicle'
-        )
+        throw new Error(json.message || 'Failed to update vehicle')
       }
 
       setCar(json.data)
       setFormData(json.data)
       setIsEditing(false)
+      setNotification({
+        type: 'success',
+        message: 'Car details updated successfully!',
+      })
 
-      alert('Car details updated successfully!')
+      // Auto-dismiss notification after 5 seconds
+      setTimeout(() => setNotification(null), 5000)
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Update failed'
-
-      alert(errorMessage)
+      const errorMessage = err instanceof Error ? err.message : 'Update failed'
+      setNotification({
+        type: 'error',
+        message: errorMessage,
+      })
     } finally {
       setSaving(false)
     }
@@ -331,41 +342,38 @@ export default function CarDetailPage({
       return
     }
 
-    if (
-      !confirm(
-        'Are you sure you want to delete this vehicle? This action cannot be undone.'
-      )
-    ) {
+    if (!confirm('Are you sure you want to delete this vehicle? This action cannot be undone.')) {
       return
     }
 
+    setNotification(null)
+
     try {
-      const res = await fetch(
-        `/api/admin/cars/${carId}`,
-        {
-          method: 'DELETE',
-          credentials: 'include',
-        }
-      )
+      const res = await fetch(`/api/admin/cars/${carId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
 
       const json = await res.json()
 
       if (!res.ok || !json.success) {
-        throw new Error(
-          json.message || 'Failed to delete vehicle'
-        )
+        throw new Error(json.message || 'Failed to delete vehicle')
       }
 
-      alert('Vehicle deleted successfully!')
+      setNotification({
+        type: 'success',
+        message: 'Vehicle deleted successfully!',
+      })
 
-      router.push('/admin/cars')
+      setTimeout(() => {
+        router.push('/admin/cars')
+      }, 1000)
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Deletion failed'
-
-      alert(errorMessage)
+      const errorMessage = err instanceof Error ? err.message : 'Deletion failed'
+      setNotification({
+        type: 'error',
+        message: errorMessage,
+      })
     }
   }
 
@@ -378,20 +386,15 @@ export default function CarDetailPage({
     )
   }
 
-
   // VIEW PERMISSION
   if (!canViewCars) {
     return (
       <div className="mx-auto max-w-4xl p-6">
         <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-          <h2 className="text-xl font-bold text-red-700">
-            Access Denied
-          </h2>
-
+          <h2 className="text-xl font-bold text-red-700">Access Denied</h2>
           <p className="mt-2 text-sm text-red-600">
             You do not have permission to view vehicle details.
           </p>
-
           <Link
             href="/admin"
             className="mt-5 inline-block rounded-lg bg-black px-5 py-2 text-sm font-semibold text-white"
@@ -403,20 +406,13 @@ export default function CarDetailPage({
     )
   }
 
-
   // ERROR
   if (error || !car) {
     return (
       <div className="mx-auto max-w-4xl p-6">
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
-          <h2 className="text-xl font-bold text-red-700">
-            Error Loading Vehicle
-          </h2>
-
-          <p className="mt-2 text-red-600">
-            {error || 'Car not found'}
-          </p>
-
+          <h2 className="text-xl font-bold text-red-700">Error Loading Vehicle</h2>
+          <p className="mt-2 text-red-600">{error || 'Car not found'}</p>
           <Link
             href="/admin/cars"
             className="mt-4 inline-block rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
@@ -428,65 +424,68 @@ export default function CarDetailPage({
     )
   }
 
+  const statusConfig = STATUS_CONFIG[car.status] || STATUS_CONFIG.UNAVAILABLE
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
+      {/* Notification */}
+      {notification && (
+        <div
+          className={`rounded-lg border p-4 ${
+            notification.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : 'border-red-200 bg-red-50 text-red-800'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span>{notification.message}</span>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-sm font-semibold hover:opacity-70"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
- 
-          {/* HEADER */}
-    
-
+      {/* HEADER */}
       <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
-
         <div>
           <div className="flex items-center gap-3">
-
             <Link
               href="/admin/cars"
               className="rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
             >
               ← Back
             </Link>
-
             <h1 className="text-2xl font-bold text-slate-900">
-              {car.manufacturer}
+              {car.manufacturer} {car.model}
             </h1>
-
             <span
-              className={`rounded-full border px-3 py-0.5 text-xs font-bold tracking-wider ${
-                car.status === 'AVAILABLE'
-                  ? 'border-emerald-300 bg-emerald-100 text-emerald-800'
-                  : car.status === 'RENTED'
-                    ? 'border-blue-300 bg-blue-100 text-blue-800'
-                    : car.status === 'MAINTENANCE'
-                      ? 'border-amber-300 bg-amber-100 text-amber-800'
-                      : 'border-rose-300 bg-rose-100 text-rose-800'
-              }`}
+              className={`rounded-full border px-3 py-0.5 text-xs font-bold tracking-wider ${statusConfig.className}`}
             >
-              {car.status}
+              {statusConfig.label}
             </span>
-
           </div>
+          <p className="mt-1 text-sm text-slate-500">
+            {car.year} · {car.licensePlate}
+          </p>
         </div>
 
-            {/* ACTION BUTTONS */}   
-
+        {/* ACTION BUTTONS */}
         <div className="flex items-center gap-2">
-
-          {/* EDIT BUTTON */}
-
           {canEditCars && (
             <button
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={() => {
+                setIsEditing(!isEditing)
+                setNotification(null)
+              }}
               className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
             >
-              {isEditing
-                ? 'Cancel Edit'
-                : 'Edit Vehicle'}
+              {isEditing ? 'Cancel Edit' : 'Edit Vehicle'}
             </button>
           )}
-
-          {/* DELETE BUTTON */}
-
           {canDeleteCars && (
             <button
               onClick={handleDelete}
@@ -495,18 +494,12 @@ export default function CarDetailPage({
               Delete
             </button>
           )}
-
         </div>
       </div>
 
-          {/* TABS */}
-    
+      {/* TABS */}
       <div className="flex border-b border-slate-200 text-sm font-medium">
-
-        {(
-          ['overview', 'gallery', 'pricing'] as const
-        ).map((tab) => (
-
+        {(['overview', 'gallery', 'pricing'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -518,214 +511,179 @@ export default function CarDetailPage({
           >
             {tab}
           </button>
-
         ))}
-
       </div>
 
-    
+      {/* EDIT FORM */}
       {isEditing && canEditCars && (
-        <form
-          onSubmit={handleSave}
-          className="space-y-6 rounded-xl border border-blue-200 bg-blue-50/50 p-6"
-        >
-
+        <form onSubmit={handleSave} className="space-y-6 rounded-xl border border-blue-200 bg-blue-50/50 p-6">
           <div className="flex items-center justify-between border-b border-blue-200 pb-3">
-
             <h2 className="text-lg font-bold text-slate-900">
               Editing {car.manufacturer} {car.model}
             </h2>
-
             <span className="text-xs text-slate-500">
               Update fields below and press Save Changes
             </span>
-
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-4">
-
             {/* Manufacturer */}
-
             <div>
               <label className="block text-xs font-semibold text-slate-700">
-                Manufacturer
+                Manufacturer *
               </label>
-
               <input
                 type="text"
                 name="manufacturer"
                 value={formData.manufacturer || ''}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-md border bg-white p-2 text-sm"
+                required
               />
             </div>
 
             {/* Model */}
-
             <div>
               <label className="block text-xs font-semibold text-slate-700">
-                Model
+                Model *
               </label>
-
               <input
                 type="text"
                 name="model"
                 value={formData.model || ''}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-md border bg-white p-2 text-sm"
+                required
               />
             </div>
 
             {/* Year */}
-
             <div>
               <label className="block text-xs font-semibold text-slate-700">
-                Year
+                Year *
               </label>
-
               <input
                 type="number"
                 name="year"
                 value={formData.year || ''}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-md border bg-white p-2 text-sm"
+                required
+                min="1900"
+                max={new Date().getFullYear() + 1}
               />
             </div>
 
             {/* License Plate */}
-
             <div>
               <label className="block text-xs font-semibold text-slate-700">
-                License Plate
+                License Plate *
               </label>
-
               <input
                 type="text"
                 name="licensePlate"
                 value={formData.licensePlate || ''}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-md border bg-white p-2 text-sm"
+                required
               />
             </div>
 
             {/* Price */}
-
             <div>
               <label className="block text-xs font-semibold text-slate-700">
-                Price Per Day
+                Price Per Day * (₹)
               </label>
-
               <input
                 type="number"
                 name="pricePerDay"
                 value={formData.pricePerDay || 0}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-md border bg-white p-2 text-sm"
+                required
+                min="0"
+                step="0.01"
               />
             </div>
 
             {/* Security */}
-
             <div>
               <label className="block text-xs font-semibold text-slate-700">
-                Security Deposit
+                Security Deposit (₹)
               </label>
-
               <input
                 type="number"
                 name="securityDeposit"
                 value={formData.securityDeposit || 0}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-md border bg-white p-2 text-sm"
+                min="0"
+                step="0.01"
               />
             </div>
 
             {/* Status */}
-
             <div>
               <label className="block text-xs font-semibold text-slate-700">
                 Status
               </label>
-
               <select
                 name="status"
                 value={formData.status || 'AVAILABLE'}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-md border bg-white p-2 text-sm"
               >
-                <option value="AVAILABLE">
-                  AVAILABLE
-                </option>
-                <option value="RENTED">
-                  RENTED
-                </option>
-                <option value="MAINTENANCE">
-                  MAINTENANCE
-                </option>
-                <option value="UNAVAILABLE">
-                  UNAVAILABLE
-                </option>
+                <option value="AVAILABLE">AVAILABLE</option>
+                <option value="RENTED">RENTED</option>
+                <option value="MAINTENANCE">MAINTENANCE</option>
+                <option value="UNAVAILABLE">UNAVAILABLE</option>
               </select>
             </div>
 
-            {/* Image */}
-
-            <div className="border-t border-blue-200 pt-4">
-
+            {/* Image Upload */}
+            <div className="border-t border-blue-200 pt-4 sm:col-span-4">
               <label className="block text-xs font-semibold text-slate-700">
-              Vehicle Images
-            </label>
-
-            <p className="mb-3 mt-0.5 text-[11px] text-slate-500">
-              Upload replaces nothing — new images are added to the gallery.
-              Pick which one is the main thumbnail below.
-            </p>
-
-            <ImageUploader
-              value={formData.imageGallery || []}
-              onChange={handleGalleryChange}
-              multiple
-              folder="cars"
-            />
+                Vehicle Images
+              </label>
+              <p className="mb-3 mt-0.5 text-[11px] text-slate-500">
+                Upload replaces nothing — new images are added to the gallery.
+                Pick which one is the main thumbnail below.
+              </p>
+              <ImageUploader
+                value={formData.imageGallery || []}
+                onChange={handleGalleryChange}
+                multiple
+                folder="cars"
+              />
 
               {/* Main image selector */}
-            {(formData.imageGallery?.length ?? 0) > 0 && (
-              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-blue-200 pt-3">
-
-                <span className="text-xs text-slate-500">
-                  Main thumbnail:
-                </span>
-
-                {formData.imageGallery?.map((url, idx) => (
-                  <button
-                    key={url}
-                    type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, imageMain: url }))
-                    }
-                    className={`rounded-lg border px-2.5 py-1 text-xs transition-all ${
-                      formData.imageMain === url
-                        ? 'border-black bg-black font-semibold text-white'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    Img #{idx + 1} {formData.imageMain === url && '★'}
-                  </button>
-                ))}
-
-              </div>
-            )}
-            
+              {(formData.imageGallery?.length ?? 0) > 0 && (
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-blue-200 pt-3">
+                  <span className="text-xs text-slate-500">Main thumbnail:</span>
+                  {formData.imageGallery?.map((url, idx) => (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, imageMain: url }))
+                      }
+                      className={`rounded-lg border px-2.5 py-1 text-xs transition-all ${
+                        formData.imageMain === url
+                          ? 'border-black bg-black font-semibold text-white'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      Img #{idx + 1} {formData.imageMain === url && '★'}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-
           </div>
 
           {/* Featured / Published */}
-
           <div className="flex gap-6 border-t border-blue-200 pt-4">
-
             <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-
               <input
                 type="checkbox"
                 name="isFeatured"
@@ -733,13 +691,9 @@ export default function CarDetailPage({
                 onChange={handleChange}
                 className="h-4 w-4 rounded border-slate-300"
               />
-
               Featured Vehicle
-
             </label>
-
             <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-
               <input
                 type="checkbox"
                 name="isPublished"
@@ -747,55 +701,40 @@ export default function CarDetailPage({
                 onChange={handleChange}
                 className="h-4 w-4 rounded border-slate-300"
               />
-
               Published on Site
-
             </label>
-
           </div>
 
           {/* Save */}
-
           <div className="flex justify-end gap-3 pt-2">
-
             <button
               type="button"
-              onClick={() => setIsEditing(false)}
+              onClick={() => {
+                setIsEditing(false)
+                setNotification(null)
+              }}
               className="rounded-md border bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
             >
               Cancel
             </button>
-
             <button
               type="submit"
               disabled={saving}
               className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {saving
-                ? 'Saving...'
-                : 'Save Changes'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
-
           </div>
-
         </form>
       )}
 
-
-          {/* OVERVIEW */}
-   
-
+      {/* OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-
           {/* Main Image */}
-
           <div className="lg:col-span-1">
-
             <div className="overflow-hidden rounded-xl border bg-white p-2 shadow-sm">
-
               <div className="relative h-64 w-full overflow-hidden rounded-lg bg-slate-100">
-
                 {car.imageMain ? (
                   <Image
                     src={car.imageMain}
@@ -809,132 +748,77 @@ export default function CarDetailPage({
                     No Main Image Available
                   </div>
                 )}
-
               </div>
-
             </div>
-
           </div>
 
           {/* Specifications */}
-
           <div className="rounded-xl border bg-white p-6 shadow-sm lg:col-span-2">
-
             <h3 className="mb-4 border-b pb-2 text-base font-bold text-slate-900">
               Technical Specifications
             </h3>
-
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3">
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Category
-                </span>
-
+                <span className="block text-xs text-slate-400">Category</span>
                 <span className="mt-1 inline-block rounded bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-800">
                   {car.category?.name || 'Unassigned'}
                 </span>
               </div>
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Transmission
-                </span>
-
+                <span className="block text-xs text-slate-400">Transmission</span>
                 <span className="mt-1 inline-block rounded bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-800">
                   {car.transmission?.name || 'Standard'}
                 </span>
               </div>
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Fuel Type
-                </span>
-
+                <span className="block text-xs text-slate-400">Fuel Type</span>
                 <span className="mt-1 inline-block rounded bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-800">
                   {car.fuelType?.name || 'Gasoline'}
                 </span>
               </div>
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Doors / Seats
-                </span>
-
+                <span className="block text-xs text-slate-400">Doors / Seats</span>
                 <span className="font-semibold text-slate-800">
                   {car.doors} Doors / {car.seats} Seats
                 </span>
               </div>
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Luggage Capacity
-                </span>
-
+                <span className="block text-xs text-slate-400">Luggage Capacity</span>
                 <span className="font-semibold text-slate-800">
                   {car.luggageCapacity} Bags
                 </span>
               </div>
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Drive Type
-                </span>
-
-                <span className="font-semibold text-slate-800">
-                  {car.driveType}
-                </span>
+                <span className="block text-xs text-slate-400">Drive Type</span>
+                <span className="font-semibold text-slate-800">{car.driveType}</span>
               </div>
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Color
-                </span>
-
+                <span className="block text-xs text-slate-400">Color</span>
                 <span className="font-semibold capitalize text-slate-800">
                   {car.color || 'N/A'}
                 </span>
               </div>
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Engine / Power
-                </span>
-
+                <span className="block text-xs text-slate-400">Engine / Power</span>
                 <span className="font-semibold text-slate-800">
-                  {car.engineSize || 'N/A'}{' '}
-                  {car.horsepower
-                    ? `(${car.horsepower} HP)`
-                    : ''}
+                  {car.engineSize || 'N/A'} {car.horsepower ? `(${car.horsepower} HP)` : ''}
                 </span>
               </div>
-
               <div>
-                <span className="block text-xs text-slate-400">
-                  Odometer
-                </span>
-
+                <span className="block text-xs text-slate-400">Odometer</span>
                 <span className="font-semibold text-slate-800">
-                  {car.odometer
-                    ? `${car.odometer} km`
-                    : 'N/A'}
+                  {car.odometer ? `${car.odometer} km` : 'N/A'}
                 </span>
               </div>
-
             </div>
 
             {/* Features */}
-
             <div className="mt-6 border-t pt-4">
-
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Features & Amenities
               </h4>
-
               <div className="mt-3 flex flex-wrap gap-2">
-
-                {car.featureMasters &&
-                car.featureMasters.length > 0 ? (
+                {car.featureMasters && car.featureMasters.length > 0 ? (
                   car.featureMasters.map((feat) => (
                     <span
                       key={feat.id}
@@ -943,8 +827,7 @@ export default function CarDetailPage({
                       {feat.name}
                     </span>
                   ))
-                ) : car.features &&
-                  car.features.length > 0 ? (
+                ) : car.features && car.features.length > 0 ? (
                   car.features.map((feat, idx) => (
                     <span
                       key={idx}
@@ -958,32 +841,20 @@ export default function CarDetailPage({
                     No specific features assigned.
                   </p>
                 )}
-
               </div>
-
             </div>
-
           </div>
-
         </div>
       )}
 
-
-          {/* GALLERY */}
-
-
+      {/* GALLERY */}
       {activeTab === 'gallery' && (
         <div className="rounded-xl border bg-white p-6 shadow-sm">
-
           <h3 className="mb-4 border-b pb-2 text-base font-bold text-slate-900">
             Photo Gallery
           </h3>
-
-          {car.imageGallery &&
-          car.imageGallery.length > 0 ? (
-
+          {car.imageGallery && car.imageGallery.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-
               {car.imageGallery.map((url, idx) => (
                 <div
                   key={idx}
@@ -998,149 +869,84 @@ export default function CarDetailPage({
                   />
                 </div>
               ))}
-
             </div>
-
           ) : (
-
             <p className="text-sm italic text-slate-500">
               No additional gallery photos provided.
             </p>
-
           )}
-
         </div>
       )}
 
-          {/* PRICING */}
-   
-
+      {/* PRICING */}
       {activeTab === 'pricing' && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-
           <div className="space-y-4 rounded-xl border bg-white p-6 shadow-sm">
-
             <h3 className="border-b pb-2 text-base font-bold text-slate-900">
               Rental Rates
             </h3>
-
             <div className="space-y-3 text-sm">
-
               <div className="flex items-center justify-between border-b pb-2">
-                <span className="text-slate-500">
-                  Daily Rate
-                </span>
-
+                <span className="text-slate-500">Daily Rate</span>
                 <span className="text-base font-bold text-emerald-600">
                   ₹{car.pricePerDay} / day
                 </span>
               </div>
-
               <div className="flex items-center justify-between border-b pb-2">
-                <span className="text-slate-500">
-                  Weekly Rate
-                </span>
-
+                <span className="text-slate-500">Weekly Rate</span>
                 <span className="font-semibold text-slate-800">
-                  {car.pricePerWeek
-                    ? `₹${car.pricePerWeek} / week`
-                    : 'N/A'}
+                  {car.pricePerWeek ? `₹${car.pricePerWeek} / week` : 'N/A'}
                 </span>
               </div>
-
               <div className="flex items-center justify-between border-b pb-2">
-                <span className="text-slate-500">
-                  Monthly Rate
-                </span>
-
+                <span className="text-slate-500">Monthly Rate</span>
                 <span className="font-semibold text-slate-800">
-                  {car.pricePerMonth
-                    ? `₹${car.pricePerMonth} / month`
-                    : 'N/A'}
+                  {car.pricePerMonth ? `₹${car.pricePerMonth} / month` : 'N/A'}
                 </span>
               </div>
-
               <div className="flex items-center justify-between border-b pb-2">
-                <span className="text-slate-500">
-                  Security Deposit
-                </span>
-
-                <span className="font-bold text-slate-800">
-                  ₹{car.securityDeposit}
-                </span>
+                <span className="text-slate-500">Security Deposit</span>
+                <span className="font-bold text-slate-800">₹{car.securityDeposit}</span>
               </div>
-
               <div className="flex items-center justify-between border-b pb-2">
-                <span className="text-slate-500">
-                  Free Mileage / Day
-                </span>
-
+                <span className="text-slate-500">Free Mileage / Day</span>
                 <span className="font-semibold text-slate-800">
-                  {car.mileageFree
-                    ? `${car.mileageFree} km`
-                    : 'Unlimited'}
+                  {car.mileageFree ? `${car.mileageFree} km` : 'Unlimited'}
                 </span>
               </div>
-
               <div className="flex items-center justify-between pt-1">
-                <span className="text-slate-500">
-                  Extra Mileage Fee
-                </span>
-
+                <span className="text-slate-500">Extra Mileage Fee</span>
                 <span className="font-semibold text-slate-800">
-                  {car.mileageExtraFee
-                    ? `₹${car.mileageExtraFee} / km`
-                    : 'Free'}
+                  {car.mileageExtraFee ? `₹${car.mileageExtraFee} / km` : 'Free'}
                 </span>
               </div>
-
             </div>
-
           </div>
 
           <div className="space-y-4 rounded-xl border bg-white p-6 shadow-sm">
-
             <h3 className="border-b pb-2 text-base font-bold text-slate-900">
               Location Information
             </h3>
-
             <div className="space-y-2 text-sm text-slate-700">
-
               <p>
-                <span className="font-semibold text-slate-900">
-                  Address:
-                </span>{' '}
+                <span className="font-semibold text-slate-900">Address:</span>{' '}
                 {car.locationAddress || 'Not set'}
               </p>
-
               <p>
-                <span className="font-semibold text-slate-900">
-                  City:
-                </span>{' '}
+                <span className="font-semibold text-slate-900">City:</span>{' '}
                 {car.locationCity || 'N/A'}
               </p>
-
               <p>
-                <span className="font-semibold text-slate-900">
-                  State / Zip:
-                </span>{' '}
-                {car.locationState || ''}{' '}
-                {car.locationZipCode || ''}
+                <span className="font-semibold text-slate-900">State / Zip:</span>{' '}
+                {car.locationState || ''} {car.locationZipCode || ''}
               </p>
-
               <p className="pt-2 font-mono text-xs text-slate-400">
-                Coordinates: Lat{' '}
-                {car.locationLat ?? 'N/A'}, Lng{' '}
-                {car.locationLng ?? 'N/A'}
+                Coordinates: Lat {car.locationLat ?? 'N/A'}, Lng {car.locationLng ?? 'N/A'}
               </p>
-
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   )
 }

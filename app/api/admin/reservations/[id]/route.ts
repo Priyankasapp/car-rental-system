@@ -260,7 +260,7 @@ export async function PUT(
       )
     }
 
-    // Car status sync
+    // Car status management
     if (mappedStatus === 'CONFIRMED' && existingBooking.status === 'PENDING') {
       await prisma.car.update({
         where: { id: existingBooking.carId },
@@ -271,7 +271,7 @@ export async function PUT(
     if (mappedStatus === 'CANCELLED' || mappedStatus === 'COMPLETED') {
       await prisma.car.update({
         where: { id: existingBooking.carId },
-        data: { status: 'AVAILABLE' },
+        data: { status: CarStatus.AVAILABLE },
       })
     }
 
@@ -281,6 +281,7 @@ export async function PUT(
         status: mappedStatus,
         adminNotes: adminNotes ?? undefined,
         cancellationReason: mappedStatus === 'CANCELLED' ? cancellationReason : undefined,
+        completedAt: mappedStatus === 'COMPLETED' ? new Date() : undefined,
       },
       include: {
         car: {
@@ -306,7 +307,7 @@ export async function PUT(
       },
     })
 
-    // Perform audit logging with resolved admin context
+    // Perform audit logging
     const activeUserId = auth.user?.id || existingBooking.userId || 'ADMIN_SYSTEM'
     await prisma.bookingAuditLog.create({
       data: {
@@ -320,9 +321,15 @@ export async function PUT(
       },
     })
 
-    // Customer email dispatch
-    if (statusInput) {
+    // Send email notification for status changes
+    if (statusInput && ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(mappedStatus)) {
       try {
+        // Map the status for email
+        const emailStatus = mappedStatus === 'CONFIRMED' ? 'CONFIRMED' 
+          : mappedStatus === 'CANCELLED' ? 'CANCELLED'
+          : mappedStatus === 'COMPLETED' ? 'COMPLETED'
+          : 'PENDING'
+
         await sendBookingEmail({
           to: updatedBooking.customerEmail,
           customerName: updatedBooking.customerName,
@@ -330,12 +337,14 @@ export async function PUT(
           carName: `${updatedBooking.car?.year ?? ''} ${updatedBooking.car?.manufacturer ?? ''} ${updatedBooking.car?.model ?? ''}`.trim(),
           pickupDate: `${formatDateForEmail(updatedBooking.pickupDate)} at ${updatedBooking.pickupTime}`,
           dropoffDate: `${formatDateForEmail(updatedBooking.dropoffDate)} at ${updatedBooking.dropoffTime}`,
-          pickupLocation: updatedBooking.pickupLocation,
+          pickupLocation: updatedBooking.pickupLocation || 'UrbanDrive Main Hub',
           totalAmount: updatedBooking.total.toLocaleString('en-IN'),
-          status: mappedStatus === 'CONFIRMED' ? 'CONFIRMED' : mappedStatus === 'CANCELLED' ? 'CANCELLED' : 'PENDING',
+          status: emailStatus,
+          cancellationReason: mappedStatus === 'CANCELLED' ? cancellationReason : undefined,
         })
       } catch (e) {
         console.error('Failed to send booking email notification:', e)
+        // Don't fail the request if email fails
       }
     }
 
@@ -408,24 +417,27 @@ export async function DELETE(
       )
     }
 
+    // Free up the car if it was reserved
     if (existingBooking.status === 'CONFIRMED') {
       await prisma.car.update({
         where: { id: existingBooking.carId },
-        data: { status: 'AVAILABLE' },
+        data: { status: CarStatus.AVAILABLE },
       })
     }
 
+    // Delete the booking
     await prisma.reservation.delete({
       where: { id },
     })
 
+    // Log the deletion
     const activeUserId = auth.user?.id || existingBooking.userId || 'ADMIN_SYSTEM'
     await prisma.bookingAuditLog.create({
       data: {
         bookingId: id,
         action: 'DELETED',
         previousStatus: existingBooking.status,
-        newStatus: 'CANCELLED',
+        newStatus: existingBooking.status,
         performedBy: activeUserId,
         notes: 'Booking deleted by admin',
         userAgent: request.headers.get('user-agent') || undefined,

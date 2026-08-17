@@ -453,6 +453,7 @@ model Reservation {
   cancellationReason String?
   cancellationFee    Int?
   adminNotes         String?
+  completedAt        DateTime? 
 
   emailLogs EmailLog[]
   payments  Payment[]

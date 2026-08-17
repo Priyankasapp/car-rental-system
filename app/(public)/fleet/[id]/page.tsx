@@ -81,7 +81,7 @@ function CarDetailContent({ id }: { id: string }) {
         setSelectedImage(car.imageGallery![next])
         return next
       })
-    }, 4000) // change every 4s
+    }, 4000) 
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
@@ -256,7 +256,7 @@ function CarDetailContent({ id }: { id: string }) {
             <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 mb-6">
               <span className="text-gray-500 text-xs font-medium uppercase tracking-wider">Daily Rate</span>
               <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-3xl font-bold text-gray-900">${car.price}</span>
+                <span className="text-3xl font-bold text-gray-900">₹{car.price}</span>
                 <span className="text-gray-500 text-sm">/ day</span>
               </div>
             </div>
