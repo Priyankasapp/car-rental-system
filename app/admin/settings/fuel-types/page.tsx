@@ -9,7 +9,7 @@ import { EntityGridSkeleton } from '@/components/settings/EntityGridSkeleton'
 import { usePagePermission } from '@/hooks/usePermissions'
 import { PERMISSIONS } from '@/lib/permissions'
 
-//  API item shape 
+// API item shape
 interface FuelTypeApiItem {
   id: string
   name: string
@@ -23,22 +23,22 @@ interface FuelTypeApiItem {
 }
 
 export default function FuelTypesPage() {
-  //  Auth & permissions 
+  // Auth & permissions
   const { loading: userLoading, hasAccess, hasPermission, isReady } =
     usePagePermission(PERMISSIONS.FUELS_VIEW, '/admin')
 
   const canCreate = hasPermission(PERMISSIONS.FUELS_CREATE)
   const canDelete = hasPermission(PERMISSIONS.FUELS_DELETE)
 
-  //  State 
+  // State
   const [items, setItems] = useState<EntityItem[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
+  const [initialLoading, setInitialLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  //  Fetch fuel types 
-  const fetchFuelTypes = useCallback(async () => {
+  // Fetch fuel types
+  const fetchFuelTypes = useCallback(async (isInitial = false) => {
     try {
-      setLoading(true)
+      if (isInitial) setInitialLoading(true)
       setError(null)
 
       const res = await fetch('/api/admin/fuel-types')
@@ -68,18 +68,20 @@ export default function FuelTypesPage() {
       console.error('Error fetching fuel types:', err)
       setError(message)
     } finally {
-      setLoading(false)
+      if (isInitial) setInitialLoading(false)
     }
   }, [])
 
-  //  Trigger fetch once auth + permission confirmed 
+  // Trigger fetch once auth + permission confirmed
   useEffect(() => {
-    if (isReady) {
-      fetchFuelTypes()
+    if (isReady && hasAccess) {
+      fetchFuelTypes(true)
+    } else if (isReady && !hasAccess) {
+      setInitialLoading(false)
     }
-  }, [isReady, fetchFuelTypes])
+  }, [isReady, hasAccess, fetchFuelTypes])
 
-  //  Save (Create or Update) 
+  // Save (Create or Update)
   const handleSaveItem = async (itemData: Partial<EntityItem>) => {
     if (!canCreate) {
       throw new Error('You do not have permission to create/edit fuel types')
@@ -104,10 +106,10 @@ export default function FuelTypesPage() {
       )
     }
 
-    await fetchFuelTypes()
+    await fetchFuelTypes(false)
   }
 
-  //  Delete 
+  // Delete
   const handleDeleteItem = async (id: string | number) => {
     if (!canDelete) {
       throw new Error('You do not have permission to delete fuel types')
@@ -123,11 +125,11 @@ export default function FuelTypesPage() {
       throw new Error(json.message || 'Failed to delete fuel type')
     }
 
-    await fetchFuelTypes()
+    await fetchFuelTypes(false)
   }
 
-  //  Guards 
-   if (userLoading || loading) {
+  // Guards
+  if (userLoading || (initialLoading && !error)) {
     return (
       <EntityGridSkeleton
         title="Fuel Types"
@@ -140,7 +142,7 @@ export default function FuelTypesPage() {
 
   if (!hasAccess) {
     return (
-      <div className="flex items-center justify-center min-h-100">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="text-4xl mb-4">🔒</div>
           <h2 className="text-lg font-semibold text-gray-900">Access Denied</h2>
@@ -154,12 +156,12 @@ export default function FuelTypesPage() {
 
   if (error) {
     return (
-      <div className="p-6 rounded-xl bg-red-50 text-red-600 border border-red-200 text-center my-8">
-        <p className="font-semibold">Failed to load Fuel Types</p>
-        <p className="text-sm mt-1">{error}</p>
+      <div className="p-6 rounded-xl bg-red-50 text-red-600 border border-red-200 text-center my-8 max-w-2xl mx-auto">
+        <p className="font-semibold text-base">Failed to load Fuel Types</p>
+        <p className="text-sm mt-1 text-red-500">{error}</p>
         <button
-          onClick={fetchFuelTypes}
-          className="mt-4 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+          onClick={() => fetchFuelTypes(true)}
+          className="mt-4 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors cursor-pointer"
         >
           Try Again
         </button>
@@ -167,7 +169,7 @@ export default function FuelTypesPage() {
     )
   }
 
-  //  Render 
+  // Render
   return (
     <EntityGridPage
       title="Fuel Types"

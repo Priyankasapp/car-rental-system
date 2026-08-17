@@ -1,26 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextRequest,NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authorizeUser } from '@/lib/auth-guard'
 import { PERMISSIONS } from '@/lib/permissions'
 import { MasterDataCreateSchema } from '@/lib/master-data/validation'
 
-
-// GET: Fetch all fuel types
+// GET: Fetch all fuel types (Active & Inactive)
 export async function GET(request: NextRequest) {
   const authResult = await authorizeUser(request, PERMISSIONS.FUELS_VIEW)
-  if(!authResult.isAuth) return authResult.response
+  if (!authResult.isAuth) return authResult.response
 
   try {
-    const { searchParams } = new URL(request.url)
-    const includeInactive = searchParams.get('includeInactive') === 'true'
-
-    const where: any = {
-      ...(includeInactive ? {} : { isActive: true }),
-    }
-
+    // Queries all records without filtering by isActive
     const fuelTypes = await prisma.fuelTypeMaster.findMany({
-      where,
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -42,7 +34,7 @@ export async function GET(request: NextRequest) {
 // POST: Create a new fuel type
 export async function POST(request: NextRequest) {
   const authResult = await authorizeUser(request, PERMISSIONS.FUELS_CREATE)
-  if(!authResult.isAuth) return authResult.response
+  if (!authResult.isAuth) return authResult.response
   try {
     const body = await request.json()
     const validation = MasterDataCreateSchema.safeParse(body)
