@@ -347,6 +347,7 @@ model OTP {
 model Car {
   id              String  @id @default(auto()) @map("_id") @db.ObjectId
   manufacturer    String
+  slug      String   @unique
   model           String
   year            Int
   licensePlate    String  @unique

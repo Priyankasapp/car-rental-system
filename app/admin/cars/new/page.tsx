@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Car,
@@ -33,6 +33,7 @@ import {
   FormActions,
 } from "@/components/ui/form-controls";
 import { ImageUploader } from "@/components/ui/ImageUploader";
+import { buildCarSlug } from "@/lib/slug";
 
 
 // Types
@@ -120,6 +121,12 @@ export default function AddCarPage() {
 
   //  Form data
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM);
+
+  //  Slug preview (derived, not submitted — server generates the real one)
+  const slugPreview = useMemo(() => {
+    if (!formData.manufacturer.trim() || !formData.model.trim()) return "";
+    return buildCarSlug(formData.manufacturer, formData.model, formData.year);
+  }, [formData.manufacturer, formData.model, formData.year]);
 
   //  Load master data
   useEffect(() => {
@@ -401,6 +408,15 @@ export default function AddCarPage() {
                 <option value="MAINTENANCE">🔧 In Maintenance</option>
                 <option value="RESERVED">📅 Reserved</option>
               </InputField>
+              <InputField
+                label="URL Slug (auto-generated)"
+                icon={Tag}
+                type="text"
+                name="slugPreview"
+                value={slugPreview || "Enter manufacturer & model..."}
+                onChange={() => {}}
+                disabled
+              />
             </div>
           </FormSection>
 

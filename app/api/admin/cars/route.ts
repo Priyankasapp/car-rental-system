@@ -5,6 +5,8 @@ import { CarCreateSchema } from "@/lib/cars/validation";
 import { authorizeUser } from "@/lib/auth-guard";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withErrorHandler } from "@/lib/api-handler";
+import { generateUniqueCarSlug } from "@/lib/slug-server";
+
 
 
 // GET /api/admin/cars
@@ -110,11 +112,19 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
 
   const imageMain = parsed.imageMain ?? parsed.imageGallery[0];
 
+  // Generate a unique slug from manufacturer + model + year
+  const slug = await generateUniqueCarSlug(
+    parsed.manufacturer,
+    parsed.model,
+    parsed.year
+  );
+
   const newCar = await prisma.car.create({
     data: {
       manufacturer: parsed.manufacturer,
       model: parsed.model,
       year: parsed.year,
+      slug,
       licensePlate: parsed.licensePlate,
       color: parsed.color ?? null,
       seats: parsed.seats,
