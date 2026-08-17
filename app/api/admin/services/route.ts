@@ -4,9 +4,8 @@ import { PERMISSIONS } from "@/lib/permissions";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-// ======================================================
 // GET: Fetch Services
-// ======================================================
+
 
 export const GET = withErrorHandler(async (request: NextRequest) => {
   const authResult = await authorizeUser(request, PERMISSIONS.SERVICES_VIEW)
@@ -97,13 +96,14 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Validate Status
-  const computedStatus =
-    status === "Inactive" ? "Inactive" : "Active";
+ const computedStatus = status === "Inactive" ? "Inactive" : "Active";
 
   // Determine Active State
-  const computedIsActive =
-    typeof isActive === "boolean"
-      ? isActive
+const computedIsActive = 
+  typeof isActive === "boolean" 
+    ? isActive 
+    : typeof isActive === "string"
+      ? isActive === "true"
       : computedStatus === "Active";
 
   // Create Service

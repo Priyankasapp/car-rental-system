@@ -102,10 +102,10 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     const validatedData = validationResult.data;
 
     // Check if service exists and is active
-    const service = await prisma.serviceMaster.findUnique({
-      where: { id: validatedData.serviceId },
-      select: { id: true, name: true, isActive: true }
-    });
+   const service = await prisma.serviceMaster.findUnique({
+  where: { id: validatedData.serviceId },
+  select: { id: true, name: true, isActive: true, status: true }
+});
 
     if (!service) {
       return NextResponse.json(
@@ -116,17 +116,16 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         { status: 400 }
       );
     }
-
-    if (!service.isActive) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Selected service is currently inactive' 
-        },
-        { status: 400 }
-      );
-    }
-
+      const isServiceActive = service.isActive === true || service.status === 'Active';
+  if (!isServiceActive) {
+  return NextResponse.json(
+    { 
+      success: false, 
+      message: 'Selected service is currently inactive' 
+    },
+    { status: 400 }
+  );
+}
     // Check for duplicate submissions (within last 5 minutes)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const recentSubmission = await prisma.contact.findFirst({

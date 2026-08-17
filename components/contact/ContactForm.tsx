@@ -40,23 +40,22 @@ const initialFormData: ContactFormData = {
 };
 
 // Register ScrollTrigger
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-// Make sure this is the default export
 const ContactForm = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const floatingCardRef = useRef<HTMLDivElement>(null);
-  
+
   const [formData, setFormData] = useState<ContactFormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  
+
   // Services state
   const [services, setServices] = useState<Service[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
@@ -67,22 +66,24 @@ const ContactForm = () => {
     const fetchServices = async () => {
       try {
         setServicesLoading(true);
-        const response = await fetch('/api/services?includeInactive=false');
-        
+        const response = await fetch("/api/services?includeInactive=false");
+
         if (!response.ok) {
-          throw new Error('Failed to fetch services');
+          throw new Error("Failed to fetch services");
         }
-        
+
         const result = await response.json();
-        
+
         if (result.success && result.data) {
           setServices(result.data);
         } else {
-          throw new Error(result.message || 'Failed to fetch services');
+          throw new Error(result.message || "Failed to fetch services");
         }
       } catch (err) {
-        setServicesError(err instanceof Error ? err.message : 'Failed to load services');
-        console.error('Error fetching services:', err);
+        setServicesError(
+          err instanceof Error ? err.message : "Failed to load services"
+        );
+        console.error("Error fetching services:", err);
       } finally {
         setServicesLoading(false);
       }
@@ -98,14 +99,20 @@ const ContactForm = () => {
 
   // Handle form field changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((current) => ({ ...current, [name]: value }));
   };
 
   // Handle field blur for validation
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleBlur = (
+    e: React.FocusEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
   };
@@ -115,18 +122,21 @@ const ContactForm = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
+
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Failed to submit contact form');
+      if (!response.ok)
+        throw new Error(result.message || "Failed to submit contact form");
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit contact form');
+      setError(
+        err instanceof Error ? err.message : "Failed to submit contact form"
+      );
     } finally {
       setLoading(false);
     }
@@ -135,31 +145,31 @@ const ContactForm = () => {
   // Validation helper
   const getFieldError = (fieldName: string) => {
     if (!touched[fieldName]) return null;
-    
+
     switch (fieldName) {
-      case 'firstName':
+      case "firstName":
         if (!formData.firstName || formData.firstName.length < 2) {
-          return 'First name is required (minimum 2 characters)';
+          return "First name is required (minimum 2 characters)";
         }
         break;
-      case 'lastName':
+      case "lastName":
         if (!formData.lastName || formData.lastName.length < 2) {
-          return 'Last name is required (minimum 2 characters)';
+          return "Last name is required (minimum 2 characters)";
         }
         break;
-      case 'email':
-        if (!formData.email || !formData.email.includes('@')) {
-          return 'Valid email is required';
+      case "email":
+        if (!formData.email || !formData.email.includes("@")) {
+          return "Valid email is required";
         }
         break;
-      case 'serviceId':
+      case "serviceId":
         if (!formData.serviceId) {
-          return 'Please select a service';
+          return "Please select a service";
         }
         break;
-      case 'message':
+      case "message":
         if (!formData.message || formData.message.length < 10) {
-          return 'Message is required (minimum 10 characters)';
+          return "Message is required (minimum 10 characters)";
         }
         break;
     }
@@ -170,7 +180,7 @@ const ContactForm = () => {
     return (
       formData.firstName.length >= 2 &&
       formData.lastName.length >= 2 &&
-      formData.email.includes('@') &&
+      formData.email.includes("@") &&
       formData.serviceId &&
       formData.message.length >= 10
     );
@@ -179,10 +189,9 @@ const ContactForm = () => {
   // Animation effect
   useEffect(() => {
     const ctx = gsap.context(() => {
-      
       // Form Left Side Animation
       gsap.fromTo(
-        '.form-content',
+        ".form-content",
         { opacity: 0, x: -30 },
         {
           opacity: 1,
@@ -192,14 +201,14 @@ const ContactForm = () => {
           scrollTrigger: {
             trigger: formRef.current,
             start: "top 80%",
-            toggleActions: "play none none none"
-          }
+            toggleActions: "play none none none",
+          },
         }
       );
 
       // Image Animation
       gsap.fromTo(
-        '.form-image',
+        ".form-image",
         { opacity: 0, x: 30, scale: 0.95 },
         {
           opacity: 1,
@@ -210,14 +219,14 @@ const ContactForm = () => {
           scrollTrigger: {
             trigger: imageRef.current,
             start: "top 75%",
-            toggleActions: "play none none none"
-          }
+            toggleActions: "play none none none",
+          },
         }
       );
 
       // Floating Card Animation
       gsap.fromTo(
-        '.floating-card',
+        ".floating-card",
         { opacity: 0, y: 30, scale: 0.9 },
         {
           opacity: 1,
@@ -229,13 +238,13 @@ const ContactForm = () => {
           scrollTrigger: {
             trigger: imageRef.current,
             start: "top 70%",
-            toggleActions: "play none none none"
-          }
+            toggleActions: "play none none none",
+          },
         }
       );
 
       // Form Fields Stagger
-      const formFields = document.querySelectorAll('.form-field');
+      const formFields = document.querySelectorAll(".form-field");
       gsap.fromTo(
         formFields,
         { opacity: 0, y: 20 },
@@ -248,14 +257,14 @@ const ContactForm = () => {
           scrollTrigger: {
             trigger: formRef.current,
             start: "top 75%",
-            toggleActions: "play none none none"
-          }
+            toggleActions: "play none none none",
+          },
         }
       );
 
       // Submit Button Animation
       gsap.fromTo(
-        '.form-submit',
+        ".form-submit",
         { opacity: 0, y: 20, scale: 0.95 },
         {
           opacity: 1,
@@ -267,21 +276,20 @@ const ContactForm = () => {
           scrollTrigger: {
             trigger: formRef.current,
             start: "top 70%",
-            toggleActions: "play none none none"
-          }
+            toggleActions: "play none none none",
+          },
         }
       );
 
       // Floating Card Pulse Animation
-      gsap.to('.floating-card', {
+      gsap.to(".floating-card", {
         scale: 1.03,
         duration: 2,
         ease: "sine.inOut",
         yoyo: true,
         repeat: -1,
-        delay: 1
+        delay: 1,
       });
-
     }, sectionRef);
 
     return () => ctx.revert();
@@ -290,18 +298,22 @@ const ContactForm = () => {
   // Success Message View
   if (success) {
     return (
-      <section ref={sectionRef} className="bg-gray-50 py-24 lg:py-32 overflow-hidden">
+      <section
+        ref={sectionRef}
+        className="bg-gray-50 py-24 lg:py-32 overflow-hidden"
+      >
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex flex-col items-center justify-center text-center py-16">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Thank You for Contacting Us! 
+              Thank You for Contacting Us!
             </h2>
             <p className="text-lg text-gray-600 max-w-md">
-              We have received your message and our team will review your travel plans carefully. 
-              We will get back to you shortly with the best recommendations for your journey.
+              We have received your message and our team will review your travel
+              plans carefully. We will get back to you shortly with the best
+              recommendations for your journey.
             </p>
             <p className="text-sm text-gray-500 mt-4">
               Please check your email for confirmation.
@@ -324,9 +336,11 @@ const ContactForm = () => {
   }
 
   return (
-    <section ref={sectionRef} className="bg-gray-50 py-24 lg:py-32 overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="bg-gray-50 py-24 lg:py-32 overflow-hidden"
+    >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-16 px-6 lg:grid-cols-2 lg:px-8">
-        
         {/* ===== LEFT SIDE ===== */}
         <div ref={formRef} className="form-content">
           <span className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
@@ -361,7 +375,7 @@ const ContactForm = () => {
               <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
               <div className="flex-1">
                 <p className="text-sm text-red-700">{error}</p>
-                <button 
+                <button
                   onClick={clearError}
                   className="mt-1 text-xs font-medium text-red-600 hover:text-red-800"
                 >
@@ -382,14 +396,16 @@ const ContactForm = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`form-field w-full rounded-2xl border px-5 py-4 outline-none transition ${
-                    getFieldError('firstName') 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:border-black'
+                    getFieldError("firstName")
+                      ? "border-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:border-black"
                   }`}
                   disabled={loading}
                 />
-                {getFieldError('firstName') && (
-                  <p className="mt-1 text-xs text-red-500">{getFieldError('firstName')}</p>
+                {getFieldError("firstName") && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {getFieldError("firstName")}
+                  </p>
                 )}
               </div>
 
@@ -402,14 +418,16 @@ const ContactForm = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`form-field w-full rounded-2xl border px-5 py-4 outline-none transition ${
-                    getFieldError('lastName') 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:border-black'
+                    getFieldError("lastName")
+                      ? "border-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:border-black"
                   }`}
                   disabled={loading}
                 />
-                {getFieldError('lastName') && (
-                  <p className="mt-1 text-xs text-red-500">{getFieldError('lastName')}</p>
+                {getFieldError("lastName") && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {getFieldError("lastName")}
+                  </p>
                 )}
               </div>
             </div>
@@ -424,14 +442,16 @@ const ContactForm = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`form-field w-full rounded-2xl border px-5 py-4 outline-none transition ${
-                    getFieldError('email') 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:border-black'
+                    getFieldError("email")
+                      ? "border-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:border-black"
                   }`}
                   disabled={loading}
                 />
-                {getFieldError('email') && (
-                  <p className="mt-1 text-xs text-red-500">{getFieldError('email')}</p>
+                {getFieldError("email") && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {getFieldError("email")}
+                  </p>
                 )}
               </div>
 
@@ -440,7 +460,7 @@ const ContactForm = () => {
                   type="tel"
                   name="phone"
                   placeholder="Phone Number"
-                  value={formData.phone || ''}
+                  value={formData.phone || ""}
                   onChange={handleChange}
                   className="form-field w-full rounded-2xl border border-gray-300 px-5 py-4 outline-none transition focus:border-black"
                   disabled={loading}
@@ -454,39 +474,29 @@ const ContactForm = () => {
                 value={formData.serviceId}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                disabled={loading || servicesLoading}
+                disabled={loading || servicesLoading || services.length === 0}
                 className={`form-field block w-full min-w-0 appearance-none rounded-2xl border bg-white px-4 py-3.5 pr-10 text-sm outline-none transition sm:px-5 sm:py-4 sm:text-base ${
                   getFieldError("serviceId")
                     ? "border-red-500 focus:border-red-500"
                     : "border-gray-300 focus:border-black"
                 } ${
-                  servicesLoading ? 'cursor-not-allowed opacity-50' : ''
+                  servicesLoading || services.length === 0
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
                 }`}
               >
                 <option value="">
-                  {servicesLoading ? 'Loading services...' : 'Select Service'}
+                  {servicesLoading
+                    ? "Loading services..."
+                    : services.length === 0
+                    ? "No services available"
+                    : "Select Service"}
                 </option>
                 {services.map((service) => (
-                  <option
-                    key={service.id}
-                    value={service.id}
-                  >
+                  <option key={service.id} value={service.id}>
                     {service.name}
                   </option>
                 ))}
-                {/* Fallback services from contactForm if API fails */}
-                {services.length === 0 && !servicesLoading && !servicesError && (
-                  <>
-                    {contactForm.services.map((service) => (
-                      <option
-                        key={service}
-                        value={service.toUpperCase().replace(/ /g, "_")}
-                      >
-                        {service}
-                      </option>
-                    ))}
-                  </>
-                )}
               </select>
 
               {/* Custom dropdown arrow */}
@@ -501,7 +511,7 @@ const ContactForm = () => {
               )}
             </div>
 
-            <div className="relative">  
+            <div className="relative">
               <textarea
                 name="message"
                 rows={6}
@@ -510,14 +520,16 @@ const ContactForm = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 className={`form-field w-full resize-none rounded-2xl border px-5 py-4 outline-none transition ${
-                  getFieldError('message') 
-                    ? 'border-red-500 focus:border-red-500' 
-                    : 'border-gray-300 focus:border-black'
+                  getFieldError("message")
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:border-black"
                 }`}
                 disabled={loading}
               />
-              {getFieldError('message') && (
-                <p className="mt-1 text-xs text-red-500">{getFieldError('message')}</p>
+              {getFieldError("message") && (
+                <p className="mt-1 text-xs text-red-500">
+                  {getFieldError("message")}
+                </p>
               )}
             </div>
 
@@ -555,7 +567,10 @@ const ContactForm = () => {
           </div>
 
           {/* Floating Card with Animation */}
-          <div ref={floatingCardRef} className="floating-card absolute bottom-8 left-8 rounded-3xl bg-white p-6 shadow-2xl">
+          <div
+            ref={floatingCardRef}
+            className="floating-card absolute bottom-8 left-8 rounded-3xl bg-white p-6 shadow-2xl"
+          >
             <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
               Average Response
             </p>
@@ -572,5 +587,4 @@ const ContactForm = () => {
   );
 };
 
-// Make sure to export default
 export default ContactForm;
