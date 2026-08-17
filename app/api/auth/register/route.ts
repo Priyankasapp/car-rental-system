@@ -5,10 +5,8 @@ import { RegisterSchema } from "@/lib/auth/validation";
 import { createOtpRecord } from "@/lib/auth/otp";
 import { sendEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
+import { hashPassword, generateTempPassword } from "@/lib/auth/password";
 import { generateOtpHTML, generateOtpText } from "@/email/VerificationOtpEmail";
-import { generateTempPasswordHTML, generateTempPasswordText } from "@/email/TempPasswordEmail";
-
 
 export async function POST(req: Request) {
   try {
@@ -24,35 +22,35 @@ export async function POST(req: Request) {
 
     const { firstName, lastName, email, phone } = validation.data;
 
-    // 1. Generate a temporary password
-    const temporaryPassword = crypto.randomBytes(4).toString("hex"); // e.g., "a1b2c3d4"
-    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+    // Generate temporary password
+    const temporaryPassword = generateTempPassword();
+    const hashedPassword = await hashPassword(temporaryPassword);
 
-    // 2. Check if user already exists
+    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      // If user is already verified, reject registration
       if (existingUser.isEmailVerified) {
         return NextResponse.json(
           { success: false, message: "An account with this email already exists." },
           { status: 400 }
         );
       }
-      // If user exists but is unverified, update their basic info and temporary password
+      // Update existing unverified user
       await prisma.user.update({
         where: { email },
         data: { 
           firstName, 
           lastName, 
           phone,
-          password: hashedPassword 
+          password: hashedPassword,
+          temporaryPassword, // Store plain text temporarily
         },
       });
     } else {
-      // Create new unverified user record with temporary password
+      // Create new user
       await prisma.user.create({
         data: {
           firstName,
@@ -61,57 +59,39 @@ export async function POST(req: Request) {
           phone,
           password: hashedPassword,
           isEmailVerified: false,
+          temporaryPassword, // Store plain text temporarily
         },
       });
     }
 
-    // 3. Generate 6-digit OTP code in database
+    // Create OTP record (no need to store password in metadata now)
     const otpRecord = await createOtpRecord({
       email,
       purpose: "REGISTER",
     });
 
-    // 4. Send both OTP Verification and Temporary Password Emails concurrently
-    await Promise.all([
-      // Verification OTP Email
-      sendEmail({
-        to: email,
-        subject: `${otpRecord.otp} is your UrbanDrive verification code`,
-        html: generateOtpHTML({
-          customerName: firstName,
-          otp: otpRecord.otp,
-          purpose: "REGISTER",
-          expiryMinutes: 10,
-        }),
-        text: generateOtpText({
-          customerName: firstName,
-          otp: otpRecord.otp,
-          purpose: "REGISTER",
-          expiryMinutes: 10,
-        }),
+    // Send ONLY OTP email
+    await sendEmail({
+      to: email,
+      subject: `${otpRecord.otp} is your UrbanDrive verification code`,
+      html: generateOtpHTML({
+        customerName: firstName,
+        otp: otpRecord.otp,
+        purpose: "REGISTER",
+        expiryMinutes: 10,
       }),
-
-      // Welcome & Temporary Password Email
-      sendEmail({
-        to: email,
-        subject: "Welcome to UrbanDrive - Your Credentials",
-        html: generateTempPasswordHTML({
-          firstName,
-          email,
-          temporaryPassword,
-        }),
-        text: generateTempPasswordText({
-          firstName,
-          email,
-          temporaryPassword,
-        }),
+      text: generateOtpText({
+        customerName: firstName,
+        otp: otpRecord.otp,
+        purpose: "REGISTER",
+        expiryMinutes: 10,
       }),
-    ]);
+    });
 
     return NextResponse.json(
       {
         success: true,
-        message: "Registration started! Your verification OTP and temporary credentials have been sent to your email.",
+        message: "Registration started! Your verification OTP has been sent to your email.",
       },
       { status: 200 }
     );

@@ -2,13 +2,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { VerifyOtpSchema } from "@/lib/auth/validation";
-
+import { sendEmail } from "@/lib/email";
+import { generateTempPasswordHTML, generateTempPasswordText } from "@/email/TempPasswordEmail";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // 1. Validate request body with Zod
     const validation = VerifyOtpSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
@@ -23,12 +23,12 @@ export async function POST(request: Request) {
 
     const { email, otp, purpose } = validation.data;
 
-    //  Find matching active OTP record using exact schema property names
+    // Find matching active OTP record
     const otpRecord = await prisma.oTP.findFirst({
       where: {
         email,
-        otp, 
-        purpose, 
+        otp,
+        purpose,
         isUsed: false,
         expiresAt: {
           gt: new Date(),
@@ -43,26 +43,69 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Mark OTP as used and set user email verified
+    // Get user details (includes temporaryPassword)
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "User not found." },
+        { status: 404 }
+      );
+    }
+
+    // Get temporary password from user record
+    const temporaryPassword = user.temporaryPassword;
+
+    if (!temporaryPassword) {
+      console.error("Temporary password not found for user:", email);
+      return NextResponse.json(
+        { success: false, message: "Registration data incomplete. Please register again." },
+        { status: 400 }
+      );
+    }
+
+    // Mark OTP as used and verify user email
     await prisma.$transaction([
-      // Mark OTP as consumed
       prisma.oTP.update({
         where: { id: otpRecord.id },
-        data: { isUsed: true }, // <--- Corrected to 'isUsed'
+        data: { isUsed: true },
       }),
-      // Mark user as email verified
       prisma.user.update({
         where: { email },
-        data: { 
+        data: {
           isEmailVerified: true,
         },
       }),
     ]);
 
+    // Send Welcome & Temporary Password Email AFTER successful verification
+    await sendEmail({
+      to: email,
+      subject: "Welcome to UrbanDrive - Your Credentials",
+      html: generateTempPasswordHTML({
+        firstName: user.firstName,
+        email: user.email,
+        temporaryPassword,
+      }),
+      text: generateTempPasswordText({
+        firstName: user.firstName,
+        email: user.email,
+        temporaryPassword,
+      }),
+    });
+
+    // Clear temporary password after sending email
+    await prisma.user.update({
+      where: { email },
+      data: { temporaryPassword: null },
+    });
+
     return NextResponse.json(
       {
         success: true,
-        message: "Email verified successfully.",
+        message: "Email verified successfully! Your credentials have been sent to your email.",
       },
       { status: 200 }
     );

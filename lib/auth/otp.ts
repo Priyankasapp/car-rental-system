@@ -1,29 +1,25 @@
-import { prisma } from "@/lib/prisma"; // Adjust path to your prisma instance
+import { prisma } from "@/lib/prisma"; 
 import { OTPScope } from "@prisma/client";
 
 const OTP_EXPIRATION_MINUTES = 10;
 const MAX_ATTEMPTS = 3;
 
-/**
- * Generate a random 6-digit numerical OTP code
- */
 function generate6DigitOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-/**
- * Create a new OTP record in DB (invalidates any older active OTPs for the same email & purpose)
- */
 export async function createOtpRecord({
   email,
   purpose,
   ipAddress,
   userAgent,
+  temporaryPassword,
 }: {
   email: string;
   purpose: OTPScope;
   ipAddress?: string;
   userAgent?: string;
+  temporaryPassword?: string;
 }) {
   // Mark old unused OTPs for this email and purpose as used
   await prisma.oTP.updateMany({
@@ -47,6 +43,7 @@ export async function createOtpRecord({
       maxAttempts: MAX_ATTEMPTS,
       ipAddress,
       userAgent,
+      metadata: temporaryPassword ? { temporaryPassword } : undefined,
     },
   });
 
