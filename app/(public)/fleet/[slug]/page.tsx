@@ -8,11 +8,11 @@ import { apiCarToFleetCar, FleetCar } from '@/types/fleet'
 
 interface CarDetailPageProps {
   params: Promise<{
-    id: string
+     slug: string
   }>
 }
 
-function CarDetailContent({ id }: { id: string }) {
+function CarDetailContent({ slug }: { slug: string }) {
   const [car, setCar] = useState<FleetCar | null>(null)
   const [selectedImage, setSelectedImage] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
@@ -28,7 +28,7 @@ function CarDetailContent({ id }: { id: string }) {
       setError(null)
 
       try {
-        const response = await fetch(`/api/cars/${id}`)
+        const response = await fetch(`/api/cars/${slug}`)
         const json = await response.json()
 
         if (!response.ok || !json.success) {
@@ -47,7 +47,7 @@ function CarDetailContent({ id }: { id: string }) {
     }
 
     fetchCarDetails()
-  }, [id])
+  }, [slug])
 
   // Sync currentIndex with selectedImage when car loads
   useEffect(() => {
@@ -340,7 +340,7 @@ export default function FleetDetailPage({ params }: CarDetailPageProps) {
           <div className="py-20 text-center text-gray-500">Loading car details...</div>
         }
       >
-        <CarDetailContent id={resolvedParams.id} />
+        <CarDetailContent slug={resolvedParams.slug} />
       </Suspense>
     </main>
   )

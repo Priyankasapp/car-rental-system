@@ -10,7 +10,7 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-// GET /api/admin/cars/[id] — Retrieve single car details
+// GET /api/admin/cars/[id] 
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
